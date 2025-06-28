@@ -52,6 +52,7 @@ class Program
             
                 if (guild.GetProperty("type").GetString() == "Started playing")
                     await client.Rest.SendMessageAsync(channelId, guild.GetProperty("message").GetString()!);
+                
                 else if (guild.GetProperty("type").GetString() == "Finished battle")
                 {
                     var embed = new EmbedProperties()
@@ -76,6 +77,20 @@ class Program
                                 .WithInline(false)
                         );
 
+                    await client.Rest.SendMessageAsync(channelId, new MessageProperties()
+                        .WithEmbeds([embed]));
+                }
+                
+                else if (guild.GetProperty("type").GetString() == "Members playing")
+                {
+                    var embed = new EmbedProperties()
+                        .WithTitle(guild.GetProperty("message").GetProperty("title").GetString()!)
+                        .AddFields(
+                            new EmbedFieldProperties()
+                                .WithValue(guild.GetProperty("message").GetProperty("players").GetString()!)
+                                .WithInline(false)
+                        );
+                    
                     await client.Rest.SendMessageAsync(channelId, new MessageProperties()
                         .WithEmbeds([embed]));
                 }

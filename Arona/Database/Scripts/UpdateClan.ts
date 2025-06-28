@@ -1,6 +1,7 @@
 ﻿import axios from 'axios';
 import mongoose from "mongoose";
-import { database_url } from "../../Config/config.json";
+import pLimit from "p-limit";
+import { database_url, wg_api } from "../../Config/config.json";
 
 const Data = mongoose.model("servers", new mongoose.Schema({ _id: String, channel_id: String, clans: Object }), "servers");
 
@@ -16,6 +17,7 @@ const returnMessages: {
         color: string,
         points: string,
         result: string,
+        players: string
     }
 }[] = [];
 
@@ -86,7 +88,8 @@ mongoose.connect(database_url)
                             game_result: "",
                             color: "",
                             points: ``,
-                            result: ""
+                            result: "",
+                            players: ""
                         }
                     }
 
@@ -158,7 +161,8 @@ mongoose.connect(database_url)
                         pushMessage = true;
                     }
 
-                    if (pushMessage) returnMessages.push(message);
+                    if (pushMessage)
+                        returnMessages.push(message);
 
                     guild.clans[id].ratings.map((r: any) => {
                         if (r.team_number === apiRating.team_number) {
@@ -176,6 +180,65 @@ mongoose.connect(database_url)
                         }
                     });
                 }
+
+                // Antal slag gjort av medlemmar
+                const membersPlaying = {
+                    guild_id: guild["_id"]!,
+                    channel_id: guild["channel_id"]!,
+                    type: "Members playing",
+                    message: {
+                        title: `Members playing in \`[${tag}] ${name}\` from <t:${lastBattleUnix}:f>`,
+                        time: lastBattleUnix,
+                        team: "",
+                        game_result: "",
+                        color: "",
+                        points: ``,
+                        result: "",
+                        players: ""
+                    }
+                }
+                
+                const limit = pLimit(5);
+                const memberDataPromise = guild.clans[id]["members"].map(async (member: { player_id: number, username: string, battles: number}) => {
+                    const region = guild.clans[id]["region"];
+                    return await limit(async () => {
+                        try {
+                            const [username, seasons] = await Promise.all([
+                                axios.get(`https://api.worldofwarships.${region}/wows/clans/accountinfo/?application_id=${wg_api}&account_id=${member.player_id}`),
+                                axios.get(`https://api.worldofwarships.${region}/wows/clans/seasonstats/?application_id=${wg_api}&account_id=${member.player_id}`)
+                            ]);
+
+                            const currentSeason = seasons.data["data"][member.player_id]["seasons"].find((s: any) => s.season_id === SEASON_NUMBER);
+
+                            return ({
+                                player_id: member.player_id,
+                                username: username.data["data"][member.player_id]["account_name"],
+                                battles: currentSeason ? currentSeason.battles : 0,
+                            });
+                        } catch (err) {
+                            return ({
+                                error: "API error, ignoring member"
+                            });
+                        }
+                    });
+                });
+
+                for (const apiMember of await Promise.all(memberDataPromise) as { player_id: number, username: string, battles: number, error?: string }[]) {
+                    if (apiMember.error) {
+                        membersPlaying.message.players = "\`API error, could not get members\`";
+                        break;
+                    }
+
+                    const dbMember = guild.clans[id]["members"].find((m: any) => m.player_id === apiMember.player_id);
+
+                    if (apiMember.battles > dbMember.battles)
+                        membersPlaying.message.players += `${dbMember.username}\n`;
+                    
+                    dbMember.battles = apiMember.battles;
+                }
+                
+                if (membersPlaying.message.players !== "")
+                    returnMessages.push(membersPlaying);
             }
 
             guild.markModified("clans");

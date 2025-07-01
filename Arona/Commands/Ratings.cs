@@ -63,13 +63,16 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
         
         var field = new List<EmbedFieldProperties>();
 
-        foreach (var r in ratings)
-        {
+        if (ratings.Count == 0)
+            await Context.Interaction.SendResponseAsync(
+                InteractionCallback.Message(new InteractionMessageProperties()
+                    .WithContent("Clan doesn't play clan battles.")));
+
+        else foreach (var r in ratings)
             field.Add(new EmbedFieldProperties()
                 .WithName(r.Team)
                 .WithValue(r.Message)
                 .WithInline(false));
-        }
         
         string tag = JsonDocument.Parse(await res.Content.ReadAsStringAsync())
             .RootElement

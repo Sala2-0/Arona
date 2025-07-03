@@ -45,7 +45,7 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
                     : "Qualification to stay in";
                 
                 string message = $"{type} {GetLeague( rating.GetProperty("stage").GetProperty("target_league").GetInt32() - (type == "Qualification for" ? 0 : 1) )} league" +
-                                 $" {GetProgress( rating.GetProperty("stage").GetProperty("progress") )}";
+                                 $"\n{GetProgress( rating.GetProperty("stage").GetProperty("progress") )}";
                 
                 ratings.Add(new RatingsStructure(team, message));
             }
@@ -115,12 +115,16 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
 
     public static string GetProgress(JsonElement arr)
     {
-        string progress = "[";
-        foreach (var result in arr.EnumerateArray())
-        {
-            progress = string.Concat(progress, result.GetString() == "victory" ? " 🟩 " : " 🟥 ");
-        }
-        progress = string.Concat(progress, "]");
-        return progress;
+        string[] progress = [" ⬛ ", " ⬛ ", " ⬛ ", " ⬛ ", " ⬛ "];
+
+        for (int p = 0; p < arr.GetArrayLength(); p++)
+            progress[p] = arr[p].GetString() == "victory" ? " 🟩 " : " 🟥 ";
+
+        string str = "[";
+        foreach (var result in progress)
+            str = string.Concat(str, result);
+
+        str = string.Concat(str, "]");
+        return str;
     }
 }

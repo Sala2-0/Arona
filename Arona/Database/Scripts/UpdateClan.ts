@@ -108,17 +108,35 @@ mongoose.connect(database_url)
                             const league = getLeague(apiRating.stage.target_league - (apiRating.stage.type === "demotion" ? 1 : 0));
                             const progress = stageFormat(apiRating.stage.progress);
 
-                            message.message.result = `${type} ${league} league [${progress}]`;
+                            message.message.result = `${type} ${league} league`;
                             message.message.color = message.message.game_result === "Victory" ? "00FF00" : "FF0000";
-                            message.message.points = "Qualification"
+                            message.message.points = `[${progress}]`;
                         }
                     }
 
                     else if (dbRating.qualification !== null) {
-                        message.message.game_result = apiRating.league < dbRating.league ? "Victory" : "Defeat";
-                        message.message.result = `${apiRating.league < dbRating.league ? "Promoted to" : "Demoted to"} ${getLeague(apiRating.league)} ${getDivision(apiRating.division)} (${apiRating.division_rating})`;
-                        message.message.color = apiRating.league < dbRating.league ? "00FF00" : "FF0000";
-                        message.message.points = apiRating.league < dbRating.league ? "Qualified" : "Failed to qualify";
+                        if (apiRating.league < dbRating.league) {
+                            message.message.game_result = "Victory";
+                            message.message.result = `Promoted to ${getLeague(apiRating.league)} ${getDivision(apiRating.division)} (${apiRating.division_rating})`;
+                            message.message.color = "00FF00";
+                            message.message.points = "Qualified";
+                        }
+
+                        else if (apiRating.league > dbRating.league) {
+                            message.message.game_result = "Defeat";
+                            message.message.result = `Demoted to ${getLeague(apiRating.league)} ${getDivision(apiRating.division)} (${apiRating.division_rating})`;
+                            message.message.color = "FF0000";
+                            message.message.points = "Failed to qualify";
+                        }
+
+                        else if (apiRating.league === dbRating.league) {
+                            message.message.game_result = "Victory";
+                            message.message.result = `Staying in ${getLeague(apiRating.league)} ${getDivision(apiRating.division)} (${apiRating.division_rating})`;
+                            message.message.color = "00FF00";
+                            message.message.points = "Qualified";
+
+                        }
+
                         pushMessage = true;
                     }
 
@@ -211,9 +229,9 @@ function getDivision(division: number): string {
 }
 
 function stageFormat(progress: string[]): string {
-    const formatted: string[] = [];
-    for (const p of progress)
-        formatted.push(p === "victory" ? " 🟩 " : " 🟥 ");
+    const formatted: string[] = [" ⬛ ", " ⬛ ", " ⬛ ", " ⬛ ", " ⬛ "];
+    for (let p = 0; p < progress.length; p++)
+        formatted[p] = progress[p] === "victory" ? " 🟩 " : " 🟥 ";
 
     return formatted.join("");
 }

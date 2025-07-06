@@ -129,12 +129,18 @@ mongoose.connect(database_url)
                             message.message.points = "Failed to qualify";
                         }
 
-                        else if (apiRating.league === dbRating.league) {
+                        else if (apiRating.league === dbRating.league && dbRating.qualification.type == "demotion") {
                             message.message.game_result = "Victory";
                             message.message.result = `Staying in ${getLeague(apiRating.league)} ${getDivision(apiRating.division)} (${apiRating.division_rating})`;
                             message.message.color = "00FF00";
                             message.message.points = "Qualified";
+                        }
 
+                        else if (apiRating.league === dbRating.league && dbRating.qualification.type == "promotion") {
+                            message.message.game_result = "Defeat";
+                            message.message.result = `Demoted to ${getLeague(apiRating.league)} ${getDivision(apiRating.division)} (${apiRating.division_rating})`;
+                            message.message.color = "FF0000";
+                            message.message.points = "Failed to qualify";
                         }
 
                         pushMessage = true;

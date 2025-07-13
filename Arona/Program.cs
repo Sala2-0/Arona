@@ -19,11 +19,14 @@ class Program
     {
         var config = JsonSerializer.Deserialize<BotConfig>(BotConfig.GetConfigFilePath());
 
+        if (config == null)
+            throw new Exception("Configuration file not found or invalid.");
+
         var builder = Host.CreateApplicationBuilder(args);
         builder.Services
             .AddDiscordGateway(options =>
             {
-                options.Token = config!.Token;
+                options.Token = config.DevToken;
             })
             .AddApplicationCommands();
         

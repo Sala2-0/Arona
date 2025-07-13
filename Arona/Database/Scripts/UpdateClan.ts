@@ -110,7 +110,7 @@ mongoose.connect(database_url)
 
                             message.message.result = `${type} ${league} league`;
                             message.message.color = message.message.game_result === "Victory" ? "00FF00" : "FF0000";
-                            message.message.points = `[${progress}]`;
+                            message.message.points = progress;
                         }
                     }
 

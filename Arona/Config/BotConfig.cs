@@ -5,6 +5,8 @@ public class BotConfig
 {
     [JsonPropertyName("token")]
     public string? Token { get; set; }
+    [JsonPropertyName("dev_token")]
+    public string? DevToken { get; set; }
     [JsonPropertyName("client_id")]
     public string? ClientId { get; set; }
     [JsonPropertyName("guild_id")]

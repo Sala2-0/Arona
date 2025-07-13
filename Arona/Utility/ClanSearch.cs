@@ -24,24 +24,22 @@ public class ClanSearch: IAutocompleteProvider<AutocompleteInteractionContext>
             region = split[0];
             input = split[1];
             
-            // Hantera NA kod
             if (region is "NA" or "na")
                 region = "com";
             
-            // Gemenera all text
             region = region.ToLower();
         }
 
-        if (String.IsNullOrEmpty(input) || input.Length < 2)
+        if (String.IsNullOrEmpty(input) || input.Length < 2 || !ValidRegion(region))
         {
             return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>([
                 new ApplicationCommandOptionChoiceProperties("Ex: NTT", "500205591|eu"),
                 new ApplicationCommandOptionChoiceProperties("Ex: NA RESIN", "1000048416|com"),
             ]);
         }
-        
-        List<ClanSearchStructure> clans = new List<ClanSearchStructure>();
-        
+
+        List<ClanSearchStructure> clans = [];
+
         var res = client.GetAsync($"https://api.worldofwarships.{region}/wows/clans/list/?application_id={config!.WgApi}&search={input}")
             .Result.Content.ReadAsStringAsync().Result;
         JsonElement doc = JsonDocument.Parse(res).RootElement.GetProperty("data");
@@ -59,4 +57,7 @@ public class ClanSearch: IAutocompleteProvider<AutocompleteInteractionContext>
         
         return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>(choices);
     }
+
+    public static bool ValidRegion(string region) => 
+        region is "eu" or "EU" or "asia" or "ASIA" or "com";
 }

@@ -4,6 +4,7 @@ using NetCord.Services.ApplicationCommands;
 using System.Text.Json;
 using NetCord.Rest;
 using NetCord;
+using System.Threading.Tasks;
 
 public class RatingsStructure(string team, string message)
 {
@@ -23,17 +24,24 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
         string region = split[1];
         string clanId = split[0];
 
-        var res = await client.GetAsync($"https://clans.worldofwarships.{region}/api/clanbase/{clanId}/claninfo/");
-        JsonElement doc = JsonDocument.Parse(await res.Content.ReadAsStringAsync())
+        Task<string> generalTask = client.GetStringAsync($"https://clans.worldofwarships.{region}/api/clanbase/{clanId}/claninfo/");
+        Task<string> globalRankTask = client.GetStringAsync($"https://clans.worldofwarships.{region}/api/ladder/structure/?clan_id={clanId}&realm=global");
+        Task<string> regionRankTask = client.GetStringAsync($"https://clans.worldofwarships.{region}/api/ladder/structure/?clan_id={clanId}&realm={GetRegionCodesClansApi(region)}");
+
+        string[] results = await Task.WhenAll(generalTask, globalRankTask, regionRankTask);
+
+        JsonElement generalDoc = JsonDocument.Parse(results[0])
             .RootElement
             .GetProperty("clanview")
             .GetProperty("wows_ladder");
         
-        int seasonNumber = doc.GetProperty("season_number").GetInt32();
-        
-        List<RatingsStructure> ratings = new List<RatingsStructure>();
+        int seasonNumber = generalDoc.GetProperty("season_number").GetInt32();
 
-        foreach (JsonElement rating in doc.GetProperty("ratings").EnumerateArray())
+        List<EmbedFieldProperties> field = [];
+
+        List<RatingsStructure> ratings = [];
+
+        foreach (JsonElement rating in generalDoc.GetProperty("ratings").EnumerateArray())
         {
             if (rating.GetProperty("season_number").GetInt32() != seasonNumber) continue;
 
@@ -60,34 +68,65 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
                 ratings.Add(new RatingsStructure(team, message));
             }
         }
-        
-        var field = new List<EmbedFieldProperties>();
 
         if (ratings.Count == 0)
             field.Add(new EmbedFieldProperties()
                 .WithName("Clan doesn't play clan battles"));
 
-        else foreach (var r in ratings)
-            field.Add(new EmbedFieldProperties()
-                .WithName(r.Team)
-                .WithValue(r.Message)
-                .WithInline(false));
-        
-        string tag = JsonDocument.Parse(await res.Content.ReadAsStringAsync())
+        else
+        {
+            ratings.Sort((a, b) => string.Compare(a.Team, b.Team, StringComparison.Ordinal));
+            foreach (var r in ratings)
+                field.Add(new EmbedFieldProperties()
+                    .WithName(r.Team)
+                    .WithValue(r.Message)
+                    .WithInline(false));
+
+            // Hämta klanens ranking
+            JsonElement globalRankDoc = JsonDocument.Parse(results[1])
+                .RootElement;
+
+            foreach (JsonElement clan in globalRankDoc.EnumerateArray())
+            {
+                if (clan.GetProperty("id").GetInt32() != int.Parse(clanId)) continue;
+
+                field.Add(new EmbedFieldProperties()
+                    .WithName("Global ranking")
+                    .WithValue($"#{clan.GetProperty("rank").GetInt32()}")
+                    .WithInline());
+                break;
+            }
+
+            JsonElement regionRankDoc = JsonDocument.Parse(results[2])
+                .RootElement;
+
+            foreach (JsonElement clan in regionRankDoc.EnumerateArray())
+            {
+                if (clan.GetProperty("id").GetInt32() != int.Parse(clanId)) continue;
+
+                field.Add(new EmbedFieldProperties()
+                    .WithName("Region ranking")
+                    .WithValue($"#{clan.GetProperty("rank").GetInt32()}")
+                    .WithInline());
+                break;
+            }
+        }
+
+        string tag = JsonDocument.Parse(results[0])
             .RootElement
             .GetProperty("clanview")
             .GetProperty("clan")
             .GetProperty("tag")
             .GetString()!;
-        string name = JsonDocument.Parse(await res.Content.ReadAsStringAsync())
+        string name = JsonDocument.Parse(results[0])
             .RootElement
             .GetProperty("clanview")
             .GetProperty("clan")
             .GetProperty("name")
             .GetString()!;
-        
+
         var embed = new EmbedProperties()
-            .WithTitle($"`[{tag}] {name}`")
+            .WithTitle($"`[{tag}] {name}` ({ClanSearchStructure.GetRegionCode(region)})")
             .WithColor(new Color(Convert.ToInt32("a4fff7", 16)))
             .WithFields(field);
         
@@ -120,11 +159,17 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
         for (int p = 0; p < arr.GetArrayLength(); p++)
             progress[p] = arr[p].GetString() == "victory" ? " 🟩 " : " 🟥 ";
 
-        string str = "[";
+        string str = "";
         foreach (var result in progress)
             str = string.Concat(str, result);
-
-        str = string.Concat(str, "]");
         return str;
     }
+
+    public static string GetRegionCodesClansApi(string region) => region switch
+    {
+        "eu" or "EU" => "eu",
+        "asia" or "ASIA" => "sg",
+        "com" => "us",
+        _ => "undefined"
+    };
 }

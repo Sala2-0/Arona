@@ -15,7 +15,8 @@ public class Help : ApplicationCommandModule<ApplicationCommandContext>
                              "`/prime_time` - Get a clans clan battle activity of today\n" +
                              "`/pr_calculator` - Calculate PR of any ship\n" +
                              "`/ratings` - Get detailed information of a clan's ratings\n" +
-                             "`/help` - Get info for commands available";
+                             "`/help` - Get info for commands available\n" +
+                             "\nCheck out source code at https://github.com/Sala2-0/Arona";
 
 
         await Context.Interaction.SendResponseAsync(

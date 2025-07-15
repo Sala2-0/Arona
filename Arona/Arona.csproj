@@ -9,10 +9,16 @@
 
     <ItemGroup>
       <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0-preview.5.25277.114" />
+      <PackageReference Include="MongoDB.Driver" Version="3.4.0" />
       <PackageReference Include="NetCord" Version="1.0.0-alpha.391" />
       <PackageReference Include="NetCord.Hosting" Version="1.0.0-alpha.391" />
       <PackageReference Include="NetCord.Hosting.Services" Version="1.0.0-alpha.391" />
       <PackageReference Include="NetCord.Services" Version="1.0.0-alpha.391" />
     </ItemGroup>
 
+	<ItemGroup>
+		<None Include="Config\config.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
 </Project>

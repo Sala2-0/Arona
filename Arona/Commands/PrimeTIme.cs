@@ -12,16 +12,10 @@ public class PrimeTime : ApplicationCommandModule<ApplicationCommandContext>
         [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag search for",
             AutocompleteProviderType = typeof(ClanSearch))] string clanIdAndRegion)
     {
-        HttpClient client = new HttpClient();
+        await Context.Interaction.SendResponseAsync(
+            InteractionCallback.DeferredMessage());
 
-        // Hantera oförväntade strukturfel
-        if (!clanIdAndRegion.Contains('|'))
-        {
-            await Context.Interaction.SendResponseAsync(
-                InteractionCallback.Message("Unexpected structure error.")
-            );
-            return;
-        }
+        HttpClient client = new HttpClient();
         
         var split = clanIdAndRegion.Split('|');
         string region = split[1];
@@ -48,12 +42,14 @@ public class PrimeTime : ApplicationCommandModule<ApplicationCommandContext>
                     .WithValue(primeTime != null ? GetPrimeTimeRegions(primeTime) : "Not playing")
             );
         
-        var props = new InteractionMessageProperties()
-            .WithEmbeds([ embed ]);
+        //var props = new InteractionMessageProperties()
+        //    .WithEmbeds([ embed ]);
         
-        await Context.Interaction.SendResponseAsync(
-            InteractionCallback.Message(props)
-        );
+        //await Context.Interaction.SendResponseAsync(
+        //    InteractionCallback.Message(props)
+        //);
+
+        await Context.Interaction.ModifyResponseAsync(options => options.Embeds = [embed]);
     }
 
     private static string GetPrimeTimeRegions(int? primeTimeId) => primeTimeId switch

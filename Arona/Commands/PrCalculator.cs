@@ -7,16 +7,10 @@ using System.Net.Http;
 using System.Text.Json;
 using Utility;
 
-public class ShipStructure
+public class ShipStructure(string name, string id)
 {
-    public string Name;
-    public string Id;
-
-    public ShipStructure(string name, string id)
-    {
-        Name = name;
-        Id = id;
-    }
+    public string Name = name;
+    public string Id = id;
 }
 
 public class Victory : IChoicesProvider<ApplicationCommandContext>
@@ -43,18 +37,16 @@ public class ShipSearch : IAutocompleteProvider<AutocompleteInteractionContext>
         var input = option.Value ?? string.Empty;
         
         var res = client.GetAsync("https://ntt-community.com/api/ships").Result.Content.ReadAsStringAsync().Result;
-        JsonElement doc = JsonDocument.Parse(res).RootElement.GetProperty("data");
+        JsonElement doc = JsonDocument.Parse(res).RootElement;
         
         List<ShipStructure> ships = new List<ShipStructure>();
 
-        foreach (JsonProperty ship in doc.EnumerateObject())
+        foreach (JsonElement ship in doc.EnumerateArray())
         {
-            string name = ship.Value.GetProperty("name").GetString()!;
+            string name = ship.GetProperty("name").GetString()!;
             
             if (name.StartsWith(input, StringComparison.InvariantCultureIgnoreCase))
-            {
-                ships.Add(new ShipStructure(name, ship.Name));
-            }
+                ships.Add(new ShipStructure(name, ship.GetProperty("_id").ToString()));
         }
         
         var choices = ships
@@ -79,27 +71,40 @@ public class PrCalculator : ApplicationCommandModule<ApplicationCommandContext>
     {
         HttpClient client = new HttpClient();
         var res = client.GetAsync("https://ntt-community.com/api/ships").Result.Content.ReadAsStringAsync().Result;
-        JsonElement doc = JsonDocument.Parse(res).RootElement.GetProperty("data");
+        JsonElement doc = JsonDocument.Parse(res).RootElement;
+        JsonElement? targetShip = null;
 
-        if (!doc.TryGetProperty(selectedShipId, out JsonElement _))
+        foreach (JsonElement ship in doc.EnumerateArray())
+        {
+            if (ship.GetProperty("_id").ToString() != selectedShipId) continue;
+
+            targetShip = ship;
+            break;
+        }
+
+        if (targetShip == null)
         {
             await Context.Interaction.SendResponseAsync(
-                InteractionCallback.Message("❌ Ship database error: Ship id does not exist.")
-            );
+                InteractionCallback.Message("❌ Error: Ship not found."));
             return;
         }
-        
-        string name = doc.GetProperty(selectedShipId).GetProperty("name").GetString()!;
-        var stats = doc.GetProperty(selectedShipId).GetProperty("stats");
+
+        string name = targetShip.Value.GetProperty("name").GetString()!;
+        var stats = new
+        {
+            AverageDamageDealt = targetShip.Value.GetProperty("average_damage").GetDouble(),
+            AverageKills = targetShip.Value.GetProperty("average_kills").GetDouble(),
+            WinRate = targetShip.Value.GetProperty("win_rate").GetDouble()
+        };
         
         var normalization = new
         {
-            damage = Math.Max(0, (damage / stats.GetProperty("average_damage_dealt").GetDouble()) - 0.4) / (1 - 0.4),
-            kills = Math.Max(0, (kills / stats.GetProperty("average_kills").GetDouble()) - 0.1) / (1 - 0.1),
-            win = Math.Max(0, ((victory == "true" ? 1 : 0) / (stats.GetProperty("win_rate").GetDouble() / 100)) - 0.7) / (1 - 0.7)
+            damage = Math.Max(0, damage / stats.AverageDamageDealt - 0.4) / (1 - 0.4),
+            kills = Math.Max(0, kills / stats.AverageKills - 0.1) / (1 - 0.1),
+            win = Math.Max(0, (victory == "true" ? 1 : 0) / (stats.WinRate / 100) - 0.7) / (1 - 0.7)
         };
                 
-        int pr = (int)((700 * normalization.damage) + (300 * normalization.kills) + (150 * normalization.win));
+        int pr = (int)Math.Round((700 * normalization.damage) + (300 * normalization.kills) + (150 * normalization.win));
 
         var embed = new EmbedProperties()
             .WithTitle(name)

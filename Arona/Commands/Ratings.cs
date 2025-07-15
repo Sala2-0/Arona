@@ -5,6 +5,7 @@ using System.Text.Json;
 using NetCord.Rest;
 using NetCord;
 using System.Threading.Tasks;
+using ApiModels;
 
 public class RatingsStructure(string team, string message)
 {
@@ -19,51 +20,57 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
         [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag search for",
             AutocompleteProviderType = typeof(ClanSearch))] string clanIdAndRegion)
     {
+        await Context.Interaction.SendResponseAsync(
+            InteractionCallback.DeferredMessage());
+
         HttpClient client = new HttpClient();
         string[] split = clanIdAndRegion.Split('|');
         string region = split[1];
         string clanId = split[0];
 
-        Task<string> generalTask = client.GetStringAsync($"https://clans.worldofwarships.{region}/api/clanbase/{clanId}/claninfo/");
-        Task<string> globalRankTask = client.GetStringAsync($"https://clans.worldofwarships.{region}/api/ladder/structure/?clan_id={clanId}&realm=global");
-        Task<string> regionRankTask = client.GetStringAsync($"https://clans.worldofwarships.{region}/api/ladder/structure/?clan_id={clanId}&realm={GetRegionCodesClansApi(region)}");
+        Task<string> generalTask = client.GetStringAsync(Clanbase.GetApiUrl(clanId, region));
+        Task<string> globalRankTask = client.GetStringAsync(LadderStructure.GetApiTargetClanUrl(clanId, region));
+        Task<string> regionRankTask = client.GetStringAsync(LadderStructure.GetApiTargetClanUrl(clanId, region, LadderStructure.ConvertRegion(region)));
 
         string[] results = await Task.WhenAll(generalTask, globalRankTask, regionRankTask);
 
-        JsonElement generalDoc = JsonDocument.Parse(results[0])
-            .RootElement
-            .GetProperty("clanview")
-            .GetProperty("wows_ladder");
-        
-        int seasonNumber = generalDoc.GetProperty("season_number").GetInt32();
+        var general = JsonSerializer.Deserialize<Clanbase>(results[0]);
+
+        if (general == null)
+        {
+            await Context.Interaction.ModifyResponseAsync(options => options.Content = "❌ Error fetching clan data from API.");
+            return;
+        }
+
+        int latestSeason = general.ClanView.WowsLadder.SeasonNumber;
 
         List<EmbedFieldProperties> field = [];
 
         List<RatingsStructure> ratings = [];
 
-        foreach (JsonElement rating in generalDoc.GetProperty("ratings").EnumerateArray())
+        foreach (Rating rating in general.ClanView.WowsLadder.Ratings)
         {
-            if (rating.GetProperty("season_number").GetInt32() != seasonNumber) continue;
+            if (rating.SeasonNumber != latestSeason) continue;
 
-            if (rating.GetProperty("stage").ValueKind != JsonValueKind.Null)
+            if (rating.Stage != null)
             {
-                string team = rating.GetProperty("team_number").GetInt32() == 1 ? "Alpha" : "Bravo";
-                string type = rating.GetProperty("stage").GetProperty("type").GetString()! == "promotion"
+                string team = rating.TeamNumber == 1 ? "Alpha" : "Bravo";
+                string type = rating.Stage.Type == "promotion"
                     ? "Qualification for"
                     : "Qualification to stay in";
                 
-                string message = $"{type} {GetLeague( rating.GetProperty("stage").GetProperty("target_league").GetInt32() - (type == "Qualification for" ? 0 : 1) )} league" +
-                                 $"\n{GetProgress( rating.GetProperty("stage").GetProperty("progress") )}";
+                string message = $"{type} {GetLeague(rating.Stage.TargetLeague - (type == "Qualification for" ? 0 : 1) )} {GetDivision(rating.Stage.TargetDivision)}" +
+                                 $"\n{GetProgress(rating.Stage.Progress)}";
                 
                 ratings.Add(new RatingsStructure(team, message));
             }
 
             else
             {
-                string team = rating.GetProperty("team_number").GetInt32() == 1 ? "Alpha" : "Bravo";
-                string message = $"{GetLeague(rating.GetProperty("league").GetInt32())}" +
-                                 $" {GetDivision(rating.GetProperty("division").GetInt32())}" +
-                                 $" ({rating.GetProperty("division_rating").GetInt32()})";
+                string team = rating.TeamNumber == 1 ? "Alpha" : "Bravo";
+                string message = $"{GetLeague(rating.League)}" +
+                                 $" {GetDivision(rating.Division)}" +
+                                 $" ({rating.DivisionRating})";
                 
                 ratings.Add(new RatingsStructure(team, message));
             }
@@ -127,14 +134,16 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
 
         var embed = new EmbedProperties()
             .WithTitle($"`[{tag}] {name}` ({ClanSearchStructure.GetRegionCode(region)})")
-            .WithColor(new Color(Convert.ToInt32("a4fff7", 16)))
+            .WithColor(new Color(Convert.ToInt32(general.ClanView.Clan.Color.Trim('#'), 16)))
             .WithFields(field);
-        
-        await Context.Interaction.SendResponseAsync(
-            InteractionCallback.Message(new InteractionMessageProperties().WithEmbeds([ embed ])));
+
+        //await Context.Interaction.SendResponseAsync(
+        //  InteractionCallback.Message(new InteractionMessageProperties().WithEmbeds([embed])));
+
+        await Context.Interaction.ModifyResponseAsync(options => options.Embeds = [embed]);
     }
 
-    public static string GetLeague(int targetLeague) => targetLeague switch
+    public static string GetLeague(int league) => league switch
     {
         0 => "Hurricane",
         1 => "Typhoon",
@@ -152,18 +161,28 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
         _ => "undefined",
     };
 
-    public static string GetProgress(JsonElement arr)
+    public static string GetProgress(string[] arr)
     {
         string[] progress = [" ⬛ ", " ⬛ ", " ⬛ ", " ⬛ ", " ⬛ "];
 
-        for (int p = 0; p < arr.GetArrayLength(); p++)
-            progress[p] = arr[p].GetString() == "victory" ? " 🟩 " : " 🟥 ";
+        for (int p = 0; p < arr.Length; p++)
+            progress[p] = arr[p] == "victory" ? " 🟩 " : " 🟥 ";
 
         string str = "";
         foreach (var result in progress)
             str = string.Concat(str, result);
         return str;
     }
+
+    public static string GetLeagueColor(int league) => league switch
+    {
+        0 => "cda4ff", // Hurricane
+        1 => "bee7bd", // Typhoon
+        2 => "e3d6a0", // Storm
+        3 => "cce4e4", // Gale
+        4 => "cc9966", // Squall
+        _ => "ffffff"  // Undefined
+    };
 
     public static string GetRegionCodesClansApi(string region) => region switch
     {

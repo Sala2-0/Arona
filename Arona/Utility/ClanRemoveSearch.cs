@@ -3,7 +3,8 @@ using System.Text.Json;
 using NetCord.Services.ApplicationCommands;
 using NetCord;
 using NetCord.Rest;
-using System.Diagnostics;
+using Database;
+using MongoDB.Driver;
 
 public class ClanRemoveSearch : IAutocompleteProvider<AutocompleteInteractionContext>
 {
@@ -13,44 +14,28 @@ public class ClanRemoveSearch : IAutocompleteProvider<AutocompleteInteractionCon
     {
         string? guildName = context.Interaction.Guild?.Name;
         string? guildId = context.Interaction.GuildId.ToString();
-        
-        ProcessStartInfo psi = JsUtility.StartJs("ClanList.js", guildId + " " + guildName);
-        
-        using var process = Process.Start(psi);
-        string? output = process?.StandardOutput.ReadToEnd();
-        
-        if (output == null)
-            return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>([
-                new ApplicationCommandOptionChoiceProperties("Internal command error", "undefined")
-            ]);
-        
-        // No clans in database
-        if (output.Contains("C#: No clans"))
-            return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>([
-                new ApplicationCommandOptionChoiceProperties("No clans in database", "undefined")
-            ]);
-        
-        // No database for guild
-        if (output.Contains("C#: No database"))
+
+        var collection = Program.DatabaseClient!.GetDatabase("Arona")
+            .GetCollection<Guild>("servers");
+
+        var guild = collection.Find(g => g.Id == guildId).FirstOrDefault();
+
+        if (guild == null)
             return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>([
                 new ApplicationCommandOptionChoiceProperties("No database exists for this server. Add a clan to initialize one.", "undefined")
             ]);
-        
-        JsonElement doc = JsonDocument.Parse(output).RootElement;
-        
-        List<ClanSearchStructure> clans = new List<ClanSearchStructure>();
 
-        foreach (JsonProperty clan in doc.EnumerateObject())
-            clans.Add(new ClanSearchStructure(clan.Value.GetProperty("clan_tag").ToString(),
-                clan.Value.GetProperty("clan_name").GetString()!, clan.Name,
-                clan.Value.GetProperty("region").GetString()!));
+        if (guild.Clans == null || guild.Clans.Count == 0)
+            return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>([
+                new ApplicationCommandOptionChoiceProperties("No clans in database", "undefined")
+            ]);
 
-        var choices = clans
-            .Take(10)
-            .Select(s =>
+        var choices = guild.Clans
+            .Take(5)
+            .Select(clan =>
                 new ApplicationCommandOptionChoiceProperties(
-                    $"[{s.ClanTag}] {s.ClanName} ({ClanSearchStructure.GetRegionCode(s.Region)})", $"{s.ClanId}"));
-        
+                    $"[{clan.Value.ClanTag}] {clan.Value.ClanName} ({ClanSearchStructure.GetRegionCode(clan.Value.Region)})", clan.Key));
+
         return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>(choices);
     }
 }

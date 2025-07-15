@@ -3,7 +3,11 @@ using System.Text.Json;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using Utility;
-using System.Diagnostics;
+using MongoDB.Bson;
+using MongoDB.Driver;
+using Database;
+using ApiModels;
+
 
 public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
 {
@@ -14,62 +18,146 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         // Skicka inledande svar
         await Context.Interaction.SendResponseAsync(
             InteractionCallback.DeferredMessage());
-        
+
+        var client = new HttpClient();
+
         string[] split = clanIdAndRegion.Split('|');
         string region = split[1];
         string clanId = split[0];
         string? guildId = Context.Interaction.GuildId.ToString();
+        string channelId = Context.Interaction.Channel.Id.ToString();
 
-        if (string.IsNullOrEmpty(guildId))
+        var collection = Program.DatabaseClient!.GetDatabase("Arona")
+            .GetCollection<Guild>("servers");
+
+        var guild = await collection.Find(g => g.Id == guildId).FirstOrDefaultAsync();
+
+        // Om guild inte finns, skapa en ny
+        if (guild == null)
         {
-            await Context.Interaction.SendResponseAsync(
-                InteractionCallback.Message("❌ Error: Guild id is null."));
+            guild = new Guild
+            {
+                Id = guildId!,
+                ChannelId = channelId,
+                Clans = new Dictionary<string, Database.Clan>()
+            };
+            await collection.InsertOneAsync(guild);
+        }
+
+        if (guild.Clans!.ContainsKey(clanId))
+        {
+            await Context.Interaction.ModifyResponseAsync(options => options.Content = "❌ Clan already exists in database.");
             return;
         }
-        
-        ProcessStartInfo psi = JsUtility.StartJs("AddClan.js", clanId + " " + region + " " + guildId);
-        
-        var process = Process.Start(psi);
-        if (await JsUtility.CheckJsErrorAsync(process, InternalCommandErr)) return;
 
-        string output = await process!.StandardOutput.ReadToEndAsync();
-        if (await JsUtility.CheckJsErrorAsync(output, InternalCommandErr)) return;
-        
-        // await Context.Interaction.SendResponseAsync(
-        //     InteractionCallback.Message(output));
+        Task<string> apiTask = client.GetStringAsync(Clanbase.GetApiUrl(clanId, region));
+        Task<string> apiGlobalRankTask = client.GetStringAsync(LadderStructure.GetApiTargetClanUrl(clanId, region));
+        Task<string> apiRegionRankTask = client.GetStringAsync(LadderStructure.GetApiTargetClanUrl(clanId, region, LadderStructure.ConvertRegion(region)));
 
-        await Context.Interaction.ModifyResponseAsync(options => options.Content = output);
+        try
+        {
+            var results = await Task.WhenAll(apiTask, apiGlobalRankTask, apiRegionRankTask);
+
+            var clan = JsonSerializer.Deserialize<Clanbase>(results[0]);
+            int latestSeason = clan!.ClanView.WowsLadder.SeasonNumber;
+
+            var globalRank = JsonSerializer.Deserialize<LadderStructure[]>(results[1]);
+            var regionRank = JsonSerializer.Deserialize<LadderStructure[]>(results[2]);
+
+            guild.Clans.Add(clanId, new Database.Clan
+            {
+                ClanId = long.Parse(clanId),
+                Region = region,
+                ClanTag = clan.ClanView.Clan.Tag,
+                ClanName = clan.ClanView.Clan.Name,
+                RecentBattles = new List<BsonDocument>(),
+                PrimeTime = new Database.PrimeTime
+                {
+                    Planned = clan.ClanView.WowsLadder.PlannedPrimeTime,
+                    Active = clan.ClanView.WowsLadder.PrimeTime
+                },
+                Ratings = clan.ClanView.WowsLadder.Ratings.Where(r => r.SeasonNumber == latestSeason).Select(r =>
+                    new Database.Rating
+                    {
+                        TeamNumber = r.TeamNumber,
+                        League = r.League,
+                        Division = r.Division,
+                        DivisionRating = r.DivisionRating,
+                        Stage = r.Stage != null
+                            ? new Database.Stage
+                            {
+                                Type = r.Stage.Type,
+                                TargetLeague = r.Stage.TargetLeague,
+                                TargetDivision = r.Stage.TargetDivision,
+                                Progress = r.Stage.Progress.ToList(),
+                                Battles = r.Stage.Battles,
+                                VictoriesRequired = r.Stage.VictoriesRequired
+                            }
+                            : null
+                    }).ToList(),
+                GlobalRank = globalRank!.FirstOrDefault(r => r.Id == long.Parse(clanId))!.Rank,
+                RegionRank = regionRank!.FirstOrDefault(r => r.Id == long.Parse(clanId))!.Rank
+            });
+
+            var res = await collection.ReplaceOneAsync(d => d.Id == guild.Id, guild);
+
+            if (!res.IsAcknowledged)
+            {
+                await Context.Interaction.ModifyResponseAsync(options =>
+                    options.Content = "❌ Error adding clan to database.");
+                return;
+            }
+
+            await Context.Interaction.ModifyResponseAsync(options =>
+                options.Content = $"✅ Added clan: `[{clan.ClanView.Clan.Tag}] {clan.ClanView.Clan.Name}`");
+        }
+        catch (Exception ex)
+        {
+            await Context.Interaction.ModifyResponseAsync(options => options.Content = "❌ Error fetching clan data from API.");
+        }
     }
     
     [SlashCommand("clan_monitor_remove", "Remove a clan from server database")]
     public async Task ClanMonitorRemove(
         [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag to remove", AutocompleteProviderType = typeof(ClanRemoveSearch))] string clanId)
     {
-        if (clanId == "undefined")
-        {
-            await InternalCommandErr();
-            return;
-        }
-        
-        string? guildName = Context.Interaction.Guild?.Name;
         string? guildId = Context.Interaction.GuildId.ToString();
-        
-        if (string.IsNullOrEmpty(guildId) || string.IsNullOrEmpty(guildName))
+
+        var collection = Program.DatabaseClient!.GetDatabase("Arona")
+            .GetCollection<Guild>("servers");
+
+        var guild = await collection.Find(g => g.Id == guildId).FirstOrDefaultAsync();
+
+        if (guild == null)
         {
-            await InternalCommandErr();
+            await Context.Interaction.SendResponseAsync(
+                InteractionCallback.Message("❌ No database exists for this server. **Add a clan to initialize one.**"));
             return;
         }
-        
-        ProcessStartInfo psi = JsUtility.StartJs("RemoveClan.js", clanId + " " + guildId + " " + guildName);
-        
-        var process = Process.Start(psi);
-        if (await JsUtility.CheckJsErrorAsync(process, InternalCommandErr)) return;
 
-        string output = await process!.StandardOutput.ReadToEndAsync();
-        if (await JsUtility.CheckJsErrorAsync(output, InternalCommandErr)) return;
+        var clanTag = guild.Clans.FirstOrDefault(c => c.Key == clanId).Value.ClanTag;
+        var clanName = guild.Clans.FirstOrDefault(c => c.Key == clanId).Value.ClanName;
+
+        var update = Builders<Guild>.Update.Unset($"clans.{clanId}");
+
+        var result = await collection.UpdateOneAsync(g => g.Id == guildId, update);
+
+        if (!result.IsAcknowledged)
+        {
+            await Context.Interaction.SendResponseAsync(
+                InteractionCallback.Message("❌ Error removing clan from database."));
+            return;
+        }
+
+        if (result.ModifiedCount == 0)
+        {
+            await Context.Interaction.SendResponseAsync(
+                InteractionCallback.Message($"❌ Clan does not exist in database"));
+            return;
+        }
         
         await Context.Interaction.SendResponseAsync(
-            InteractionCallback.Message(output));
+            InteractionCallback.Message($"✅ Removed clan: `[{clanTag}] {clanName}`"));
     }
 
     [SlashCommand("clan_monitor_list", "List all clans in server database")]
@@ -77,42 +165,31 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
     {
         string? guildName = Context.Interaction.Guild?.Name;
         string? guildId = Context.Interaction.GuildId.ToString();
-        
-        if (string.IsNullOrEmpty(guildId) || string.IsNullOrEmpty(guildName))
-        {
-            await InternalCommandErr();
-            return;
-        }
-        
-        ProcessStartInfo psi = JsUtility.StartJs("ClanList.js", guildId + " " + guildName);
-        
-        var process = Process.Start(psi);
-        if (await JsUtility.CheckJsErrorAsync(process, InternalCommandErr)) return;
 
-        string output = await process!.StandardOutput.ReadToEndAsync();
-        if (await JsUtility.CheckJsErrorAsync(output, InternalCommandErr)) return;
+        var collection = Program.DatabaseClient!.GetDatabase("Arona")
+            .GetCollection<Guild>("servers");
 
-        if (output.Contains("C#: No database"))
+        Guild? guild = await collection.Find(g => g.Id == guildId).FirstOrDefaultAsync();
+
+        if (guild == null)
         {
             await Context.Interaction.SendResponseAsync(
                 InteractionCallback.Message("❌ No database exists for this server. **Add a clan to initialize one.**"));
             return;
         }
 
-        if (output.Contains("C#: No clans"))
+        if (guild.Clans.Count == 0)
         {
             await Context.Interaction.SendResponseAsync(
                 InteractionCallback.Message($"No clans currently monitored in `{guildName}`"));
             return;
         }
         
-        JsonElement doc = JsonDocument.Parse(output).RootElement;
-        
         List<string> clans = new List<string>();
 
-        foreach (JsonProperty clan in doc.EnumerateObject())
-            clans.Add($"`[{clan.Value.GetProperty("clan_tag").GetString()}] {clan.Value.GetProperty("clan_name").GetString()}` " +
-                      $"({ClanSearchStructure.GetRegionCode(clan.Value.GetProperty("region").GetString()!)})");
+        foreach (var clanEntry in guild.Clans)
+            clans.Add($"`[{clanEntry.Value.ClanTag}] {clanEntry.Value.ClanName}` " +
+                      $"({ClanSearchStructure.GetRegionCode(clanEntry.Value.Region)})");
         
         var field = new List<EmbedFieldProperties>();
 
@@ -129,12 +206,5 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         
         await Context.Interaction.SendResponseAsync(
             InteractionCallback.Message(new InteractionMessageProperties().WithEmbeds([ embed ])));
-    }
-
-    // Error visningsfunktion när något fel händer internt
-    private async Task InternalCommandErr()
-    {
-        await Context.Interaction.SendResponseAsync(
-            InteractionCallback.Message("❌ Internal command error"));
     }
 }

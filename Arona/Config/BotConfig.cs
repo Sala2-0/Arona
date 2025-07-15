@@ -13,11 +13,9 @@ public class BotConfig
     public string? GuildId { get; set; }
     [JsonPropertyName("wg_api")]
     public string? WgApi { get; set; }
-    [JsonPropertyName("server_api")]
-    public string? ServerApi { get; set; }
-    [JsonPropertyName("database")]
+    [JsonPropertyName("database_url")]
     public string? Database { get; set; }
 
     public static string GetConfigFilePath() =>
-        File.ReadAllText(Path.Combine("..", "..", "..", "Config", "config.json"));
+        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Config", "config.json"));
 }

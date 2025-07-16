@@ -49,8 +49,7 @@ internal class UpdateClan
 
                     if (dbClan.PrimeTime.Active == null && primeTime != null)
                     {
-                        await Program.Client!.Rest.SendMessageAsync(channelId: ulong.Parse(guild.Id), message: $"`[{tag}] {name} has started playing`");
-                        continue;
+                        await Program.Client!.Rest.SendMessageAsync(channelId: ulong.Parse(guild.ChannelId), message: $"`[{tag}] {name} has started playing`");
                     }
                     guild.Clans[clanId.ToString()].PrimeTime.Active = primeTime;
                     guild.Clans[clanId.ToString()].PrimeTime.Planned = plannedPrimeTime;
@@ -213,7 +212,7 @@ internal class UpdateClan
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error med hämtning av data" + ex);
+                Console.WriteLine($"Error med hämtning av data: " + ex);
             }
         }
     }

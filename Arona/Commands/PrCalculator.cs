@@ -7,13 +7,13 @@ using System.Net.Http;
 using System.Text.Json;
 using Utility;
 
-public class ShipStructure(string name, string id)
+internal class ShipStructure(string name, string id)
 {
     public string Name = name;
     public string Id = id;
 }
 
-public class Victory : IChoicesProvider<ApplicationCommandContext>
+internal class Victory : IChoicesProvider<ApplicationCommandContext>
 {
     public ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(SlashCommandParameter<ApplicationCommandContext> param)
     {
@@ -26,7 +26,7 @@ public class Victory : IChoicesProvider<ApplicationCommandContext>
     }
 }
 
-public class ShipSearch : IAutocompleteProvider<AutocompleteInteractionContext>
+internal class ShipSearch : IAutocompleteProvider<AutocompleteInteractionContext>
 {
     public ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(
         ApplicationCommandInteractionDataOption option,

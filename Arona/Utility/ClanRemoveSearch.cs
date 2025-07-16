@@ -6,7 +6,7 @@ using NetCord.Rest;
 using Database;
 using MongoDB.Driver;
 
-public class ClanRemoveSearch : IAutocompleteProvider<AutocompleteInteractionContext>
+internal class ClanRemoveSearch : IAutocompleteProvider<AutocompleteInteractionContext>
 {
     public ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(
         ApplicationCommandInteractionDataOption option,
@@ -34,7 +34,7 @@ public class ClanRemoveSearch : IAutocompleteProvider<AutocompleteInteractionCon
             .Take(5)
             .Select(clan =>
                 new ApplicationCommandOptionChoiceProperties(
-                    $"[{clan.Value.ClanTag}] {clan.Value.ClanName} ({ClanSearchStructure.GetRegionCode(clan.Value.Region)})", clan.Key));
+                    name: $"[{clan.Value.ClanTag}] {clan.Value.ClanName} ({ClanSearchStructure.GetRegionCode(clan.Value.Region)})", stringValue: clan.Key));
 
         return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>(choices);
     }

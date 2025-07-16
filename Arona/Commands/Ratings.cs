@@ -7,7 +7,7 @@ using NetCord;
 using System.Threading.Tasks;
 using ApiModels;
 
-public class RatingsStructure(string team, string message)
+internal class RatingsStructure(string team, string message)
 {
     public readonly string Team = team;
     public readonly string Message = message;
@@ -182,13 +182,5 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
         3 => "cce4e4", // Gale
         4 => "cc9966", // Squall
         _ => "ffffff"  // Undefined
-    };
-
-    public static string GetRegionCodesClansApi(string region) => region switch
-    {
-        "eu" or "EU" => "eu",
-        "asia" or "ASIA" => "sg",
-        "com" => "us",
-        _ => "undefined"
     };
 }

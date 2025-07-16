@@ -6,7 +6,7 @@ using NetCord.Services.ApplicationCommands;
 using NetCord;
 using NetCord.Rest;
 
-public class ClanSearch: IAutocompleteProvider<AutocompleteInteractionContext>
+internal class ClanSearch: IAutocompleteProvider<AutocompleteInteractionContext>
 {
     public ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(
         ApplicationCommandInteractionDataOption option,

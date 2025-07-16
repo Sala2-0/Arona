@@ -11,7 +11,7 @@ using NetCord.Gateway;
 using MongoDB.Driver;
 using Utility;
 
-class Program
+internal class Program
 {
     public static BotConfig? Config = JsonSerializer.Deserialize<BotConfig>(BotConfig.GetConfigFilePath());
     public static MongoClient? DatabaseClient { get; private set; }
@@ -49,4 +49,7 @@ class Program
         
         await host.RunAsync();
     }
+
+    public static void ApiError(Exception ex) =>
+        Console.WriteLine("Error med hämtning av API data: " + ex.Message);
 }

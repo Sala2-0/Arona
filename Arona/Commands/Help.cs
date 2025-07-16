@@ -16,6 +16,7 @@ public class Help : ApplicationCommandModule<ApplicationCommandContext>
                              "`/pr_calculator` - Calculate PR of any ship\n" +
                              "`/ratings` - Get detailed information of a clan's ratings\n" +
                              "`/help` - Get info for commands available\n" +
+                             "`/leaderboard` - Leaderboard for latest clan battles season\n" +
                              "\nCheck out source code at https://github.com/Sala2-0/Arona";
 
 

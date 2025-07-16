@@ -1,7 +1,7 @@
 ﻿namespace Arona.ApiModels;
 using System.Text.Json.Serialization;
 
-public class Clanbase
+internal class Clanbase
 {
     [JsonPropertyName("clanview")] public ClanView ClanView { get; set; }
 
@@ -9,13 +9,13 @@ public class Clanbase
         $"https://clans.worldofwarships.{region}/api/clanbase/{clanId}/claninfo/";
 }
 
-public class ClanView
+internal class ClanView
 {
     [JsonPropertyName("clan")] public Clan Clan { get; set; }
     [JsonPropertyName("wows_ladder")] public WowsLadder WowsLadder { get; set; }
 }
 
-public class Clan
+internal class Clan
 {
     [JsonPropertyName("tag")] public string Tag { get; set; }
     [JsonPropertyName("name")] public string Name { get; set; }
@@ -23,16 +23,16 @@ public class Clan
     [JsonPropertyName("color")] public string Color { get; set; }
 }
 
-public class WowsLadder
+internal class WowsLadder
 {
     [JsonPropertyName("prime_time")] public int? PrimeTime { get; set; }
-    [JsonPropertyName("planned_prime_time")] public int PlannedPrimeTime { get; set; }
+    [JsonPropertyName("planned_prime_time")] public int? PlannedPrimeTime { get; set; }
     [JsonPropertyName("ratings")] public List<Rating> Ratings { get; set; } = [];
     [JsonPropertyName("season_number")] public int SeasonNumber { get; set; }
     [JsonPropertyName("last_battle_at")] public string LastBattleAt { get; set; }
 }
 
-public class Rating
+internal class Rating
 {
     [JsonPropertyName("team_number")] public int TeamNumber { get; set; }
     [JsonPropertyName("league")] public int League { get; set; }
@@ -42,7 +42,7 @@ public class Rating
     [JsonPropertyName("season_number")] public int SeasonNumber { get; set; }
 }
 
-public class Stage
+internal class Stage
 {
     [JsonPropertyName("type")] public string Type { get; set; }
     [JsonPropertyName("target_league")] public int TargetLeague { get; set; }

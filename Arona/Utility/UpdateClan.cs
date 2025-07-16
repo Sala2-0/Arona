@@ -6,7 +6,7 @@ using NetCord;
 using NetCord.Rest;
 using Commands;
 
-class UpdateClan
+internal class UpdateClan
 {
     public static async Task UpdateClansAsync()
     {
@@ -45,7 +45,7 @@ class UpdateClan
                     string name = clan.ClanView.Clan.Name;
 
                     int? primeTime = clan.ClanView.WowsLadder.PrimeTime;
-                    int plannedPrimeTime = clan.ClanView.WowsLadder.PlannedPrimeTime;
+                    int? plannedPrimeTime = clan.ClanView.WowsLadder.PlannedPrimeTime;
 
                     if (dbClan.PrimeTime.Active == null && primeTime != null)
                     {

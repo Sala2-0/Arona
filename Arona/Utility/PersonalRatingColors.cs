@@ -1,6 +1,6 @@
 ﻿namespace Arona.Utility;
 
-public class PersonalRatingColors
+internal class PersonalRatingColors
 {
     private const string Superunicum = "A00DC5";
     private const string Unicum = "D042F3";

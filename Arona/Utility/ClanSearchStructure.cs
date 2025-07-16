@@ -1,6 +1,6 @@
 ﻿namespace Arona.Utility;
 
-public class ClanSearchStructure(string clanTag, string clanName, string clanId, string region)
+internal class ClanSearchStructure(string clanTag, string clanName, string clanId, string region)
 {
     public string ClanTag = clanTag;
     public string ClanName = clanName;

@@ -3,14 +3,14 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using System.Collections.Generic;
 
-public class Guild
+internal class Guild
 {
     [BsonId] public string Id { get; set; }
     [BsonElement("channel_id")] public string ChannelId { get; set; }
     [BsonElement("clans")] public Dictionary<string, Clan>? Clans { get; set; }
 }
 
-public class Clan
+internal class Clan
 {
     [BsonElement("clan_id")] public long ClanId { get; set; }
     [BsonElement("region")] public string Region { get; set; }
@@ -23,13 +23,13 @@ public class Clan
     [BsonElement("region_rank")] public int RegionRank { get; set; }
 }
 
-public class PrimeTime
+internal class PrimeTime
 {
-    [BsonElement("planned")] public int Planned { get; set; }
+    [BsonElement("planned")] public int? Planned { get; set; }
     [BsonElement("active")] public int? Active { get; set; }
 }
 
-public class Rating
+internal class Rating
 {
     [BsonElement("team_number")] public int TeamNumber { get; set; }
     [BsonElement("league")] public int League { get; set; }
@@ -38,8 +38,8 @@ public class Rating
     [BsonElement("stage")] public Stage? Stage { get; set; }
 }
 
-public class Stage
-{
+internal class Stage
+{   
     [BsonElement("type")] public string Type { get; set; }
     [BsonElement("target_league")] public int TargetLeague { get; set; }
     [BsonElement("target_division")] public int TargetDivision { get; set; }

@@ -1,7 +1,7 @@
 ﻿namespace Arona.Config;
 using System.Text.Json.Serialization;
 
-public class BotConfig
+internal class BotConfig
 {
     [JsonPropertyName("token")]
     public string? Token { get; set; }

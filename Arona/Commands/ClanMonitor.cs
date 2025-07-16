@@ -113,6 +113,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         }
         catch (Exception ex)
         {
+            Program.ApiError(ex);
             await Context.Interaction.ModifyResponseAsync(options => options.Content = "❌ Error fetching clan data from API.");
         }
     }

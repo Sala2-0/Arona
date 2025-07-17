@@ -1,4 +1,4 @@
-<img width="680" height="240" alt="world_of_apes_banner" src="https://github.com/user-attachments/assets/647ecc68-dcfa-4fac-bbe7-dc688396747a" />
+<img width="680" height="240" alt="wows_ba_banner" src="https://github.com/user-attachments/assets/bfe94411-e04e-444a-b062-c40558867c14" />
 
 ## Arona - A clan battle oriented discord bot for World of Warships
 Add it to your server with this [link](https://discord.com/oauth2/authorize?client_id=1360295816476098692&permissions=139586750464&integration_type=0&scope=bot+applications.commands)
@@ -7,6 +7,7 @@ Bot theme is based on [Blue Archive](https://www.nexon.com/main/en/Blue%20Archiv
 
 ## Commands
 ### Clan Monitor
+
 Monitors a clans CB activity and displays it to you
 | Command Name         | Description                                                              |
 |----------------------|--------------------------------------------------------------------------|

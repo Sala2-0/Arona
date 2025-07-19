@@ -5,10 +5,27 @@ Add it to your server with this [link](https://discord.com/oauth2/authorize?clie
 
 Bot theme is based on [Blue Archive](https://www.nexon.com/main/en/Blue%20Archive/details)
 
-## Commands
+## Commands and features
+### Success Factor
+Success Factor (S/F) is an experimental statistics ratio aiming to show a clans overall success over a CB season.
+
+The hope is that S/F could determine whether a clan spammed games or put in actual effort to reach their position on the leaderboards.
+
+$Formula: \dfrac{\text{rating}^L}{\text{battles}}$
+
+where L is based on what league the clan currently resides in.
+
+| League  | Exponent (L) value |
+|---------|--------------------|
+|Hurricane|1                   |
+|Typhoon  |0.8                 |
+|Storm    |0.6                 |
+|Gale     |0.4                 |
+|Squall   |0.2                 |
+
 ### Clan Monitor
 
-Monitors a clans CB activity and displays it to you
+Monitors a clans CB activity and displays it to you.
 | Command Name         | Description                                                              |
 |----------------------|--------------------------------------------------------------------------|
 |`/clan_monitor_add`   |Add a clan to server database                                             |
@@ -24,7 +41,7 @@ Monitors a clans CB activity and displays it to you
 |`/ratings`            |Get detailed info about a clans CB rating on latest season, their progress on league qualifications <br> as well as their global and region rankings|
 
 ## License
-Licensed under MIT
+Licensed under MIT.
 
 Any redistributions, use or derivative work of any kind is required to have a link to original repository
 (https://github.com/Sala2-0/Arona) in README or equivalent documentation

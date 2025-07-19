@@ -6,12 +6,7 @@ using NetCord.Rest;
 using NetCord;
 using System.Threading.Tasks;
 using ApiModels;
-
-internal class RatingsStructure(string team, string message)
-{
-    public readonly string Team = team;
-    public readonly string Message = message;
-}
+using System.Globalization;
 
 public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
 {
@@ -32,115 +27,149 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
         Task<string> globalRankTask = client.GetStringAsync(LadderStructure.GetApiTargetClanUrl(clanId, region));
         Task<string> regionRankTask = client.GetStringAsync(LadderStructure.GetApiTargetClanUrl(clanId, region, LadderStructure.ConvertRegion(region)));
 
-        string[] results = await Task.WhenAll(generalTask, globalRankTask, regionRankTask);
-
-        var general = JsonSerializer.Deserialize<Clanbase>(results[0]);
-
-        if (general == null)
+        try
         {
-            await Context.Interaction.ModifyResponseAsync(options => options.Content = "❌ Error fetching clan data from API.");
-            return;
-        }
+            string[] results = await Task.WhenAll(generalTask, globalRankTask, regionRankTask);
 
-        int latestSeason = general.ClanView.WowsLadder.SeasonNumber;
+            var general = JsonSerializer.Deserialize<Clanbase>(results[0]);
 
-        List<EmbedFieldProperties> field = [];
-
-        List<RatingsStructure> ratings = [];
-
-        foreach (Rating rating in general.ClanView.WowsLadder.Ratings)
-        {
-            if (rating.SeasonNumber != latestSeason) continue;
-
-            if (rating.Stage != null)
+            if (general == null)
             {
-                string team = rating.TeamNumber == 1 ? "Alpha" : "Bravo";
-                string type = rating.Stage.Type == "promotion"
-                    ? "Qualification for"
-                    : "Qualification to stay in";
-                
-                string message = $"{type} {GetLeague(rating.Stage.TargetLeague - (type == "Qualification for" ? 0 : 1) )} {GetDivision(rating.Stage.TargetDivision)}" +
-                                 $"\n{GetProgress(rating.Stage.Progress)}";
-                
-                ratings.Add(new RatingsStructure(team, message));
+                await Context.Interaction.ModifyResponseAsync(options => options.Content = "❌ Error fetching clan data from API.");
+                return;
             }
+
+            int latestSeason = general.ClanView.WowsLadder.SeasonNumber;
+
+            List<EmbedFieldProperties> field = [];
+
+            List<RatingsStructure> ratings = [];
+
+            foreach (Rating rating in general.ClanView.WowsLadder.Ratings)
+            {
+                if (rating.SeasonNumber != latestSeason) continue;
+
+                string team = rating.TeamNumber == 1 ? "Alpha" : "Bravo";
+
+                // rating.PublicRating -= 1000; // Ratings startar på 1000, motsvarar Squall III (0)
+
+                // Minimum antal strider är 20 för att visa successfaktorn
+                string successfactor = rating.BattlesCount >= 20
+                    ? (Math.Pow(rating.PublicRating, GetSuccessFactor(rating.League)) / rating.BattlesCount).ToString("0.##", CultureInfo.InvariantCulture)
+                    : "< 20 battles";
+                string winRate = rating.BattlesCount > 0
+                    ? $"{Math.Round((double)rating.WinsCount / rating.BattlesCount * 100, 2)}%"
+                    : "N/A";
+
+                var obj = new RatingsStructure
+                {
+                    Team = team,
+                    BattlesCount = rating.BattlesCount.ToString(),
+                    WinRate = winRate,
+                    SuccessFactor = successfactor
+                };
+
+                if (rating.Stage != null)
+                {
+                    string type = rating.Stage.Type == "promotion"
+                        ? "Qualification for"
+                        : "Qualification to stay in";
+
+                    string message = $"{type} {GetLeague(rating.Stage.TargetLeague - (type == "Qualification for" ? 0 : 1))} {GetDivision(rating.Stage.TargetDivision)}" +
+                                     $"\n{GetProgress(rating.Stage.Progress)}";
+
+                    obj.Message = message;
+                }
+                else
+                {
+                    string message = $"{GetLeague(rating.League)}" +
+                                     $" {GetDivision(rating.Division)}" +
+                                     $" ({rating.DivisionRating})";
+
+                    obj.Message = message;
+                }
+
+                ratings.Add(obj);
+            }
+
+            if (ratings.Count == 0)
+                field.Add(new EmbedFieldProperties()
+                    .WithName("Clan doesn't play clan battles"));
 
             else
             {
-                string team = rating.TeamNumber == 1 ? "Alpha" : "Bravo";
-                string message = $"{GetLeague(rating.League)}" +
-                                 $" {GetDivision(rating.Division)}" +
-                                 $" ({rating.DivisionRating})";
-                
-                ratings.Add(new RatingsStructure(team, message));
+                ratings.Sort((a, b) => string.Compare(a.Team, b.Team, StringComparison.Ordinal));
+
+                foreach (var r in ratings)
+                {
+                    field.Add(new EmbedFieldProperties()
+                        .WithName(r.Team)
+                        .WithValue(r.Message)
+                        .WithInline());
+
+                    field.Add(new EmbedFieldProperties()
+                        .WithName("Battles")
+                        .WithValue(r.BattlesCount)
+                        .WithInline());
+
+                    field.Add(new EmbedFieldProperties()
+                        .WithName("Win rate")
+                        .WithValue(r.WinRate)
+                        .WithInline());
+
+                    field.Add(new EmbedFieldProperties()
+                        .WithName("S/F")
+                        .WithValue(r.SuccessFactor)
+                        .WithInline());
+
+                    field.Add(new EmbedFieldProperties()
+                        .WithInline(false)
+                        .WithName("-----------------------------------------------------------------------------------"));
+                }
+
+                // Hämta klanens ranking
+                var globalRankDoc = JsonSerializer.Deserialize<LadderStructure[]>(results[1])!;
+
+                foreach (var clan in globalRankDoc)
+                {
+                    if (clan.Id != int.Parse(clanId)) continue;
+
+                    field.Add(new EmbedFieldProperties()
+                        .WithName("Global ranking")
+                        .WithValue($"#{clan.Rank}")
+                        .WithInline());
+                    break;
+                }
+
+                var regionRankDoc = JsonSerializer.Deserialize<LadderStructure[]>(results[2])!;
+
+                foreach (var clan in regionRankDoc)
+                {
+                    if (clan.Id != int.Parse(clanId)) continue;
+
+                    field.Add(new EmbedFieldProperties()
+                        .WithName("Region ranking")
+                        .WithValue($"#{clan.Rank}")
+                        .WithInline());
+                    break;
+                }
             }
+
+            string tag = general.ClanView.Clan.Tag;
+            string name = general.ClanView.Clan.Name;
+
+            var embed = new EmbedProperties()
+                .WithTitle($"`[{tag}] {name}` ({ClanSearchStructure.GetRegionCode(region)})")
+                .WithColor(new Color(Convert.ToInt32(general.ClanView.Clan.Color.Trim('#'), 16)))
+                .WithFields(field);
+
+            await Context.Interaction.ModifyResponseAsync(options => options.Embeds = [embed]);
         }
-
-        if (ratings.Count == 0)
-            field.Add(new EmbedFieldProperties()
-                .WithName("Clan doesn't play clan battles"));
-
-        else
+        catch (Exception ex)
         {
-            ratings.Sort((a, b) => string.Compare(a.Team, b.Team, StringComparison.Ordinal));
-            foreach (var r in ratings)
-                field.Add(new EmbedFieldProperties()
-                    .WithName(r.Team)
-                    .WithValue(r.Message)
-                    .WithInline(false));
-
-            // Hämta klanens ranking
-            JsonElement globalRankDoc = JsonDocument.Parse(results[1])
-                .RootElement;
-
-            foreach (JsonElement clan in globalRankDoc.EnumerateArray())
-            {
-                if (clan.GetProperty("id").GetInt32() != int.Parse(clanId)) continue;
-
-                field.Add(new EmbedFieldProperties()
-                    .WithName("Global ranking")
-                    .WithValue($"#{clan.GetProperty("rank").GetInt32()}")
-                    .WithInline());
-                break;
-            }
-
-            JsonElement regionRankDoc = JsonDocument.Parse(results[2])
-                .RootElement;
-
-            foreach (JsonElement clan in regionRankDoc.EnumerateArray())
-            {
-                if (clan.GetProperty("id").GetInt32() != int.Parse(clanId)) continue;
-
-                field.Add(new EmbedFieldProperties()
-                    .WithName("Region ranking")
-                    .WithValue($"#{clan.GetProperty("rank").GetInt32()}")
-                    .WithInline());
-                break;
-            }
+            Program.ApiError(ex);
+            await Context.Interaction.ModifyResponseAsync(options => options.Content = "❌ Error fetching clan data from API.");
         }
-
-        string tag = JsonDocument.Parse(results[0])
-            .RootElement
-            .GetProperty("clanview")
-            .GetProperty("clan")
-            .GetProperty("tag")
-            .GetString()!;
-        string name = JsonDocument.Parse(results[0])
-            .RootElement
-            .GetProperty("clanview")
-            .GetProperty("clan")
-            .GetProperty("name")
-            .GetString()!;
-
-        var embed = new EmbedProperties()
-            .WithTitle($"`[{tag}] {name}` ({ClanSearchStructure.GetRegionCode(region)})")
-            .WithColor(new Color(Convert.ToInt32(general.ClanView.Clan.Color.Trim('#'), 16)))
-            .WithFields(field);
-
-        //await Context.Interaction.SendResponseAsync(
-        //  InteractionCallback.Message(new InteractionMessageProperties().WithEmbeds([embed])));
-
-        await Context.Interaction.ModifyResponseAsync(options => options.Embeds = [embed]);
     }
 
     public static string GetLeague(int league) => league switch
@@ -183,4 +212,23 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
         4 => "cc9966", // Squall
         _ => "ffffff"  // Undefined
     };
+
+    public static double GetSuccessFactor(int league) => league switch
+    {
+        0 => 1.0, // Hurricane
+        1 => 0.8, // Typhoon
+        2 => 0.6, // Storm
+        3 => 0.4, // Gale
+        4 => 0.2, // Squall
+        _ => 0   // Undefined
+    };
+}
+
+internal class RatingsStructure()
+{
+    public string Team { init; get; }
+    public string Message { set; get; }
+    public string BattlesCount { init; get; }
+    public string WinRate { init; get; }
+    public string SuccessFactor { init; get; }
 }

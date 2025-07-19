@@ -40,6 +40,9 @@ internal class Rating
     [JsonPropertyName("division_rating")] public int DivisionRating { get; set; }
     [JsonPropertyName("stage")] public Stage? Stage { get; set; }
     [JsonPropertyName("season_number")] public int SeasonNumber { get; set; }
+    [JsonPropertyName("public_rating")] public int PublicRating { get; set; }
+    [JsonPropertyName("battles_count")] public int BattlesCount { get; set; }
+    [JsonPropertyName("wins_count")] public int WinsCount { get; set; }
 }
 
 internal class Stage

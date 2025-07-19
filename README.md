@@ -9,7 +9,9 @@ Bot theme is based on [Blue Archive](https://www.nexon.com/main/en/Blue%20Archiv
 ### Success Factor
 Success Factor (S/F) is an experimental statistics ratio aiming to show a clans overall success over a CB season.
 
-The hope is that S/F could determine whether a clan spammed games or put in actual effort to reach their position on the leaderboards.
+The hope is that S/F could give a new perspective on a clans position on the leaderboards.
+<br> For example, S/F could determine whether a clan spammed games or put in actual effort to reach their position on the leaderboards.
+
 
 $Formula: \dfrac{\text{rating}^L}{\text{battles}}$
 
@@ -22,6 +24,8 @@ where L is based on what league the clan currently resides in.
 |Storm    |0.6                 |
 |Gale     |0.4                 |
 |Squall   |0.2                 |
+
+Since exponent is different per league, each league would have their own ranges on what's considered "good" or "bad" S/F.
 
 ### Clan Monitor
 

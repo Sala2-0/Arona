@@ -5,6 +5,8 @@ using System.Text.Json;
 using NetCord;
 using NetCord.Rest;
 using Commands;
+using System.Globalization;
+using Commands;
 
 internal class UpdateClan
 {
@@ -83,7 +85,10 @@ internal class UpdateClan
                             LastBattleTime = lastBattleUnix,
                             TeamNumber = apiRating.TeamNumber,
                             GlobalRank = $"#{dbClan.GlobalRank.ToString()}",
-                            RegionRank = $"#{dbClan.RegionRank.ToString()}"
+                            RegionRank = $"#{dbClan.RegionRank.ToString()}",
+                            SuccessFactor = apiRating.BattlesCount >= 20
+                                ? (Math.Pow(apiRating.PublicRating, Ratings.GetSuccessFactor(apiRating.League)) / apiRating.BattlesCount).ToString("0.##", CultureInfo.InvariantCulture)
+                                : "< 20 battles"
                         };
 
                         if (apiRating.Stage != null)
@@ -212,7 +217,7 @@ internal class UpdateClan
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error med hämtning av data: " + ex);
+                Console.WriteLine("Error med hämtning av data: " + ex);
             }
         }
     }
@@ -228,6 +233,7 @@ internal class UpdateClan
         public string ResultMsg { get; set; }
         public string GlobalRank { get; set; }
         public string RegionRank { get; set; }
+        public string SuccessFactor { get; set; }
     }
 
     public static async Task SendMessage(ulong channelId, EmbedProperties embed)
@@ -272,6 +278,10 @@ internal class UpdateClan
                 new EmbedFieldProperties()
                     .WithName("Region rank")
                     .WithValue(props.RegionRank)
+                    .WithInline(),
+                new EmbedFieldProperties()
+                    .WithName("S/F")
+                    .WithValue(props.SuccessFactor)
                     .WithInline());
 
     public static string GetTeamString(int teamNumber) => teamNumber switch

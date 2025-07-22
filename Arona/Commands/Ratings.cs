@@ -51,12 +51,9 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
 
                 string team = rating.TeamNumber == 1 ? "Alpha" : "Bravo";
 
-                // rating.PublicRating -= 1000; // Ratings startar på 1000, motsvarar Squall III (0)
+                string successFactor = SuccessFactor.Calculate(rating.PublicRating, rating.BattlesCount, GetLeagueExponent(rating.League))
+                    .ToString("0.##", CultureInfo.InvariantCulture);
 
-                // Minimum antal strider är 20 för att visa successfaktorn
-                string successfactor = rating.BattlesCount >= 20
-                    ? (Math.Pow(rating.PublicRating, GetSuccessFactor(rating.League)) / rating.BattlesCount).ToString("0.##", CultureInfo.InvariantCulture)
-                    : "< 20 battles";
                 string winRate = rating.BattlesCount > 0
                     ? $"{Math.Round((double)rating.WinsCount / rating.BattlesCount * 100, 2)}%"
                     : "N/A";
@@ -66,7 +63,7 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
                     Team = team,
                     BattlesCount = rating.BattlesCount.ToString(),
                     WinRate = winRate,
-                    SuccessFactor = successfactor
+                    SuccessFactor = successFactor
                 };
 
                 if (rating.Stage != null)
@@ -94,7 +91,7 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
 
             if (ratings.Count == 0)
                 field.Add(new EmbedFieldProperties()
-                    .WithName("Clan doesn't play clan battles"));
+                    .WithName("Clan doesn't play clan battles."));
 
             else
             {
@@ -213,14 +210,14 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
         _ => "ffffff"  // Undefined
     };
 
-    public static double GetSuccessFactor(int league) => league switch
+    public static double GetLeagueExponent(int league) => league switch
     {
         0 => 1.0, // Hurricane
         1 => 0.8, // Typhoon
         2 => 0.6, // Storm
         3 => 0.4, // Gale
         4 => 0.2, // Squall
-        _ => 0   // Undefined
+        _ => 0    // Undefined
     };
 }
 

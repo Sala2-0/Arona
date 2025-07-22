@@ -1,9 +1,12 @@
-﻿namespace Arona.Commands;
+﻿using Arona.Utility;
+
+namespace Arona.Commands;
 using ApiModels;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using System.Text.Json;
+using System.Globalization;
 
 public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
 {
@@ -24,7 +27,7 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
         if (league == 0 && division is 2 or 3)
         {
             await Context.Interaction.ModifyResponseAsync(options =>
-                options.Content = $"❌ Hurricane {Ratings.GetDivision(division)} doesn't exist");
+                options.Content = $"❌ Hurricane {Ratings.GetDivision(division)} doesn't exist.");
             return;
         }
 
@@ -52,9 +55,14 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
             var fields = new List<EmbedFieldProperties>();
 
             foreach (var clan in structure)
+            {
+                string successFactor = SuccessFactor.Calculate(clan.PublicRating, clan.BattlesCount, Ratings.GetLeagueExponent(league))
+                    .ToString("0.##", CultureInfo.InvariantCulture);
+
                 fields.Add(new EmbedFieldProperties()
                     .WithName(
-                        $"**#{clan.Rank}** ({LadderStructure.ConvertRealm(clan.Realm)}) `[{clan.Tag}] {clan.Name}` ({clan.DivisionRating})"));
+                        $"**#{clan.Rank}** ({LadderStructure.ConvertRealm(clan.Realm)}) `[{clan.Tag}]` ({clan.DivisionRating}) `BTL: {clan.BattlesCount}` `S/F: {successFactor}`"));
+            }
 
             embed.WithFields(fields);
 

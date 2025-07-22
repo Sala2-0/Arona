@@ -19,11 +19,14 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         await Context.Interaction.SendResponseAsync(
             InteractionCallback.DeferredMessage());
 
+        await Program.WaitForUpdateAsync();
+
         var client = new HttpClient();
 
         string[] split = clanIdAndRegion.Split('|');
         string region = split[1];
         string clanId = split[0];
+
         string? guildId = Context.Interaction.GuildId.ToString();
         string channelId = Context.Interaction.Channel.Id.ToString();
 
@@ -38,8 +41,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
             guild = new Guild
             {
                 Id = guildId!,
-                ChannelId = channelId,
-                Clans = new Dictionary<string, Database.Clan>()
+                ChannelId = channelId
             };
             await collection.InsertOneAsync(guild);
         }
@@ -99,7 +101,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
                 RegionRank = regionRank!.FirstOrDefault(r => r.Id == long.Parse(clanId))!.Rank
             });
 
-            var res = await collection.ReplaceOneAsync(d => d.Id == guild.Id, guild);
+            var res = await collection.ReplaceOneAsync(g => g.Id == guild.Id, guild);
 
             if (!res.IsAcknowledged)
             {
@@ -122,6 +124,11 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
     public async Task ClanMonitorRemove(
         [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag to remove", AutocompleteProviderType = typeof(ClanRemoveSearch))] string clanId)
     {
+        await Context.Interaction.SendResponseAsync(
+            InteractionCallback.DeferredMessage());
+
+        await Program.WaitForUpdateAsync();
+
         string? guildId = Context.Interaction.GuildId.ToString();
 
         var collection = Program.DatabaseClient!.GetDatabase("Arona")
@@ -141,24 +148,24 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
 
         var update = Builders<Guild>.Update.Unset($"clans.{clanId}");
 
-        var result = await collection.UpdateOneAsync(g => g.Id == guildId, update);
+        var res = await collection.UpdateOneAsync(g => g.Id == guildId, update);
 
-        if (!result.IsAcknowledged)
+        if (!res.IsAcknowledged)
         {
             await Context.Interaction.SendResponseAsync(
                 InteractionCallback.Message("❌ Error removing clan from database."));
             return;
         }
 
-        if (result.ModifiedCount == 0)
+        if (res.ModifiedCount == 0)
         {
             await Context.Interaction.SendResponseAsync(
-                InteractionCallback.Message($"❌ Clan does not exist in database"));
+                InteractionCallback.Message($"❌ Clan does not exist in database."));
             return;
         }
-        
-        await Context.Interaction.SendResponseAsync(
-            InteractionCallback.Message($"✅ Removed clan: `[{clanTag}] {clanName}`"));
+
+        await Context.Interaction.ModifyResponseAsync(options =>
+            options.Content = $"✅ Removed clan: `[{clanTag}] {clanName}`");
     }
 
     [SlashCommand("clan_monitor_list", "List all clans in server database")]

@@ -6,12 +6,13 @@ using NetCord;
 using NetCord.Rest;
 using Commands;
 using System.Globalization;
-using Commands;
 
 internal class UpdateClan
 {
     public static async Task UpdateClansAsync()
     {
+        Program.UpdateProgress = true;
+
         var db = Program.DatabaseClient!.GetDatabase("Arona");
         var guildsCollection = db.GetCollection<Database.Guild>("servers");
 
@@ -19,7 +20,7 @@ internal class UpdateClan
 
         foreach (var guild in await guildsCollection.Find(_ => true).ToListAsync())
         {
-            if (guild.Clans == null || guild.Clans.Count == 0) continue;
+            if (guild.Clans.Count == 0) continue;
 
             List<Task<string>> apiTasks = [];
 
@@ -33,7 +34,7 @@ internal class UpdateClan
             {
                 foreach (var result in await Task.WhenAll(apiTasks))
                 {
-                    var clan = JsonSerializer.Deserialize<ApiModels.Clanbase>(result);
+                    var clan = JsonSerializer.Deserialize<Clanbase>(result);
 
                     if (clan == null) continue;
 
@@ -87,7 +88,7 @@ internal class UpdateClan
                             GlobalRank = $"#{dbClan.GlobalRank.ToString()}",
                             RegionRank = $"#{dbClan.RegionRank.ToString()}",
                             SuccessFactor = apiRating.BattlesCount >= 20
-                                ? (Math.Pow(apiRating.PublicRating, Ratings.GetSuccessFactor(apiRating.League)) / apiRating.BattlesCount).ToString("0.##", CultureInfo.InvariantCulture)
+                                ? (Math.Pow(apiRating.PublicRating, Ratings.GetLeagueExponent(apiRating.League)) / apiRating.BattlesCount).ToString("0.##", CultureInfo.InvariantCulture)
                                 : "< 20 battles"
                         };
 
@@ -97,10 +98,11 @@ internal class UpdateClan
                             string league = Ratings.GetLeague(apiRating.Stage.TargetLeague - (type == "demotion" ? 1 : 0));
                             string division = Ratings.GetDivision(apiRating.Stage.TargetDivision);
 
-                            msgProp.ResultMsg = (type == "promotion"
-                                                        ? "Qualification for"
-                                                        : "Qualification to stay in")
-                                                    + $" {league} {division}";
+                            msgProp.ResultMsg = (
+                                type == "promotion"
+                                ? "Qualification for"
+                                : "Qualification to stay in"
+                            ) + $" {league} {division}";
 
                             if (apiRating.Stage?.Progress.Length == 0 && dbRating.Stage == null)
                             {
@@ -217,23 +219,25 @@ internal class UpdateClan
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error med hämtning av data: " + ex);
+                Program.ApiError(ex);
             }
         }
+
+        Program.UpdateProgress = false;
     }
 
     public class MsgProperties
     {
-        public string ClanTag { get; set; }
-        public string ClanName { get; set; }
+        public string ClanTag { get; set; } = string.Empty;
+        public string ClanName { get; set; } = string.Empty;
         public long LastBattleTime { get; set; }
         public int TeamNumber { get; set; }
-        public string GameResult { get; set; }
-        public string GameResultMsg { get; set; }
-        public string ResultMsg { get; set; }
-        public string GlobalRank { get; set; }
-        public string RegionRank { get; set; }
-        public string SuccessFactor { get; set; }
+        public string GameResult { get; set; } = string.Empty;
+        public string GameResultMsg { get; set; } = string.Empty;
+        public string ResultMsg { get; set; } = string.Empty;
+        public string GlobalRank { get; set; } = string.Empty;
+        public string RegionRank { get; set; } = string.Empty;
+        public string SuccessFactor { get; set; } = string.Empty;
     }
 
     public static async Task SendMessage(ulong channelId, EmbedProperties embed)

@@ -9,6 +9,8 @@ internal class LadderStructure
     [JsonPropertyName("rank")] public int Rank { get; set; }
     [JsonPropertyName("division_rating")] public int DivisionRating { get; set; }
     [JsonPropertyName("realm")] public string Realm { get; set; }
+    [JsonPropertyName("public_rating")] public int PublicRating { get; set; }
+    [JsonPropertyName("battles_count")] public int BattlesCount { get; set; }
 
     public static string GetApiTargetClanUrl(string clanId, string region, string realm = "global") =>
         $"https://clans.worldofwarships.{region}/api/ladder/structure/?clan_id={clanId}&realm={realm}";

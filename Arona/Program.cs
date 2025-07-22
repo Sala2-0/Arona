@@ -1,4 +1,6 @@
-﻿namespace Arona;
+﻿using System.Diagnostics;
+
+namespace Arona;
 using System.Text.Json;
 using Config;
 using Microsoft.Extensions.Hosting;
@@ -16,6 +18,7 @@ internal class Program
     public static BotConfig? Config = JsonSerializer.Deserialize<BotConfig>(BotConfig.GetConfigFilePath());
     public static MongoClient? DatabaseClient { get; private set; }
     public static GatewayClient? Client { get; private set; }
+    public static bool UpdateProgress { get; set; } = false;
     static async Task Main(string[] args)
     {
         if (Config == null)
@@ -52,4 +55,16 @@ internal class Program
 
     public static void ApiError(Exception ex) =>
         Console.WriteLine("Error med hämtning av API data: " + ex.Message);
+
+    // Väntar på att UpdateClansAsync slutförs om det pågår en
+    // Används bara för kommandon som skriver till databasen
+    public static async Task WaitForUpdateAsync()
+    {
+        while (UpdateProgress)
+        {
+            Console.WriteLine("Waiting for update to finish...");
+            
+            await Task.Delay(1000);
+        }
+    }
 }

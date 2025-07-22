@@ -12,7 +12,6 @@ internal class ClanSearch: IAutocompleteProvider<AutocompleteInteractionContext>
         ApplicationCommandInteractionDataOption option,
         AutocompleteInteractionContext context)
     {
-        var config = JsonSerializer.Deserialize<BotConfig>(BotConfig.GetConfigFilePath());
         HttpClient client = new HttpClient();
         
         var input = option.Value ?? string.Empty;
@@ -40,7 +39,7 @@ internal class ClanSearch: IAutocompleteProvider<AutocompleteInteractionContext>
 
         List<ClanSearchStructure> clans = [];
 
-        var res = client.GetAsync($"https://api.worldofwarships.{region}/wows/clans/list/?application_id={config!.WgApi}&search={input}")
+        var res = client.GetAsync($"https://api.worldofwarships.{region}/wows/clans/list/?application_id={Program.Config!.WgApi}&search={input}")
             .Result.Content.ReadAsStringAsync().Result;
         JsonElement doc = JsonDocument.Parse(res).RootElement.GetProperty("data");
 

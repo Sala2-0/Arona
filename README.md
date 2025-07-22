@@ -12,8 +12,9 @@ Success Factor (S/F) is an experimental statistics ratio aiming to show a clans 
 The hope is that S/F could give a new perspective on a clans position on the leaderboards.
 <br> For example, S/F could determine whether a clan spammed games or put in actual effort to reach their position on the leaderboards.
 
-
-$Formula: \dfrac{\text{rating}^L}{\text{battles}}$
+Formula: 
+  
+$\Large \frac{\frac{rating^{L}}{15} \times \frac{rating}{battles}}{10}$
 
 where L is based on what league the clan currently resides in.
 
@@ -35,6 +36,14 @@ Monitors a clans CB activity and displays it to you.
 |`/clan_monitor_add`   |Add a clan to server database                                             |
 |`/clan_monitor_remove`|Remove a clan from server database                                        |
 |`/clan_monitor_list`  |List all clans currently monitored in the server where the command is used|
+
+### Builds
+Store your [WoWs ShipBuilder](https://app.wowssb.com) builds/links for ease of access later on.
+| Command Name         | Description                                                              |
+|----------------------|--------------------------------------------------------------------------|
+|`/builds_add`         |Add a build to server database                                            |
+|`/builds_remove`      |Remove a build from server database                                       |
+|`/builds_get`         |Get a build saved in server database                                      |
 
 ### Other commands
 | Command Name         | Description                                                                                                                                        |

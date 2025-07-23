@@ -20,10 +20,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
 
         await Program.WaitForUpdateAsync();
 
-        var collection = Program.DatabaseClient!.GetDatabase("Arona")
-            .GetCollection<Guild>("servers");
-
-        var guild = await collection.Find(g => g.Id == Context.Interaction.GuildId.ToString()).FirstOrDefaultAsync();
+        var guild = await Program.Collection!.Find(g => g.Id == Context.Interaction.GuildId.ToString()).FirstOrDefaultAsync();
 
         if (guild == null)
         {
@@ -32,7 +29,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
                 Id = Context.Interaction.GuildId.ToString()!,
                 ChannelId = Context.Interaction.Channel.Id.ToString()
             };
-            await collection.InsertOneAsync(guild);
+            await Program.Collection!.InsertOneAsync(guild);
         }
 
         if (guild.Builds.Count >= 25)
@@ -60,7 +57,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
             Color = color?.TrimStart('#')
         });
 
-        var res = await collection.ReplaceOneAsync(g => g.Id == guild.Id, guild);
+        var res = await Program.Collection!.ReplaceOneAsync(g => g.Id == guild.Id, guild);
 
         if (!res.IsAcknowledged)
         {
@@ -85,7 +82,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
         var collection = Program.DatabaseClient!.GetDatabase("Arona")
             .GetCollection<Guild>("servers");
 
-        var guild = await collection.Find(g => g.Id == Context.Interaction.GuildId.ToString()).FirstOrDefaultAsync();
+        var guild = await Program.Collection!.Find(g => g.Id == Context.Interaction.GuildId.ToString()).FirstOrDefaultAsync();
         if (guild == null || guild.Builds.Count == 0)
         {
             await Context.Interaction.ModifyResponseAsync(options =>
@@ -103,7 +100,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
 
         guild.Builds.Remove(build);
 
-        var res = await collection.ReplaceOneAsync(g => g.Id == guild.Id, guild);
+        var res = await Program.Collection!.ReplaceOneAsync(g => g.Id == guild.Id, guild);
         if (!res.IsAcknowledged)
         {
             await Context.Interaction.ModifyResponseAsync(options =>
@@ -122,7 +119,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
         var collection = Program.DatabaseClient!.GetDatabase("Arona")
             .GetCollection<Guild>("servers");
 
-        var guild = await collection.Find(g => g.Id == Context.Interaction.GuildId.ToString()).FirstOrDefaultAsync();
+        var guild = await Program.Collection!.Find(g => g.Id == Context.Interaction.GuildId.ToString()).FirstOrDefaultAsync();
         if (guild == null || guild.Builds.Count == 0)
         {
             await Context.Interaction.SendResponseAsync(

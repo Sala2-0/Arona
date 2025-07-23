@@ -13,12 +13,9 @@ internal class UpdateClan
     {
         Program.UpdateProgress = true;
 
-        var db = Program.DatabaseClient!.GetDatabase("Arona");
-        var guildsCollection = db.GetCollection<Database.Guild>("servers");
-
         var client = new HttpClient();
 
-        foreach (var guild in await guildsCollection.Find(_ => true).ToListAsync())
+        foreach (var guild in await Program.Collection!.Find(_ => true).ToListAsync())
         {
             if (guild.Clans.Count == 0) continue;
 
@@ -214,7 +211,7 @@ internal class UpdateClan
                         } : null;
                     }
 
-                    await guildsCollection.ReplaceOneAsync(g => g.Id == guild.Id, guild);
+                    await Program.Collection!.ReplaceOneAsync(g => g.Id == guild.Id, guild);
                 }
             }
             catch (Exception ex)

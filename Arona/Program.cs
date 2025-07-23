@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-
-namespace Arona;
+﻿namespace Arona;
 using System.Text.Json;
 using Config;
 using Microsoft.Extensions.Hosting;
@@ -17,9 +15,10 @@ internal class Program
 {
     public static BotConfig? Config = JsonSerializer.Deserialize<BotConfig>(BotConfig.GetConfigFilePath());
     public static MongoClient? DatabaseClient { get; private set; }
+    public static IMongoCollection<Database.Guild>? Collection { get; private set; }
     public static GatewayClient? Client { get; private set; }
     public static bool UpdateProgress { get; set; } = false;
-    static async Task Main(string[] args)
+    private static async Task Main(string[] args)
     {
         if (Config == null)
             throw new Exception("Configuration file not found or invalid.");
@@ -39,6 +38,7 @@ internal class Program
         Client = host.Services.GetRequiredService<GatewayClient>();
 
         DatabaseClient = new MongoClient(Config.Database);
+        Collection = DatabaseClient.GetDatabase("Arona").GetCollection<Database.Guild>("servers");
 
         // Varje minut, hämta API och kolla klanaktiviteter
         Timer clanMonitorTask = new Timer(60000); // 300000

@@ -30,10 +30,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         string? guildId = Context.Interaction.GuildId.ToString();
         string channelId = Context.Interaction.Channel.Id.ToString();
 
-        var collection = Program.DatabaseClient!.GetDatabase("Arona")
-            .GetCollection<Guild>("servers");
-
-        var guild = await collection.Find(g => g.Id == guildId).FirstOrDefaultAsync();
+        var guild = await Program.Collection.Find(g => g.Id == guildId).FirstOrDefaultAsync();
 
         // Om guild inte finns, skapa en ny
         if (guild == null)
@@ -43,7 +40,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
                 Id = guildId!,
                 ChannelId = channelId
             };
-            await collection.InsertOneAsync(guild);
+            await Program.Collection!.InsertOneAsync(guild);
         }
 
         if (guild.Clans!.ContainsKey(clanId))
@@ -101,7 +98,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
                 RegionRank = regionRank!.FirstOrDefault(r => r.Id == long.Parse(clanId))!.Rank
             });
 
-            var res = await collection.ReplaceOneAsync(g => g.Id == guild.Id, guild);
+            var res = await Program.Collection!.ReplaceOneAsync(g => g.Id == guild.Id, guild);
 
             if (!res.IsAcknowledged)
             {
@@ -131,10 +128,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
 
         string? guildId = Context.Interaction.GuildId.ToString();
 
-        var collection = Program.DatabaseClient!.GetDatabase("Arona")
-            .GetCollection<Guild>("servers");
-
-        var guild = await collection.Find(g => g.Id == guildId).FirstOrDefaultAsync();
+        var guild = await Program.Collection!.Find(g => g.Id == guildId).FirstOrDefaultAsync();
 
         if (guild == null)
         {
@@ -148,7 +142,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
 
         var update = Builders<Guild>.Update.Unset($"clans.{clanId}");
 
-        var res = await collection.UpdateOneAsync(g => g.Id == guildId, update);
+        var res = await Program.Collection!.UpdateOneAsync(g => g.Id == guildId, update);
 
         if (!res.IsAcknowledged)
         {
@@ -174,10 +168,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         string? guildName = Context.Interaction.Guild?.Name;
         string? guildId = Context.Interaction.GuildId.ToString();
 
-        var collection = Program.DatabaseClient!.GetDatabase("Arona")
-            .GetCollection<Guild>("servers");
-
-        Guild? guild = await collection.Find(g => g.Id == guildId).FirstOrDefaultAsync();
+        Guild? guild = await Program.Collection!.Find(g => g.Id == guildId).FirstOrDefaultAsync();
 
         if (guild == null)
         {

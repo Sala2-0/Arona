@@ -11,7 +11,7 @@ using System.Globalization;
 public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("ratings", "Get detailed information about a clans current ratings on current CB season")]
-    public async Task RatingsFn(
+    public async Task RatingsAsync(
         [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag search for",
             AutocompleteProviderType = typeof(ClanSearch))] string clanIdAndRegion)
     {

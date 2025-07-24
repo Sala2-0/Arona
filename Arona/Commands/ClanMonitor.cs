@@ -12,7 +12,7 @@ using ApiModels;
 public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("clan_monitor_add", "Add a clan to server database")]
-    public async Task ClanMonitorAdd(
+    public async Task ClanMonitorAddAsync(
         [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag to add", AutocompleteProviderType = typeof(ClanSearch))] string clanIdAndRegion)
     {
         // Skicka inledande svar
@@ -118,13 +118,20 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
     }
     
     [SlashCommand("clan_monitor_remove", "Remove a clan from server database")]
-    public async Task ClanMonitorRemove(
+    public async Task ClanMonitorRemoveAsync(
         [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag to remove", AutocompleteProviderType = typeof(ClanRemoveSearch))] string clanId)
     {
         await Context.Interaction.SendResponseAsync(
             InteractionCallback.DeferredMessage());
 
         await Program.WaitForUpdateAsync();
+
+        if (clanId == "undefined")
+        {
+            await Context.Interaction.ModifyResponseAsync(options =>
+                options.Content = "❌ No clan selected to remove.");
+            return;
+        }
 
         string? guildId = Context.Interaction.GuildId.ToString();
 
@@ -163,7 +170,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
     }
 
     [SlashCommand("clan_monitor_list", "List all clans in server database")]
-    public async Task ClanMonitorList()
+    public async Task ClanMonitorListAsync()
     {
         string? guildName = Context.Interaction.Guild?.Name;
         string? guildId = Context.Interaction.GuildId.ToString();

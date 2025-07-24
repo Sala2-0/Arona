@@ -9,7 +9,7 @@ using NetCord;
 public class Builds : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("builds_add", "Add a ship build to server database in form of WoWs-ShipBuilder link")]
-    public async Task BuildsAdd(
+    public async Task BuildsAddAsync(
         [SlashCommandParameter(Name = "name", Description = "Build name")] string name,
         [SlashCommandParameter(Name = "link", Description = "ShipBuilder link")] string link,
         [SlashCommandParameter(Name = "description", Description = "Short description for the build")] string? description = null,
@@ -71,7 +71,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
     }
 
     [SlashCommand("builds_remove", "Remove a build from server database")]
-    public async Task BuildsRemove(
+    public async Task BuildsRemoveAsync(
         [SlashCommandParameter(Name = "name", Description = "Build name", AutocompleteProviderType = typeof(BuildsList))] string name)
     {
         await Context.Interaction.SendResponseAsync(
@@ -113,7 +113,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
     }
 
     [SlashCommand("builds_get", "Get a build from server database")]
-    public async Task BuildsGet(
+    public async Task BuildsGetAsync(
         [SlashCommandParameter(Name = "name", Description = "Build name", AutocompleteProviderType = typeof(BuildsList))] string name)
     {
         var collection = Program.DatabaseClient!.GetDatabase("Arona")

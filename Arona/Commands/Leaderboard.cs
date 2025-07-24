@@ -11,7 +11,7 @@ using System.Globalization;
 public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("leaderboard", "Latest clan battles season leaderboard. Default: Hurricane I (Global)")]
-    public async Task LeaderboardFn(
+    public async Task LeaderboardAsync(
         [SlashCommandParameter(Name = "league", Description = "League", AutocompleteProviderType = typeof(League))]
         int league = 0,
         [SlashCommandParameter(Name = "division", Description = "Division",

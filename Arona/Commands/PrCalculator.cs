@@ -62,7 +62,7 @@ internal class ShipSearch : IAutocompleteProvider<AutocompleteInteractionContext
 public class PrCalculator : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("pr_calculator", "Calculate PR of any ship")]
-    public async Task PrCalculatorFn(
+    public async Task PrCalculatorAsync(
         [SlashCommandParameter(Name = "ship", Description = "The ship to calculate PR for", AutocompleteProviderType = typeof(ShipSearch))] string selectedShipId,
         [SlashCommandParameter(Name = "damage", Description = "Damage dealt")] int damage,
         [SlashCommandParameter(Name = "kills", Description = "Number of kills", MinValue = 0, MaxValue = 12)] int kills,

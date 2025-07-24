@@ -8,7 +8,7 @@ using Utility;
 public class PrimeTime : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("prime_time", "Get a clans active clan battle regions")]
-    public async Task PrimeTimeFn(
+    public async Task PrimeTimeAsync(
         [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag search for",
             AutocompleteProviderType = typeof(ClanSearch))] string clanIdAndRegion)
     {

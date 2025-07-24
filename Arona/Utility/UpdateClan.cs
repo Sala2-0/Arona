@@ -84,9 +84,11 @@ internal class UpdateClan
                             TeamNumber = apiRating.TeamNumber,
                             GlobalRank = $"#{dbClan.GlobalRank.ToString()}",
                             RegionRank = $"#{dbClan.RegionRank.ToString()}",
-                            SuccessFactor = apiRating.BattlesCount >= 20
-                                ? (Math.Pow(apiRating.PublicRating, Ratings.GetLeagueExponent(apiRating.League)) / apiRating.BattlesCount).ToString("0.##", CultureInfo.InvariantCulture)
-                                : "< 20 battles"
+                            SuccessFactor = SuccessFactor.Calculate(
+                                rating: apiRating.PublicRating,
+                                battlesCount: apiRating.BattlesCount,
+                                leagueExponent: Ratings.GetLeagueExponent(apiRating.League)
+                            ).ToString("0.##", CultureInfo.InvariantCulture)
                         };
 
                         if (apiRating.Stage != null)

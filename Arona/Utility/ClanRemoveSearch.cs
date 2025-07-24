@@ -1,5 +1,4 @@
 ﻿namespace Arona.Utility;
-using System.Text.Json;
 using NetCord.Services.ApplicationCommands;
 using NetCord;
 using NetCord.Rest;
@@ -25,7 +24,7 @@ internal class ClanRemoveSearch : IAutocompleteProvider<AutocompleteInteractionC
                 new ApplicationCommandOptionChoiceProperties("No database exists for this server. Add a clan to initialize one.", "undefined")
             ]);
 
-        if (guild.Clans == null || guild.Clans.Count == 0)
+        if (guild.Clans.Count == 0)
             return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>([
                 new ApplicationCommandOptionChoiceProperties("No clans in database", "undefined")
             ]);

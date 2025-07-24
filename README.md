@@ -52,6 +52,7 @@ Store your [WoWs ShipBuilder](https://app.wowssb.com) builds/links for ease of a
 |`/prime_time`         |Get a clans current CB session selection and activity                                                                                               |
 |`/leaderboard`        |Latest CB seasons leaderboards, globally and regionally                                                                                             |
 |`/ratings`            |Get detailed info about a clans CB rating on latest season, their progress on league qualifications <br> as well as their global and region rankings|
+|`/set_channel`        |Set a text channel for Arona to log events in                                                                                                       |
 
 ## License
 Licensed under MIT.

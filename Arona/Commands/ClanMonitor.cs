@@ -15,9 +15,9 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
     public async Task ClanMonitorAddAsync(
         [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag to add", AutocompleteProviderType = typeof(ClanSearch))] string clanIdAndRegion)
     {
-        // Skicka inledande svar
-        await Context.Interaction.SendResponseAsync(
-            InteractionCallback.DeferredMessage());
+        var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
+
+        await deferredMessage.SendAsync();
 
         await Program.WaitForUpdateAsync();
 
@@ -45,7 +45,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
 
         if (guild.Clans!.ContainsKey(clanId))
         {
-            await Context.Interaction.ModifyResponseAsync(options => options.Content = "❌ Clan already exists in database.");
+            await deferredMessage.EditAsync("❌ Clan already exists in database.");
             return;
         }
 
@@ -102,18 +102,16 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
 
             if (!res.IsAcknowledged)
             {
-                await Context.Interaction.ModifyResponseAsync(options =>
-                    options.Content = "❌ Error adding clan to database.");
+                await deferredMessage.EditAsync("❌ Error saving clan to database.");
                 return;
             }
 
-            await Context.Interaction.ModifyResponseAsync(options =>
-                options.Content = $"✅ Added clan: `[{clan.ClanView.Clan.Tag}] {clan.ClanView.Clan.Name}`");
+            await deferredMessage.EditAsync($"✅ Added clan: `[{clan.ClanView.Clan.Tag}] {clan.ClanView.Clan.Name}`");
         }
         catch (Exception ex)
         {
             Program.ApiError(ex);
-            await Context.Interaction.ModifyResponseAsync(options => options.Content = "❌ Error fetching clan data from API.");
+            await deferredMessage.EditAsync("❌ Error fetching clan data from API.");
         }
     }
     
@@ -121,28 +119,21 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
     public async Task ClanMonitorRemoveAsync(
         [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag to remove", AutocompleteProviderType = typeof(ClanRemoveSearch))] string clanId)
     {
-        await Context.Interaction.SendResponseAsync(
-            InteractionCallback.DeferredMessage());
+        var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
+
+        await deferredMessage.SendAsync();
 
         await Program.WaitForUpdateAsync();
 
         if (clanId == "undefined")
         {
-            await Context.Interaction.ModifyResponseAsync(options =>
-                options.Content = "❌ No clan selected to remove.");
+            await deferredMessage.EditAsync("❌ No clan selected to remove.");
             return;
         }
 
         string? guildId = Context.Interaction.GuildId.ToString();
 
         var guild = await Program.Collection!.Find(g => g.Id == guildId).FirstOrDefaultAsync();
-
-        if (guild == null)
-        {
-            await Context.Interaction.SendResponseAsync(
-                InteractionCallback.Message("❌ No database exists for this server. **Add a clan to initialize one.**"));
-            return;
-        }
 
         var clanTag = guild.Clans.FirstOrDefault(c => c.Key == clanId).Value.ClanTag;
         var clanName = guild.Clans.FirstOrDefault(c => c.Key == clanId).Value.ClanName;
@@ -153,20 +144,17 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
 
         if (!res.IsAcknowledged)
         {
-            await Context.Interaction.SendResponseAsync(
-                InteractionCallback.Message("❌ Error removing clan from database."));
+            await deferredMessage.EditAsync("❌ Error removing clan from database.");
             return;
         }
 
         if (res.ModifiedCount == 0)
         {
-            await Context.Interaction.SendResponseAsync(
-                InteractionCallback.Message($"❌ Clan does not exist in database."));
+            await deferredMessage.EditAsync("❌ Clan does not exist in database.");
             return;
         }
 
-        await Context.Interaction.ModifyResponseAsync(options =>
-            options.Content = $"✅ Removed clan: `[{clanTag}] {clanName}`");
+        await deferredMessage.EditAsync($"✅ Removed clan: `[{clanTag}] {clanName}`");
     }
 
     [SlashCommand("clan_monitor_list", "List all clans in server database")]

@@ -36,9 +36,9 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
 
         try
         {
-            var response = await client.GetAsync(apiUrl);
+            var res = await client.GetAsync(apiUrl);
 
-            var structure = JsonSerializer.Deserialize<LadderStructure[]>(await response.Content.ReadAsStringAsync());
+            var structure = JsonSerializer.Deserialize<LadderStructure[]>(await res.Content.ReadAsStringAsync());
 
             if (structure == null || structure.Length == 0)
             {

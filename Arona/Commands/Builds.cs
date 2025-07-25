@@ -15,8 +15,9 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
         [SlashCommandParameter(Name = "description", Description = "Short description for the build")] string? description = null,
         [SlashCommandParameter(Name = "color", Description = "Optional color. HEX-format only")] string? color = null)
     {
-        await Context.Interaction.SendResponseAsync(
-            InteractionCallback.DeferredMessage());
+        var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
+
+        await deferredMessage.SendAsync();
 
         await Program.WaitForUpdateAsync();
 
@@ -34,8 +35,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
 
         if (guild.Builds.Count >= 25)
         {
-            await Context.Interaction.ModifyResponseAsync(options =>
-                options.Content = "❌ Maximum number of builds reached (25).");
+            await deferredMessage.EditAsync("❌ Maximum number of builds reached (25).");
             return;
         }
 
@@ -43,8 +43,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
         {
             if (build.Name != name) continue;
             
-            await Context.Interaction.ModifyResponseAsync(options =>
-                options.Content = $"❌ Build with name `{name}` already exists.");
+            await deferredMessage.EditAsync($"❌ Build with name `{name}` already exists.");
             return;
         }
 
@@ -61,40 +60,34 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
 
         if (!res.IsAcknowledged)
         {
-            await Context.Interaction.ModifyResponseAsync(options =>
-                options.Content = "❌ Error adding build to database.");
+            await deferredMessage.EditAsync("❌ Error adding build to database.");
             return;
         }
 
-        await Context.Interaction.ModifyResponseAsync(options =>
-            options.Content = $"✅ Added build: `{name}`");
+        await deferredMessage.EditAsync($"✅ Added build: `{name}`");
     }
 
     [SlashCommand("builds_remove", "Remove a build from server database")]
     public async Task BuildsRemoveAsync(
         [SlashCommandParameter(Name = "name", Description = "Build name", AutocompleteProviderType = typeof(BuildsList))] string name)
     {
-        await Context.Interaction.SendResponseAsync(
-            InteractionCallback.DeferredMessage());
+        var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
+
+        await deferredMessage.SendAsync();
 
         await Program.WaitForUpdateAsync();
-
-        var collection = Program.DatabaseClient!.GetDatabase("Arona")
-            .GetCollection<Guild>("servers");
 
         var guild = await Program.Collection!.Find(g => g.Id == Context.Interaction.GuildId.ToString()).FirstOrDefaultAsync();
         if (guild == null || guild.Builds.Count == 0)
         {
-            await Context.Interaction.ModifyResponseAsync(options =>
-                options.Content = "❌ No builds found in the database.");
+            await deferredMessage.EditAsync("❌ No builds found in the database.");
             return;
         }
 
         var build = guild.Builds.FirstOrDefault(b => b.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
         if (build == null)
         {
-            await Context.Interaction.ModifyResponseAsync(options =>
-                options.Content = $"❌ Build `{name}` not found.");
+            await deferredMessage.EditAsync($"❌ Build `{name}` not found.");
             return;
         }
 
@@ -103,27 +96,23 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
         var res = await Program.Collection!.ReplaceOneAsync(g => g.Id == guild.Id, guild);
         if (!res.IsAcknowledged)
         {
-            await Context.Interaction.ModifyResponseAsync(options =>
-                options.Content = "❌ Error removing build from database.");
+            await deferredMessage.EditAsync("❌ Error removing build from database.");
             return;
         }
 
-        await Context.Interaction.ModifyResponseAsync(options =>
-            options.Content = $"✅ Removed build: `{name}`");
+        await deferredMessage.EditAsync($"✅ Removed build: `{name}`");
     }
 
     [SlashCommand("builds_get", "Get a build from server database")]
     public async Task BuildsGetAsync(
         [SlashCommandParameter(Name = "name", Description = "Build name", AutocompleteProviderType = typeof(BuildsList))] string name)
     {
-        var collection = Program.DatabaseClient!.GetDatabase("Arona")
-            .GetCollection<Guild>("servers");
-
         var guild = await Program.Collection!.Find(g => g.Id == Context.Interaction.GuildId.ToString()).FirstOrDefaultAsync();
         if (guild == null || guild.Builds.Count == 0)
         {
             await Context.Interaction.SendResponseAsync(
-                InteractionCallback.Message("❌ No builds found in the database."));
+                InteractionCallback.Message("❌ No builds found in the database.")
+            );
             return;
         }
 
@@ -131,7 +120,8 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
         if (build == null)
         {
             await Context.Interaction.SendResponseAsync(
-                InteractionCallback.Message($"❌ Build with name `{name}` not found."));
+                InteractionCallback.Message($"❌ Build with name `{name}` not found.")
+            );
             return;
         }
 
@@ -158,6 +148,10 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
             embed.WithColor(new Color(Convert.ToInt32(build.Color, 16)));
 
         await Context.Interaction.SendResponseAsync(
-            InteractionCallback.Message(new InteractionMessageProperties().WithEmbeds([embed])));
+            InteractionCallback.Message(
+                new InteractionMessageProperties()
+                .WithEmbeds([embed])
+            )
+        );
     }
 }

@@ -4,6 +4,7 @@ using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using NetCord;
 using Utility;
+using ApiModels;
 
 public class PrimeTime : ApplicationCommandModule<ApplicationCommandContext>
 {
@@ -12,8 +13,9 @@ public class PrimeTime : ApplicationCommandModule<ApplicationCommandContext>
         [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag search for",
             AutocompleteProviderType = typeof(ClanSearch))] string clanIdAndRegion)
     {
-        await Context.Interaction.SendResponseAsync(
-            InteractionCallback.DeferredMessage());
+        var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
+
+        await deferredMessage.SendAsync();
 
         HttpClient client = new HttpClient();
         
@@ -21,35 +23,46 @@ public class PrimeTime : ApplicationCommandModule<ApplicationCommandContext>
         string region = split[1];
         string clanId = split[0];
 
-        var res = client.GetAsync($"https://clans.worldofwarships.{region}/api/clanbase/{clanId}/claninfo/")
-            .Result.Content.ReadAsStringAsync().Result;
-        JsonElement doc = JsonDocument.Parse(res).RootElement.GetProperty("clanview").GetProperty("wows_ladder");
-        JsonElement clanDoc = JsonDocument.Parse(res).RootElement.GetProperty("clanview").GetProperty("clan");
+        try
+        {
+            var res = await client.GetAsync($"https://clans.worldofwarships.{region}/api/clanbase/{clanId}/claninfo/");
 
-        int? primeTime = doc.GetProperty("prime_time").ValueKind != JsonValueKind.Null ? doc.GetProperty("prime_time").GetInt16() : null;
-        int? plannedPrimeTime = doc.GetProperty("planned_prime_time").ValueKind != JsonValueKind.Null ? doc.GetProperty("planned_prime_time").GetInt16() : null;
+            Clanbase clan = JsonSerializer.Deserialize<Clanbase>(await res.Content.ReadAsStringAsync())!;
 
-        var embed = new EmbedProperties()
-            .WithTitle($"`[{clanDoc.GetProperty("tag")}] {clanDoc.GetProperty("name")}`")
-            .WithColor(new Color(Convert.ToInt32("a4fff7", 16)))
-            .AddFields(
-                new EmbedFieldProperties()
-                    .WithName("Selected region")
-                    .WithValue(plannedPrimeTime != null ? GetPrimeTimeRegions(plannedPrimeTime) : "Not selected")
-                    .WithInline(false),
-                new EmbedFieldProperties()
-                    .WithName("Active region")
-                    .WithValue(primeTime != null ? GetPrimeTimeRegions(primeTime) : "Not playing")
-            );
-        
-        //var props = new InteractionMessageProperties()
-        //    .WithEmbeds([ embed ]);
-        
-        //await Context.Interaction.SendResponseAsync(
-        //    InteractionCallback.Message(props)
-        //);
+            int? primeTime = clan.ClanView.WowsLadder.PrimeTime;
+            int? plannedPrimeTime = clan.ClanView.WowsLadder.PlannedPrimeTime;
 
-        await Context.Interaction.ModifyResponseAsync(options => options.Embeds = [embed]);
+            string tag = clan.ClanView.Clan.Tag;
+            string name = clan.ClanView.Clan.Name;
+
+            var embed = new EmbedProperties()
+                .WithTitle($"`[{tag}] {name}`")
+                .WithColor(new Color(Convert.ToInt32("a4fff7", 16)))
+                .AddFields(
+                    new EmbedFieldProperties()
+                        .WithName("Selected region")
+                        .WithValue(
+                            plannedPrimeTime != null
+                                ? GetPrimeTimeRegions(plannedPrimeTime)
+                                : "Not selected"
+                        )
+                        .WithInline(false),
+                    new EmbedFieldProperties()
+                        .WithName("Active region")
+                        .WithValue(
+                            primeTime != null
+                                ? GetPrimeTimeRegions(primeTime)
+                                : "Not playing"
+                        )
+                );
+
+            await deferredMessage.EditAsync(embed);
+        }
+        catch (Exception ex)
+        {
+            Program.ApiError(ex);
+            await deferredMessage.EditAsync("❌ Error fetching clan data from API.");
+        }
     }
 
     private static string GetPrimeTimeRegions(int? primeTimeId) => primeTimeId switch

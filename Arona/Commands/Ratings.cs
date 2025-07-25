@@ -15,8 +15,9 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
         [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag search for",
             AutocompleteProviderType = typeof(ClanSearch))] string clanIdAndRegion)
     {
-        await Context.Interaction.SendResponseAsync(
-            InteractionCallback.DeferredMessage());
+        var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
+
+        await deferredMessage.SendAsync();
 
         HttpClient client = new HttpClient();
         string[] split = clanIdAndRegion.Split('|');
@@ -33,13 +34,7 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
 
             var general = JsonSerializer.Deserialize<Clanbase>(results[0]);
 
-            if (general == null)
-            {
-                await Context.Interaction.ModifyResponseAsync(options => options.Content = "❌ Error fetching clan data from API.");
-                return;
-            }
-
-            int latestSeason = general.ClanView.WowsLadder.SeasonNumber;
+            int latestSeason = general!.ClanView.WowsLadder.SeasonNumber;
 
             List<EmbedFieldProperties> field = [];
 
@@ -160,12 +155,12 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
                 .WithColor(new Color(Convert.ToInt32(general.ClanView.Clan.Color.Trim('#'), 16)))
                 .WithFields(field);
 
-            await Context.Interaction.ModifyResponseAsync(options => options.Embeds = [embed]);
+            await deferredMessage.EditAsync(embed);
         }
         catch (Exception ex)
         {
             Program.ApiError(ex);
-            await Context.Interaction.ModifyResponseAsync(options => options.Content = "❌ Error fetching clan data from API.");
+            await deferredMessage.EditAsync("❌ Error fetching clan data from API.");
         }
     }
 
@@ -223,9 +218,9 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
 
 internal class RatingsStructure()
 {
-    public string Team { init; get; }
-    public string Message { set; get; }
-    public string BattlesCount { init; get; }
-    public string WinRate { init; get; }
-    public string SuccessFactor { init; get; }
+    public string Team { init; get; } = string.Empty;
+    public string Message { set; get; } = string.Empty;
+    public string BattlesCount { init; get; } = string.Empty;
+    public string WinRate { init; get; } = string.Empty;
+    public string SuccessFactor { init; get; } = string.Empty;
 }

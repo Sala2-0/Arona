@@ -8,6 +8,7 @@ public class Help : ApplicationCommandModule<ApplicationCommandContext>
     public async Task HelpAsync()
     {
         await Context.Interaction.SendResponseAsync(
-            InteractionCallback.Message("Commands list can be found at https://github.com/Sala2-0/Arona"));
+            InteractionCallback.Message("Commands list can be found at https://github.com/Sala2-0/Arona")
+        );
     }
 }

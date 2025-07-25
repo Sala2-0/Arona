@@ -2,8 +2,8 @@
 using NetCord;
 using MongoDB.Driver;
 using NetCord.Services.ApplicationCommands;
-using NetCord.Rest;
 using Database;
+using Utility;
 
 public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
 {
@@ -11,8 +11,9 @@ public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
     public async Task SetChannelAsync(
         [SlashCommandParameter(Name = "channel_id", Description = "Right click a channel and select \"Copy channel-ID\"")] string channelId)
     {
-        await Context.Interaction.SendResponseAsync(
-            InteractionCallback.DeferredMessage());
+        var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
+
+        await deferredMessage.SendAsync();
 
         await Program.WaitForUpdateAsync();
 
@@ -24,8 +25,7 @@ public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
 
             if (channel.GetType() != typeof(TextGuildChannel))
             {
-                await Context.Interaction.ModifyResponseAsync(options =>
-                    options.Content = "❌ Specified channel is not a text channel.");
+                await deferredMessage.EditAsync("❌ Specified channel is not a text channel.");
                 return;
             }
 
@@ -40,8 +40,7 @@ public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
 
             if ((permissions & Permissions.SendMessages) == 0)
             {
-                await Context.Interaction.ModifyResponseAsync(options =>
-                    options.Content = $"❌ I don't have permission to send messages in <#{channelIdParsed}>!");
+                await deferredMessage.EditAsync($"❌ I don't have permission to send messages in <#{channelIdParsed}>!");
                 return;
             }
 
@@ -53,19 +52,16 @@ public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
 
             if (!res.IsAcknowledged)
             {
-                await Context.Interaction.ModifyResponseAsync(options =>
-                    options.Content = "❌ Error setting channel in database.");
+                await deferredMessage.EditAsync("❌ Error setting channel in database.");
                 return;
             }
 
-            await Context.Interaction.ModifyResponseAsync(options =>
-                options.Content = $"✅ Channel set to <#{channelIdParsed}>");
+            await deferredMessage.EditAsync($"✅ Channel set to <#{channelIdParsed}>");
         }
         catch (Exception ex)
         {
-            await Context.Interaction.ModifyResponseAsync(options =>
-                options.Content = "❌ Invalid channel ID format. Please provide a valid channel ID." +
-                                  "\nCould also be that Arona doesn't have permissions to see specified channel");
+            await deferredMessage.EditAsync("❌ Invalid channel ID format. Please provide a valid channel ID." +
+                                            "\nCould also be that Arona doesn't have permissions to see specified channel");
         }
     }
 }

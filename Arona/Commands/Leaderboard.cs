@@ -70,7 +70,7 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
         }
         catch (Exception ex)
         {
-            Program.ApiError(ex);
+            Program.Error(ex);
             await Context.Interaction.ModifyResponseAsync(options => options.Content = "❌ Error fetching leaderboard data from API.");
         }
     }

@@ -44,7 +44,7 @@ public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
                 return;
             }
 
-            var res = await Program.Collection!.UpdateOneAsync(
+            var res = await Program.GuildCollection!.UpdateOneAsync(
                 g => g.Id == Context.Guild.Id.ToString(),
                 Builders<Guild>.Update.Set(g => g.ChannelId, channelIdParsed.ToString()),
                 new UpdateOptions{ IsUpsert = true }

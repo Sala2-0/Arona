@@ -13,10 +13,7 @@ internal class BuildsList : IAutocompleteProvider<AutocompleteInteractionContext
     {
         var guildId = context.Interaction.GuildId.ToString();
 
-        var collection = Program.DatabaseClient!.GetDatabase("Arona")
-            .GetCollection<Guild>("servers");
-
-        var guild = collection.Find(g => g.Id == guildId).FirstOrDefault();
+        var guild = Program.GuildCollection.Find(g => g.Id == guildId).FirstOrDefault();
 
         if (guild == null || guild.Builds.Count == 0)
         {

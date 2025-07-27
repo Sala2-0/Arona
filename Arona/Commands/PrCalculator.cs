@@ -7,58 +7,6 @@ using System.Net.Http;
 using System.Text.Json;
 using Utility;
 
-internal class ShipStructure(string name, string id)
-{
-    public string Name = name;
-    public string Id = id;
-}
-
-internal class Victory : IChoicesProvider<ApplicationCommandContext>
-{
-    public ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(SlashCommandParameter<ApplicationCommandContext> param)
-    {
-        var choices = new[]
-        {
-            new ApplicationCommandOptionChoiceProperties("True", "true"),
-            new ApplicationCommandOptionChoiceProperties("False", "false")
-        };
-        return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>(choices);
-    }
-}
-
-internal class ShipSearch : IAutocompleteProvider<AutocompleteInteractionContext>
-{
-    public ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(
-        ApplicationCommandInteractionDataOption option,
-        AutocompleteInteractionContext context)
-    {
-        HttpClient client = new HttpClient();
-        
-        var input = option.Value ?? string.Empty;
-        
-        var res = client.GetAsync("https://ntt-community.com/api/ships").Result.Content.ReadAsStringAsync().Result;
-        JsonElement doc = JsonDocument.Parse(res).RootElement;
-        
-        List<ShipStructure> ships = new List<ShipStructure>();
-
-        foreach (JsonElement ship in doc.EnumerateArray())
-        {
-            string name = ship.GetProperty("name").GetString()!;
-            
-            if (name.StartsWith(input, StringComparison.InvariantCultureIgnoreCase))
-                ships.Add(new ShipStructure(name, ship.GetProperty("_id").ToString()));
-        }
-        
-        var choices = ships
-            .Where(s => s.Name.StartsWith(input, StringComparison.InvariantCultureIgnoreCase))
-            .Take(8)
-            .Select(s => new ApplicationCommandOptionChoiceProperties(s.Name, s.Id))
-            .ToArray();
-        
-        return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>(choices);
-    }
-}
-
 public class PrCalculator : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("pr_calculator", "Calculate PR of any ship")]
@@ -132,5 +80,18 @@ public class PrCalculator : ApplicationCommandModule<ApplicationCommandContext>
             .WithEmbeds([ embed ]);
 
         await Context.Interaction.SendResponseAsync(InteractionCallback.Message(props));
+    }
+}
+
+internal class Victory : IChoicesProvider<ApplicationCommandContext>
+{
+    public ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(SlashCommandParameter<ApplicationCommandContext> param)
+    {
+        var choices = new[]
+        {
+            new ApplicationCommandOptionChoiceProperties("True", "true"),
+            new ApplicationCommandOptionChoiceProperties("False", "false")
+        };
+        return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>(choices);
     }
 }

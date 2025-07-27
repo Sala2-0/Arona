@@ -21,7 +21,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
 
         await Program.WaitForUpdateAsync();
 
-        var guild = await Program.Collection!.Find(g => g.Id == Context.Interaction.GuildId.ToString()).FirstOrDefaultAsync();
+        var guild = await Program.GuildCollection!.Find(g => g.Id == Context.Interaction.GuildId.ToString()).FirstOrDefaultAsync();
 
         if (guild == null)
         {
@@ -30,7 +30,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
                 Id = Context.Interaction.GuildId.ToString()!,
                 ChannelId = Context.Interaction.Channel.Id.ToString()
             };
-            await Program.Collection!.InsertOneAsync(guild);
+            await Program.GuildCollection!.InsertOneAsync(guild);
         }
 
         if (guild.Builds.Count >= 25)
@@ -56,7 +56,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
             Color = color?.TrimStart('#')
         });
 
-        var res = await Program.Collection!.ReplaceOneAsync(g => g.Id == guild.Id, guild);
+        var res = await Program.GuildCollection!.ReplaceOneAsync(g => g.Id == guild.Id, guild);
 
         if (!res.IsAcknowledged)
         {
@@ -77,7 +77,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
 
         await Program.WaitForUpdateAsync();
 
-        var guild = await Program.Collection!.Find(g => g.Id == Context.Interaction.GuildId.ToString()).FirstOrDefaultAsync();
+        var guild = await Program.GuildCollection!.Find(g => g.Id == Context.Interaction.GuildId.ToString()).FirstOrDefaultAsync();
         if (guild == null || guild.Builds.Count == 0)
         {
             await deferredMessage.EditAsync("❌ No builds found in the database.");
@@ -93,7 +93,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
 
         guild.Builds.Remove(build);
 
-        var res = await Program.Collection!.ReplaceOneAsync(g => g.Id == guild.Id, guild);
+        var res = await Program.GuildCollection!.ReplaceOneAsync(g => g.Id == guild.Id, guild);
         if (!res.IsAcknowledged)
         {
             await deferredMessage.EditAsync("❌ Error removing build from database.");
@@ -107,7 +107,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
     public async Task BuildsGetAsync(
         [SlashCommandParameter(Name = "name", Description = "Build name", AutocompleteProviderType = typeof(BuildsList))] string name)
     {
-        var guild = await Program.Collection!.Find(g => g.Id == Context.Interaction.GuildId.ToString()).FirstOrDefaultAsync();
+        var guild = await Program.GuildCollection!.Find(g => g.Id == Context.Interaction.GuildId.ToString()).FirstOrDefaultAsync();
         if (guild == null || guild.Builds.Count == 0)
         {
             await Context.Interaction.SendResponseAsync(

@@ -60,7 +60,7 @@ public class PrimeTime : ApplicationCommandModule<ApplicationCommandContext>
         }
         catch (Exception ex)
         {
-            Program.ApiError(ex);
+            Program.Error(ex);
             await deferredMessage.EditAsync("❌ Error fetching clan data from API.");
         }
     }

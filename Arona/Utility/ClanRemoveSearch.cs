@@ -9,15 +9,12 @@ internal class ClanRemoveSearch : IAutocompleteProvider<AutocompleteInteractionC
 {
     public ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(
         ApplicationCommandInteractionDataOption option,
-        AutocompleteInteractionContext context)
+        AutocompleteInteractionContext context
+    )
     {
-        string? guildName = context.Interaction.Guild?.Name;
-        string? guildId = context.Interaction.GuildId.ToString();
+        string guildId = context.Interaction.GuildId.ToString()!;
 
-        var collection = Program.DatabaseClient!.GetDatabase("Arona")
-            .GetCollection<Guild>("servers");
-
-        var guild = collection.Find(g => g.Id == guildId).FirstOrDefault();
+        var guild = Program.GuildCollection.Find(g => g.Id == guildId).FirstOrDefault();
 
         if (guild == null)
             return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>([
@@ -29,11 +26,23 @@ internal class ClanRemoveSearch : IAutocompleteProvider<AutocompleteInteractionC
                 new ApplicationCommandOptionChoiceProperties("No clans in database", "undefined")
             ]);
 
-        var choices = guild.Clans
-            .Take(5)
+        List<Clan> clans = [];
+
+        foreach (long clanId in guild.Clans)
+        {
+            Clan dbClan = Program.ClanCollection!.Find(c => c.Id == clanId).FirstOrDefault();
+            
+            clans.Add(dbClan);
+        }
+
+        var choices = clans
+            .Take(20)
             .Select(clan =>
                 new ApplicationCommandOptionChoiceProperties(
-                    name: $"[{clan.Value.ClanTag}] {clan.Value.ClanName} ({ClanSearchStructure.GetRegionCode(clan.Value.Region)})", stringValue: clan.Key));
+                    name: $"[{clan.ClanTag}] {clan.ClanName} ({ClanSearchStructure.GetRegionCode(clan.Region)})",
+                    stringValue: clan.Id.ToString()
+                )
+            );
 
         return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>(choices);
     }

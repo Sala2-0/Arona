@@ -101,7 +101,6 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
                         Ratings = clan.ClanView.WowsLadder.Ratings.Where(r => r.SeasonNumber == latestSeason).Select(r =>
                             new Database.Rating
                             {
-
                                 TeamNumber = r.TeamNumber,
                                 League = r.League,
                                 Division = r.Division,

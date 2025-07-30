@@ -150,9 +150,24 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
             string tag = general.ClanView.Clan.Tag;
             string name = general.ClanView.Clan.Name;
 
+            var self = await Program.Client!.Rest.GetCurrentUserAsync();
+            var botIconUrl = self.GetAvatarUrl()!.ToString();
+
             var embed = new EmbedProperties()
                 .WithTitle($"`[{tag}] {name}` ({ClanSearchStructure.GetRegionCode(region)})")
-                .WithColor(new Color(Convert.ToInt32(general.ClanView.Clan.Color.Trim('#'), 16)))
+                .WithColor(
+                    new Color(
+                        Convert.ToInt32(
+                            general.ClanView.Clan.Color.Trim('#'), 
+                            16
+                        )
+                    )
+                )
+                .WithAuthor(
+                    new EmbedAuthorProperties()
+                        .WithName("Arona's intelligence report")
+                        .WithIconUrl(botIconUrl)
+                )
                 .WithFields(field);
 
             await deferredMessage.EditAsync(embed);
@@ -216,7 +231,7 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
     };
 }
 
-internal class RatingsStructure()
+internal class RatingsStructure
 {
     public string Team { init; get; } = string.Empty;
     public string Message { set; get; } = string.Empty;

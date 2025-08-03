@@ -142,7 +142,11 @@ internal class UpdateClan
                     {
                         string type = apiRating.Stage.Type;
                         string league = Ratings.GetLeague(apiRating.Stage.TargetLeague - (type == "demotion" ? 1 : 0));
-                        string division = Ratings.GetDivision(apiRating.Stage.TargetDivision);
+                        string division = Ratings.GetDivision(
+                            type == "promotion"
+                            ? apiRating.Stage.TargetDivision
+                            : apiRating.Division
+                        );
 
                         msgProp.ResultMsg = (
                             type == "promotion"

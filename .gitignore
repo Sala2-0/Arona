@@ -9,3 +9,4 @@ Arona/Config/config.json
 /Arona/Database/node_modules
 Arona/Properties/PublishProfiles/FolderProfile.pubxml.user
 Arona/Properties/PublishProfiles/FolderProfile.pubxml
+/.idea

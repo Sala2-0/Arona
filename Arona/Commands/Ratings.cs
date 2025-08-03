@@ -66,8 +66,12 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
                     string type = rating.Stage.Type == "promotion"
                         ? "Qualification for"
                         : "Qualification to stay in";
+                    
+                    int division = rating.Stage.Type == "promotion"
+                        ? rating.Stage.TargetDivision
+                        : rating.Division;
 
-                    string message = $"{type} {GetLeague(rating.Stage.TargetLeague - (type == "Qualification for" ? 0 : 1))} {GetDivision(rating.Division)}" +
+                    string message = $"{type} {GetLeague(rating.Stage.TargetLeague - (type == "Qualification for" ? 0 : 1))} {GetDivision(division)}" +
                                      $"\n{GetProgress(rating.Stage.Progress)}";
 
                     obj.Message = message;

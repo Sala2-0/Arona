@@ -1,6 +1,7 @@
-﻿namespace Arona.Utility;
-using NetCord;
+﻿using NetCord;
 using NetCord.Rest;
+
+namespace Arona.Utility;
 
 internal class DeferredMessage
 {

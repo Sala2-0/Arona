@@ -1,5 +1,6 @@
-﻿namespace Arona.ApiModels;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
+
+namespace Arona.ApiModels;
 
 internal class Clanbase
 {

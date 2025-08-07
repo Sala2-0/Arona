@@ -1,6 +1,6 @@
-﻿namespace Arona.Database;
-using MongoDB.Bson.Serialization.Attributes;
-using System.Collections.Generic;
+﻿using MongoDB.Bson.Serialization.Attributes;
+
+namespace Arona.Database;
 
 internal class Clan
 {

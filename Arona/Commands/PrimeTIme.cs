@@ -1,10 +1,11 @@
-﻿namespace Arona.Commands;
-using System.Text.Json;
+﻿using System.Text.Json;
+using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using NetCord;
-using Utility;
-using ApiModels;
+using Arona.ApiModels;
+using Arona.Utility;
+
+namespace Arona.Commands;
 
 public class PrimeTime : ApplicationCommandModule<ApplicationCommandContext>
 {

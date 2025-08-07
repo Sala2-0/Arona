@@ -1,9 +1,10 @@
-﻿namespace Arona.Commands;
-using NetCord;
-using MongoDB.Driver;
+﻿using NetCord;
 using NetCord.Services.ApplicationCommands;
-using Database;
-using Utility;
+using MongoDB.Driver;
+using Arona.Database;
+using Arona.Utility;
+
+namespace Arona.Commands;
 
 public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
 {

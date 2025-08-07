@@ -1,11 +1,12 @@
-﻿namespace Arona.Utility;
-using MongoDB.Driver;
-using ApiModels;
+﻿using System.Globalization;
 using System.Text.Json;
 using NetCord;
 using NetCord.Rest;
-using Commands;
-using System.Globalization;
+using MongoDB.Driver;
+using Arona.ApiModels;
+using Arona.Commands;
+
+namespace Arona.Utility;
 
 internal class UpdateClan
 {

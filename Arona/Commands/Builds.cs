@@ -1,10 +1,11 @@
-﻿namespace Arona.Commands;
+﻿using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using Database;
 using MongoDB.Driver;
-using Utility;
-using NetCord;
+using Arona.Database;
+using Arona.Utility;
+
+namespace Arona.Commands;
 
 public class Builds : ApplicationCommandModule<ApplicationCommandContext>
 {

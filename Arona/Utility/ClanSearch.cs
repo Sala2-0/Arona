@@ -1,10 +1,9 @@
-﻿namespace Arona.Utility;
-using Config;
-using System.Text.Json;
-using System.Net.Http;
-using NetCord.Services.ApplicationCommands;
+﻿using System.Text.Json;
 using NetCord;
 using NetCord.Rest;
+using NetCord.Services.ApplicationCommands;
+
+namespace Arona.Utility;
 
 internal class ClanSearch: IAutocompleteProvider<AutocompleteInteractionContext>
 {

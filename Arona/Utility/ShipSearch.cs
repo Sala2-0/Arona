@@ -1,8 +1,9 @@
-﻿namespace Arona.Utility;
+﻿using System.Text.Json;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using System.Text.Json;
+
+namespace Arona.Utility;
 
 internal class ShipSearch : IAutocompleteProvider<AutocompleteInteractionContext>
 {

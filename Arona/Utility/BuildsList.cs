@@ -1,9 +1,9 @@
-﻿namespace Arona.Utility;
-using NetCord;
+﻿using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using Database;
 using MongoDB.Driver;
+
+namespace Arona.Utility;
 
 internal class BuildsList : IAutocompleteProvider<AutocompleteInteractionContext>
 {

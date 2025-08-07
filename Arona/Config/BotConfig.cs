@@ -1,5 +1,6 @@
-﻿namespace Arona.Config;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
+
+namespace Arona.Config;
 
 internal class BotConfig
 {

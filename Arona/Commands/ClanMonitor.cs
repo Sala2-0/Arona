@@ -1,11 +1,12 @@
-﻿namespace Arona.Commands;
-using System.Text.Json;
+﻿using System.Text.Json;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using Utility;
 using MongoDB.Driver;
-using Database;
-using ApiModels;
+using Arona.ApiModels;
+using Arona.Database;
+using Arona.Utility;
+
+namespace Arona.Commands;
 
 public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
 {

@@ -1,12 +1,12 @@
-﻿using Arona.Utility;
-
-namespace Arona.Commands;
-using ApiModels;
+﻿using System.Globalization;
+using System.Text.Json;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using System.Text.Json;
-using System.Globalization;
+using Arona.ApiModels;
+using Arona.Utility;
+
+namespace Arona.Commands;
 
 public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
 {

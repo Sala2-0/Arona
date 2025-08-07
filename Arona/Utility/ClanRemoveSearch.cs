@@ -1,9 +1,10 @@
-﻿namespace Arona.Utility;
-using NetCord.Services.ApplicationCommands;
-using NetCord;
+﻿using NetCord;
 using NetCord.Rest;
-using Database;
+using NetCord.Services.ApplicationCommands;
 using MongoDB.Driver;
+using Arona.Database;
+
+namespace Arona.Utility;
 
 internal class ClanRemoveSearch : IAutocompleteProvider<AutocompleteInteractionContext>
 {

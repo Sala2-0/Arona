@@ -1,12 +1,12 @@
-﻿namespace Arona.Commands;
-using Utility;
-using NetCord.Services.ApplicationCommands;
+﻿using System.Globalization;
 using System.Text.Json;
-using NetCord.Rest;
 using NetCord;
-using System.Threading.Tasks;
-using ApiModels;
-using System.Globalization;
+using NetCord.Rest;
+using NetCord.Services.ApplicationCommands;
+using Arona.ApiModels;
+using Arona.Utility;
+
+namespace Arona.Commands;
 
 public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
 {

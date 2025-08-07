@@ -1,6 +1,7 @@
-namespace Arona.Commands;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
+
+namespace Arona.Commands;
 
 public class Help : ApplicationCommandModule<ApplicationCommandContext>
 {

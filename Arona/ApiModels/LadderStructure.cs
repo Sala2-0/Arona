@@ -4,14 +4,16 @@ namespace Arona.ApiModels;
 
 internal class LadderStructure
 {
-    [JsonPropertyName("id")] public long Id { get; set; }
-    [JsonPropertyName("tag")] public string Tag { get; set; }
-    [JsonPropertyName("name")] public string Name { get; set; }
-    [JsonPropertyName("rank")] public int Rank { get; set; }
-    [JsonPropertyName("division_rating")] public int DivisionRating { get; set; }
-    [JsonPropertyName("realm")] public string Realm { get; set; }
-    [JsonPropertyName("public_rating")] public int PublicRating { get; set; }
-    [JsonPropertyName("battles_count")] public int BattlesCount { get; set; }
+    [JsonPropertyName("id")] public required long Id { get; init; }
+    [JsonPropertyName("tag")] public required string Tag { get; init; }
+    [JsonPropertyName("name")] public required string Name { get; init; }
+    [JsonPropertyName("rank")] public required int Rank { get; init; }
+    [JsonPropertyName("division_rating")] public required int DivisionRating { get; init; }
+    [JsonPropertyName("realm")] public required string Realm { get; init; }
+    [JsonPropertyName("public_rating")] public required int PublicRating { get; init; }
+    [JsonPropertyName("battles_count")] public required int BattlesCount { get; init; }
+
+    public double? SuccessFactor { get; set; }
 
     public static string GetApiTargetClanUrl(string clanId, string region, string realm = "global") =>
         $"https://clans.worldofwarships.{region}/api/ladder/structure/?clan_id={clanId}&realm={realm}";

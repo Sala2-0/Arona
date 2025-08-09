@@ -10,7 +10,7 @@ namespace Arona.Commands;
 
 public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
 {
-    [SlashCommand("leaderboard", "Latest clan battles season leaderboard. Default: Hurricane I (Global)")]
+    [SlashCommand("leaderboard", "Latest clan battles season leaderboard. Default: Hurricane I (Global) [Ratings]")]
     public async Task LeaderboardAsync(
         [SlashCommandParameter(Name = "league", Description = "League", AutocompleteProviderType = typeof(League))]
         int league = 0,
@@ -18,60 +18,117 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
             AutocompleteProviderType = typeof(Division))]
         int division = 1,
         [SlashCommandParameter(Name = "region", Description = "Region", AutocompleteProviderType = typeof(Realm))]
-        string realm = "global"
+        string realm = "global",
+        [SlashCommandParameter(Name = "type", Description = "The clan parameter rankings will base on", AutocompleteProviderType = typeof(LeaderboardType))]
+        string leaderboardType = "ratings"
     )
     {
-        await Context.Interaction.SendResponseAsync(
-            InteractionCallback.DeferredMessage());
+        var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
+
+        await deferredMessage.SendAsync();
 
         if (league == 0 && division is 2 or 3)
         {
-            await Context.Interaction.ModifyResponseAsync(options =>
-                options.Content = $"❌ Hurricane {Ratings.GetDivision(division)} doesn't exist.");
+            await deferredMessage.EditAsync($"❌ Hurricane {Ratings.GetDivision(division)} doesn't exist.");
             return;
         }
 
         HttpClient client = new HttpClient();
         string apiUrl = LadderStructure.GetApiGeneralUrl(league, division, realm);
 
-        try
+        if (leaderboardType == "ratings")
         {
-            var res = await client.GetAsync(apiUrl);
-
-            var structure = JsonSerializer.Deserialize<LadderStructure[]>(await res.Content.ReadAsStringAsync());
-
-            if (structure == null || structure.Length == 0)
+            try
             {
-                await Context.Interaction.ModifyResponseAsync(options =>
-                    options.Content = "❌ No data found for the specified league and division.");
-                return;
+                var res = await client.GetAsync(apiUrl);
+
+                var structure = JsonSerializer.Deserialize<LadderStructure[]>(await res.Content.ReadAsStringAsync());
+
+                if (structure == null || structure.Length == 0)
+                {
+                    await deferredMessage.EditAsync("❌ No data found for the specified league and division.");
+                    return;
+                }
+
+                var embed = new EmbedProperties()
+                    .WithTitle(
+                        $"Leaderboard - {Ratings.GetLeague(league)} {Ratings.GetDivision(division)} ({LadderStructure.ConvertRealm(realm)}) [Ratings]")
+                    .WithColor(new Color(Convert.ToInt32(Ratings.GetLeagueColor(league), 16)));
+
+                var fields = new List<EmbedFieldProperties>();
+
+                foreach (var clan in structure)
+                {
+                    string successFactor = SuccessFactor.Calculate(clan.PublicRating, clan.BattlesCount, Ratings.GetLeagueExponent(league))
+                        .ToString("0.##", CultureInfo.InvariantCulture);
+
+                    fields.Add(new EmbedFieldProperties()
+                        .WithName(
+                            $"**#{clan.Rank}** ({LadderStructure.ConvertRealm(clan.Realm)}) `[{clan.Tag}]` ({clan.DivisionRating}) `BTL: {clan.BattlesCount}` `S/F: {successFactor}`"));
+                }
+
+                embed.WithFields(fields);
+
+                await Context.Interaction.ModifyResponseAsync(options => options.Embeds = [embed]);
             }
-
-            var embed = new EmbedProperties()
-                .WithTitle(
-                    $"Leaderboard - {Ratings.GetLeague(league)} {Ratings.GetDivision(division)} ({LadderStructure.ConvertRealm(realm)})")
-                .WithColor(new Color(Convert.ToInt32(Ratings.GetLeagueColor(league), 16)));
-
-            var fields = new List<EmbedFieldProperties>();
-
-            foreach (var clan in structure)
+            catch (Exception ex)
             {
-                string successFactor = SuccessFactor.Calculate(clan.PublicRating, clan.BattlesCount, Ratings.GetLeagueExponent(league))
-                    .ToString("0.##", CultureInfo.InvariantCulture);
-
-                fields.Add(new EmbedFieldProperties()
-                    .WithName(
-                        $"**#{clan.Rank}** ({LadderStructure.ConvertRealm(clan.Realm)}) `[{clan.Tag}]` ({clan.DivisionRating}) `BTL: {clan.BattlesCount}` `S/F: {successFactor}`"));
+                Program.Error(ex);
+                await deferredMessage.EditAsync("❌ Error fetching leaderboard data from API.");
             }
-
-            embed.WithFields(fields);
-
-            await Context.Interaction.ModifyResponseAsync(options => options.Embeds = [embed]);
         }
-        catch (Exception ex)
+        
+        else if (leaderboardType == "success_factor")
         {
-            Program.Error(ex);
-            await Context.Interaction.ModifyResponseAsync(options => options.Content = "❌ Error fetching leaderboard data from API.");
+            try
+            {
+                var res = await client.GetAsync(apiUrl);
+
+                var structure = JsonSerializer.Deserialize<LadderStructure[]>(await res.Content.ReadAsStringAsync());
+
+                if (structure == null || structure.Length == 0)
+                {
+                    await deferredMessage.EditAsync("❌ No data found for the specified league and division.");
+                    return;
+                }
+            
+                foreach (var clan in structure)
+                {
+                    clan.SuccessFactor = Math.Round(
+                        SuccessFactor.Calculate(clan.PublicRating, clan.BattlesCount, Ratings.GetLeagueExponent(league)),
+                        2
+                    );
+                }
+
+                var embed = new EmbedProperties()
+                    .WithTitle(
+                        $"Leaderboard - {Ratings.GetLeague(league)} {Ratings.GetDivision(division)} ({LadderStructure.ConvertRealm(realm)}) [S/F]")
+                    .WithColor(new Color(Convert.ToInt32(Ratings.GetLeagueColor(league), 16)));
+
+                var fields = new List<EmbedFieldProperties>();
+
+                var sortedStructure = structure.OrderByDescending(s => s.SuccessFactor).ToList();
+
+                for (int i = 0; i < sortedStructure.Count; i++)
+                {
+                    var clan = sortedStructure[i];
+                    var successFactor = clan.SuccessFactor?.ToString(CultureInfo.InvariantCulture);
+                
+                    fields.Add(
+                        new EmbedFieldProperties()
+                            .WithName($"**#{i + 1}** ({LadderStructure.ConvertRealm(clan.Realm)}) `[{clan.Tag}]` ({clan.DivisionRating}) `S/F: {successFactor}` `BTL: {clan.BattlesCount}`")
+                    );
+                }
+
+                embed.WithFields(fields);
+            
+                await deferredMessage.EditAsync(embed);
+            }
+            catch (Exception ex)
+            {
+                Program.Error(ex);
+                await deferredMessage.EditAsync("❌ Error fetching leaderboard data from API.");
+            }
         }
     }
 }
@@ -124,5 +181,20 @@ internal class Realm : IAutocompleteProvider<AutocompleteInteractionContext>
             new ApplicationCommandOptionChoiceProperties("ASIA", "sg")
         };
         return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>(realms);
+    }
+}
+
+internal class LeaderboardType : IAutocompleteProvider<AutocompleteInteractionContext>
+{
+    public ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(
+        ApplicationCommandInteractionDataOption option,
+        AutocompleteInteractionContext context)
+    {
+        var types = new[]
+        {
+            new ApplicationCommandOptionChoiceProperties("Ratings", "ratings"),
+            new ApplicationCommandOptionChoiceProperties("S/F", "success_factor")
+        };
+        return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>(types);
     }
 }

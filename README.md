@@ -3,6 +3,8 @@
 ## Arona - A clan battle oriented discord bot for World of Warships
 Add it to your server with this [link](https://discord.com/oauth2/authorize?client_id=1360295816476098692&permissions=139586750464&integration_type=0&scope=bot+applications.commands)
 
+It is recommended that you create a special channel where Arona can log events in.
+
 Bot theme is based on [Blue Archive](https://www.nexon.com/main/en/Blue%20Archive/details)
 
 ## Commands and features

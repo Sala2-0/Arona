@@ -2,6 +2,7 @@
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using MongoDB.Driver;
+using Microsoft.Playwright;
 using Arona.Autocomplete;
 using Arona.Database;
 using Arona.Utility;
@@ -109,23 +110,52 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
     public async Task BuildsGetAsync(
         [SlashCommandParameter(Name = "name", Description = "Build name", AutocompleteProviderType = typeof(BuildAutocomplete))] string name)
     {
+        var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
+        
+        await deferredMessage.SendAsync();
+        
         var guild = await Program.Collections.Guilds.Find(g => g.Id == Context.Interaction.GuildId.ToString()).FirstOrDefaultAsync();
         if (guild == null || guild.Builds.Count == 0)
         {
-            await Context.Interaction.SendResponseAsync(
-                InteractionCallback.Message("❌ No builds found in the database.")
-            );
+            await deferredMessage.EditAsync("❌ No builds found in the database.");
             return;
         }
 
         var build = guild.Builds.FirstOrDefault(b => b.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
         if (build == null)
         {
-            await Context.Interaction.SendResponseAsync(
-                InteractionCallback.Message($"❌ Build with name `{name}` not found.")
-            );
+            await deferredMessage.EditAsync($"❌ Build with name `{name}` not found.");
             return;
         }
+        
+        using var playwright = await Playwright.CreateAsync();
+        await using var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions { Headless = true });
+        
+        var page = await browser.NewPageAsync();
+        await page.GotoAsync(build.Link);
+        
+        await Task.Delay(100);
+
+        if (await page.TitleAsync() != "WoWs ShipBuilder")
+        {
+            await deferredMessage.EditAsync("❌ Not a valid build link!");
+            return;
+        }
+        
+        await page.GetByRole(AriaRole.Button, new() { Name = "Share Build Image" }).ClickAsync();
+        
+        await Task.Delay(500);
+        
+        var element = await page.QuerySelectorAsync("#image");
+        
+        await page.Mouse.MoveAsync(0, 0);
+            
+        var screenshotBytes = await element!.ScreenshotAsync(new ElementHandleScreenshotOptions
+        {
+            Type = ScreenshotType.Png
+        });
+        
+        using var stream = new MemoryStream(screenshotBytes);
 
         var embed = new EmbedProperties()
             .WithTitle(build.Name)
@@ -148,12 +178,14 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
 
         if (!string.IsNullOrEmpty(build.Color))
             embed.WithColor(new Color(Convert.ToInt32(build.Color, 16)));
+        
+        string guildId = Context.Interaction.GuildId.ToString()!;
+        string parsedName = build.Name.ToLower().Replace(" ", "_");
 
-        await Context.Interaction.SendResponseAsync(
-            InteractionCallback.Message(
-                new InteractionMessageProperties()
-                .WithEmbeds([embed])
-            )
+        await deferredMessage.EditAsync(embed);
+        await deferredMessage.Interaction.SendFollowupMessageAsync(
+            new InteractionMessageProperties()
+                .WithAttachments([new AttachmentProperties($"{guildId}_{parsedName}.png", stream)])
         );
     }
 }

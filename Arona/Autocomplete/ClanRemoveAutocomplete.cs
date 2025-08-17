@@ -3,10 +3,11 @@ using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using MongoDB.Driver;
 using Arona.Database;
+using Arona.Utility;
 
-namespace Arona.Utility;
+namespace Arona.Autocomplete;
 
-internal class ClanRemoveSearch : IAutocompleteProvider<AutocompleteInteractionContext>
+internal class ClanRemoveAutocomplete : IAutocompleteProvider<AutocompleteInteractionContext>
 {
     public ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(
         ApplicationCommandInteractionDataOption option,
@@ -15,7 +16,7 @@ internal class ClanRemoveSearch : IAutocompleteProvider<AutocompleteInteractionC
     {
         string guildId = context.Interaction.GuildId.ToString()!;
 
-        var guild = Program.GuildCollection.Find(g => g.Id == guildId).FirstOrDefault();
+        var guild = Program.Collections.Guilds.Find(g => g.Id == guildId).FirstOrDefault();
 
         if (guild == null)
             return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>([
@@ -31,7 +32,7 @@ internal class ClanRemoveSearch : IAutocompleteProvider<AutocompleteInteractionC
 
         foreach (long clanId in guild.Clans)
         {
-            Clan dbClan = Program.ClanCollection!.Find(c => c.Id == clanId).FirstOrDefault();
+            Clan dbClan = Program.Collections.Clans.Find(c => c.Id == clanId).FirstOrDefault();
             
             clans.Add(dbClan);
         }

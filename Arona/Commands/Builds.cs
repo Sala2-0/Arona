@@ -2,6 +2,7 @@
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using MongoDB.Driver;
+using Arona.Autocomplete;
 using Arona.Database;
 using Arona.Utility;
 
@@ -22,7 +23,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
 
         await Program.WaitForUpdateAsync();
 
-        var guild = await Program.GuildCollection!.Find(g => g.Id == Context.Interaction.GuildId.ToString()).FirstOrDefaultAsync();
+        var guild = await Program.Collections.Guilds.Find(g => g.Id == Context.Interaction.GuildId.ToString()).FirstOrDefaultAsync();
 
         if (guild == null)
         {
@@ -31,7 +32,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
                 Id = Context.Interaction.GuildId.ToString()!,
                 ChannelId = Context.Interaction.Channel.Id.ToString()
             };
-            await Program.GuildCollection!.InsertOneAsync(guild);
+            await Program.Collections.Guilds.InsertOneAsync(guild);
         }
 
         if (guild.Builds.Count >= 25)
@@ -57,7 +58,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
             Color = color?.TrimStart('#')
         });
 
-        var res = await Program.GuildCollection!.ReplaceOneAsync(g => g.Id == guild.Id, guild);
+        var res = await Program.Collections.Guilds.ReplaceOneAsync(g => g.Id == guild.Id, guild);
 
         if (!res.IsAcknowledged)
         {
@@ -70,7 +71,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
 
     [SlashCommand("builds_remove", "Remove a build from server database")]
     public async Task BuildsRemoveAsync(
-        [SlashCommandParameter(Name = "name", Description = "Build name", AutocompleteProviderType = typeof(BuildsList))] string name)
+        [SlashCommandParameter(Name = "name", Description = "Build name", AutocompleteProviderType = typeof(BuildAutocomplete))] string name)
     {
         var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
 
@@ -78,7 +79,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
 
         await Program.WaitForUpdateAsync();
 
-        var guild = await Program.GuildCollection!.Find(g => g.Id == Context.Interaction.GuildId.ToString()).FirstOrDefaultAsync();
+        var guild = await Program.Collections.Guilds.Find(g => g.Id == Context.Interaction.GuildId.ToString()).FirstOrDefaultAsync();
         if (guild == null || guild.Builds.Count == 0)
         {
             await deferredMessage.EditAsync("❌ No builds found in the database.");
@@ -94,7 +95,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
 
         guild.Builds.Remove(build);
 
-        var res = await Program.GuildCollection!.ReplaceOneAsync(g => g.Id == guild.Id, guild);
+        var res = await Program.Collections.Guilds.ReplaceOneAsync(g => g.Id == guild.Id, guild);
         if (!res.IsAcknowledged)
         {
             await deferredMessage.EditAsync("❌ Error removing build from database.");
@@ -106,9 +107,9 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
 
     [SlashCommand("builds_get", "Get a build from server database")]
     public async Task BuildsGetAsync(
-        [SlashCommandParameter(Name = "name", Description = "Build name", AutocompleteProviderType = typeof(BuildsList))] string name)
+        [SlashCommandParameter(Name = "name", Description = "Build name", AutocompleteProviderType = typeof(BuildAutocomplete))] string name)
     {
-        var guild = await Program.GuildCollection!.Find(g => g.Id == Context.Interaction.GuildId.ToString()).FirstOrDefaultAsync();
+        var guild = await Program.Collections.Guilds.Find(g => g.Id == Context.Interaction.GuildId.ToString()).FirstOrDefaultAsync();
         if (guild == null || guild.Builds.Count == 0)
         {
             await Context.Interaction.SendResponseAsync(

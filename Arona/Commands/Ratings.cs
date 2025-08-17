@@ -4,6 +4,7 @@ using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using Arona.ApiModels;
+using Arona.Autocomplete;
 using Arona.Utility;
 
 namespace Arona.Commands;
@@ -13,7 +14,7 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
     [SlashCommand("ratings", "Get detailed information about a clans current ratings on current CB season")]
     public async Task RatingsAsync(
         [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag search for",
-            AutocompleteProviderType = typeof(ClanSearch))] string clanIdAndRegion)
+            AutocompleteProviderType = typeof(ClanAutocomplete))] string clanIdAndRegion)
     {
         var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
 

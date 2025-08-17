@@ -3,6 +3,7 @@ using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using Arona.ApiModels;
+using Arona.Autocomplete;
 using Arona.Utility;
 
 namespace Arona.Commands;
@@ -12,7 +13,7 @@ public class PrimeTime : ApplicationCommandModule<ApplicationCommandContext>
     [SlashCommand("prime_time", "Get a clans active clan battle regions")]
     public async Task PrimeTimeAsync(
         [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag search for",
-            AutocompleteProviderType = typeof(ClanSearch))] string clanIdAndRegion)
+            AutocompleteProviderType = typeof(ClanAutocomplete))] string clanIdAndRegion)
     {
         var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
 

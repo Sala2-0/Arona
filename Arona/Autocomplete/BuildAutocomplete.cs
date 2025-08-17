@@ -3,9 +3,9 @@ using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using MongoDB.Driver;
 
-namespace Arona.Utility;
+namespace Arona.Autocomplete;
 
-internal class BuildsList : IAutocompleteProvider<AutocompleteInteractionContext>
+internal class BuildAutocomplete : IAutocompleteProvider<AutocompleteInteractionContext>
 {
     public ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(
         ApplicationCommandInteractionDataOption option,
@@ -13,7 +13,7 @@ internal class BuildsList : IAutocompleteProvider<AutocompleteInteractionContext
     {
         var guildId = context.Interaction.GuildId.ToString();
 
-        var guild = Program.GuildCollection.Find(g => g.Id == guildId).FirstOrDefault();
+        var guild = Program.Collections.Guilds.Find(g => g.Id == guildId).FirstOrDefault();
 
         if (guild == null || guild.Builds.Count == 0)
         {

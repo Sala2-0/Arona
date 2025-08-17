@@ -3,6 +3,7 @@ using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using MongoDB.Driver;
 using Arona.ApiModels;
+using Arona.Autocomplete;
 using Arona.Database;
 using Arona.Utility;
 
@@ -12,7 +13,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("clan_monitor_add", "Add a clan to server database")]
     public async Task ClanMonitorAddAsync(
-        [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag to add", AutocompleteProviderType = typeof(ClanSearch))] string clanIdAndRegion)
+        [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag to add", AutocompleteProviderType = typeof(ClanAutocomplete))] string clanIdAndRegion)
     {
         var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
 
@@ -34,7 +35,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
 
         long clanIdParsed = long.Parse(clanId);
 
-        var guild = await Program.GuildCollection.Find(g => g.Id == guildId).FirstOrDefaultAsync();
+        var guild = await Program.Collections.Guilds.Find(g => g.Id == guildId).FirstOrDefaultAsync();
 
         // Om guild inte finns, skapa en ny
         if (guild == null)
@@ -44,7 +45,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
                 Id = guildId,
                 ChannelId = channelId
             };
-            await Program.GuildCollection!.InsertOneAsync(guild);
+            await Program.Collections.Guilds.InsertOneAsync(guild);
         }
 
         if (guild.Clans.Contains(clanIdParsed))
@@ -67,13 +68,13 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
             var globalRank = JsonSerializer.Deserialize<LadderStructure[]>(results[1]);
             var regionRank = JsonSerializer.Deserialize<LadderStructure[]>(results[2]);
 
-            var dbClan = await Program.ClanCollection.Find(c => c.Id == clanIdParsed).FirstOrDefaultAsync();
+            var dbClan = await Program.Collections.Clans.Find(c => c.Id == clanIdParsed).FirstOrDefaultAsync();
 
             if (dbClan is not null)
             {
                 dbClan.Guilds.Add(guild.Id);
 
-                var clanRes = await Program.ClanCollection!.ReplaceOneAsync(
+                var clanRes = await Program.Collections.Clans.ReplaceOneAsync(
                     c => c.Id == clanIdParsed,
                     dbClan
                 );
@@ -86,7 +87,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
             }
             else
             {
-                await Program.ClanCollection!.InsertOneAsync(
+                await Program.Collections.Clans.InsertOneAsync(
                     new Database.Clan 
                     {
                         Id = clanIdParsed,
@@ -129,7 +130,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
 
             guild.Clans.Add(clanIdParsed);
 
-            var guildRes = await Program.GuildCollection!.ReplaceOneAsync(
+            var guildRes = await Program.Collections.Guilds.ReplaceOneAsync(
                 g => g.Id == guild.Id,
                 guild
             );
@@ -153,7 +154,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
     
     [SlashCommand("clan_monitor_remove", "Remove a clan from server database")]
     public async Task ClanMonitorRemoveAsync(
-        [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag to remove", AutocompleteProviderType = typeof(ClanRemoveSearch))] string clanId)
+        [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag to remove", AutocompleteProviderType = typeof(ClanRemoveAutocomplete))] string clanId)
     {
         var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
 
@@ -174,8 +175,8 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
 
         long clanIdParsed = long.Parse(clanId);
 
-        var guild = await Program.GuildCollection!.Find(g => g.Id == guildId).FirstOrDefaultAsync();
-        var clan = await Program.ClanCollection!.Find(c => c.Id == clanIdParsed).FirstOrDefaultAsync();
+        var guild = await Program.Collections.Guilds.Find(g => g.Id == guildId).FirstOrDefaultAsync();
+        var clan = await Program.Collections.Clans.Find(c => c.Id == clanIdParsed).FirstOrDefaultAsync();
 
         if (clan == null)
         {
@@ -190,11 +191,11 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         clan.Guilds.Remove(guildId);
 
         if (clan.Guilds.Count == 0)
-            await Program.ClanCollection!.DeleteOneAsync(c => c.Id == clanIdParsed);
+            await Program.Collections.Clans.DeleteOneAsync(c => c.Id == clanIdParsed);
         else
-            await Program.ClanCollection!.ReplaceOneAsync(c => c.Id == clanIdParsed, clan);
+            await Program.Collections.Clans.ReplaceOneAsync(c => c.Id == clanIdParsed, clan);
 
-        var res = await Program.GuildCollection!.ReplaceOneAsync(g => g.Id == guildId, guild);
+        var res = await Program.Collections.Guilds.ReplaceOneAsync(g => g.Id == guildId, guild);
 
         if (!res.IsAcknowledged)
         {
@@ -213,7 +214,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         string? guildName = Context.Interaction.Guild?.Name;
         string? guildId = Context.Interaction.GuildId.ToString();
 
-        Guild? guild = await Program.GuildCollection!.Find(g => g.Id == guildId).FirstOrDefaultAsync();
+        Guild? guild = await Program.Collections.Guilds.Find(g => g.Id == guildId).FirstOrDefaultAsync();
 
         if (guild == null)
         {
@@ -233,7 +234,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
 
         foreach (var clanId in guild.Clans)
         {
-            var clan = await Program.ClanCollection.Find(c => c.Id == clanId).FirstOrDefaultAsync();
+            var clan = await Program.Collections.Clans.Find(c => c.Id == clanId).FirstOrDefaultAsync();
 
             clans.Add($"`[{clan.ClanTag}] {clan.ClanName}` " +
                       $"({ClanSearchStructure.GetRegionCode(clan.Region)})");

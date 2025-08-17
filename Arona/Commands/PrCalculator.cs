@@ -2,6 +2,7 @@
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
+using Arona.Autocomplete;
 using Arona.Utility;
 
 namespace Arona.Commands;
@@ -10,7 +11,7 @@ public class PrCalculator : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("pr_calculator", "Calculate PR of any ship")]
     public async Task PrCalculatorAsync(
-        [SlashCommandParameter(Name = "ship", Description = "The ship to calculate PR for", AutocompleteProviderType = typeof(ShipSearch))] string selectedShipId,
+        [SlashCommandParameter(Name = "ship", Description = "The ship to calculate PR for", AutocompleteProviderType = typeof(ShipAutocomplete))] string selectedShipId,
         [SlashCommandParameter(Name = "damage", Description = "Damage dealt")] int damage,
         [SlashCommandParameter(Name = "kills", Description = "Number of kills", MinValue = 0, MaxValue = 12)] int kills,
         [SlashCommandParameter(Name = "victory", Description = "Win or loss", ChoicesProviderType = typeof(Victory))] string victory

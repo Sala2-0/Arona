@@ -10,3 +10,4 @@ Arona/Config/config.json
 Arona/Properties/PublishProfiles/FolderProfile.pubxml.user
 Arona/Properties/PublishProfiles/FolderProfile.pubxml
 /.idea
+*.user

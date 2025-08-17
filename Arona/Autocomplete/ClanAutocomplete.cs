@@ -2,10 +2,11 @@
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
+using Arona.Utility;
 
-namespace Arona.Utility;
+namespace Arona.Autocomplete;
 
-internal class ClanSearch: IAutocompleteProvider<AutocompleteInteractionContext>
+internal class ClanAutocomplete: IAutocompleteProvider<AutocompleteInteractionContext>
 {
     public ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(
         ApplicationCommandInteractionDataOption option,

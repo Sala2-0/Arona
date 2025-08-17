@@ -3,9 +3,9 @@ using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 
-namespace Arona.Utility;
+namespace Arona.Autocomplete;
 
-internal class ShipSearch : IAutocompleteProvider<AutocompleteInteractionContext>
+internal class ShipAutocomplete : IAutocompleteProvider<AutocompleteInteractionContext>
 {
     public ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(
         ApplicationCommandInteractionDataOption option,

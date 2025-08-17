@@ -9,6 +9,7 @@ using NetCord.Hosting.Services;
 using NetCord.Hosting.Services.ApplicationCommands;
 using MongoDB.Driver;
 using Arona.Config;
+using Arona.Database;
 using Arona.Utility;
 
 namespace Arona;
@@ -18,8 +19,7 @@ internal class Program
     // Kastar en TypeInitializationException med JsonException om config.json inte är korrekt konfigurerat
     public static readonly BotConfig Config = JsonSerializer.Deserialize<BotConfig>(BotConfig.GetConfigFilePath())!;
     public static MongoClient DatabaseClient = new(Config.Database);
-    public static IMongoCollection<Database.Guild>? GuildCollection { get; private set; }
-    public static IMongoCollection<Database.Clan>? ClanCollection { get; private set; }
+    public static Collections Collections;
     public static GatewayClient? Client { get; private set; }
     public static bool UpdateProgress { get; set; } = false;
     public static readonly List<string> ActiveWrites = [];
@@ -31,7 +31,7 @@ internal class Program
             .AddDiscordGateway(options =>
             {
                 options.Token = Debugger.IsAttached
-                    ? Config.DevToken // Använd Config.DevToken för utvecklingsläge
+                    ? Config.DevToken
                     : Config.Token;
             })
             .AddApplicationCommands();
@@ -46,10 +46,12 @@ internal class Program
             ? "Arona_dev"
             : "Arona";
 
-        GuildCollection = DatabaseClient.GetDatabase(dbName)
-            .GetCollection<Database.Guild>("Guilds");
-        ClanCollection = DatabaseClient.GetDatabase(dbName)
-            .GetCollection<Database.Clan>("Clans");
+        Collections = new Collections
+        {
+            Clans = DatabaseClient.GetDatabase(dbName).GetCollection<Database.Clan>("Clans"),
+            Guilds = DatabaseClient.GetDatabase(dbName).GetCollection<Database.Guild>("Guilds"),
+            Users = DatabaseClient.GetDatabase(dbName).GetCollection<Database.User>("Users")
+        };
 
         // Varje minut, hämta API och kolla klan aktiviteter
         Timer clanMonitorTask = new(60000); // 300000

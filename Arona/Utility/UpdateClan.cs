@@ -16,7 +16,7 @@ internal class UpdateClan
 
         var client = new HttpClient();
 
-        foreach (var dbClan in await Program.ClanCollection!.Find(_ => true).ToListAsync())
+        foreach (var dbClan in await Program.Collections.Clans.Find(_ => true).ToListAsync())
         {
             List<string> channelIds = [];
 
@@ -24,7 +24,7 @@ internal class UpdateClan
             {
                 foreach (var guildId in dbClan.Guilds.ToList())
                 {
-                    var guild = await Program.GuildCollection!.Find(g => g.Id == guildId).FirstOrDefaultAsync();
+                    var guild = await Program.Collections.Guilds.Find(g => g.Id == guildId).FirstOrDefaultAsync();
                     if (guild != null) channelIds.Add(guild.ChannelId);
                     else dbClan.Guilds.Remove(guildId);
                 }
@@ -85,7 +85,7 @@ internal class UpdateClan
                 {
                     foreach (var guildId in dbClan.Guilds)
                     {
-                        var guild = await Program.GuildCollection!.Find(g => g.Id == guildId).FirstOrDefaultAsync();
+                        var guild = await Program.Collections.Guilds.Find(g => g.Id == guildId).FirstOrDefaultAsync();
                         if (guild == null) continue;
 
                         dbClan.SessionEndTime = GetEndSession(primeTime);
@@ -281,9 +281,9 @@ internal class UpdateClan
                 }
 
                 if (dbClan.Guilds.Count == 0)
-                    await Program.ClanCollection.DeleteOneAsync(c => c.Id == dbClan.Id);
+                    await Program.Collections.Clans.DeleteOneAsync(c => c.Id == dbClan.Id);
                 else
-                    await Program.ClanCollection.ReplaceOneAsync(
+                    await Program.Collections.Clans.ReplaceOneAsync(
                         filter: c => c.Id == dbClan.Id,
                         replacement: dbClan
                     );

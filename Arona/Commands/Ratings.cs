@@ -20,7 +20,7 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
 
         await deferredMessage.SendAsync();
 
-        HttpClient client = new HttpClient();
+        using HttpClient client = new HttpClient();
         string[] split = clanIdAndRegion.Split('|');
         string region = split[1];
         string clanId = split[0];

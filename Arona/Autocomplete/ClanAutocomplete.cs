@@ -12,7 +12,7 @@ internal class ClanAutocomplete: IAutocompleteProvider<AutocompleteInteractionCo
         ApplicationCommandInteractionDataOption option,
         AutocompleteInteractionContext context)
     {
-        HttpClient client = new HttpClient();
+        using HttpClient client = new HttpClient();
         
         var input = option.Value ?? string.Empty;
         

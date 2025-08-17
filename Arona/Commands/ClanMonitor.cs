@@ -27,7 +27,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
 
         Program.ActiveWrites.Add(guildId);
 
-        var client = new HttpClient();
+        using var client = new HttpClient();
 
         string[] split = clanIdAndRegion.Split('|');
         string region = split[1];

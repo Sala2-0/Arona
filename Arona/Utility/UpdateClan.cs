@@ -14,7 +14,7 @@ internal class UpdateClan
     {
         Program.UpdateProgress = true;
 
-        var client = new HttpClient();
+        using var client = new HttpClient();
 
         foreach (var dbClan in await Program.Collections.Clans.Find(_ => true).ToListAsync())
         {

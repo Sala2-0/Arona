@@ -33,7 +33,7 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
             return;
         }
 
-        HttpClient client = new HttpClient();
+        using HttpClient client = new HttpClient();
         string apiUrl = LadderStructure.GetApiGeneralUrl(league, division, realm);
 
         if (leaderboardType == "ratings")

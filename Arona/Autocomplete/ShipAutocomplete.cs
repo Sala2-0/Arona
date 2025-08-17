@@ -11,7 +11,7 @@ internal class ShipAutocomplete : IAutocompleteProvider<AutocompleteInteractionC
         ApplicationCommandInteractionDataOption option,
         AutocompleteInteractionContext context)
     {
-        HttpClient client = new HttpClient();
+        using HttpClient client = new HttpClient();
 
         var input = option.Value ?? string.Empty;
 

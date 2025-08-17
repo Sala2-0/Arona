@@ -19,7 +19,7 @@ public class PrimeTime : ApplicationCommandModule<ApplicationCommandContext>
 
         await deferredMessage.SendAsync();
 
-        HttpClient client = new HttpClient();
+        using HttpClient client = new HttpClient();
         
         var split = clanIdAndRegion.Split('|');
         string region = split[1];

@@ -17,7 +17,7 @@ public class PrCalculator : ApplicationCommandModule<ApplicationCommandContext>
         [SlashCommandParameter(Name = "victory", Description = "Win or loss", ChoicesProviderType = typeof(Victory))] string victory
         )
     {
-        HttpClient client = new HttpClient();
+        using HttpClient client = new HttpClient();
         var res = client.GetAsync("https://ntt-community.com/api/ships").Result.Content.ReadAsStringAsync().Result;
         JsonElement doc = JsonDocument.Parse(res).RootElement;
         JsonElement? targetShip = null;

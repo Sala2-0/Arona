@@ -1,7 +1,6 @@
 ﻿using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using MongoDB.Driver;
 using Arona.Database;
 using Arona.Utility;
 
@@ -16,7 +15,7 @@ internal class ClanRemoveAutocomplete : IAutocompleteProvider<AutocompleteIntera
     {
         string guildId = context.Interaction.GuildId.ToString()!;
 
-        var guild = Program.Collections.Guilds.Find(g => g.Id == guildId).FirstOrDefault();
+        var guild = Collections.Guilds.FindOne(g => g.Id == guildId);
 
         if (guild == null)
             return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>([
@@ -32,7 +31,7 @@ internal class ClanRemoveAutocomplete : IAutocompleteProvider<AutocompleteIntera
 
         foreach (long clanId in guild.Clans)
         {
-            Clan dbClan = Program.Collections.Clans.Find(c => c.Id == clanId).FirstOrDefault();
+            Clan dbClan = Collections.Clans.FindOne(c => c.Id == clanId);
             
             clans.Add(dbClan);
         }

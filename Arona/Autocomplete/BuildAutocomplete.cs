@@ -1,7 +1,7 @@
 ﻿using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using MongoDB.Driver;
+using Arona.Database;
 
 namespace Arona.Autocomplete;
 
@@ -13,7 +13,7 @@ internal class BuildAutocomplete : IAutocompleteProvider<AutocompleteInteraction
     {
         var guildId = context.Interaction.GuildId.ToString();
 
-        var guild = Program.Collections.Guilds.Find(g => g.Id == guildId).FirstOrDefault();
+        var guild = Collections.Guilds.FindOne(g => g.Id == guildId);
 
         if (guild == null || guild.Builds.Count == 0)
         {

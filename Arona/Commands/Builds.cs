@@ -1,7 +1,7 @@
 ﻿using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using MongoDB.Driver;
+using LiteDB;
 using Arona.Autocomplete;
 using Arona.Database;
 using Arona.Utility;
@@ -23,7 +23,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
 
         await Program.WaitForUpdateAsync();
 
-        var guild = await Program.Collections.Guilds.Find(g => g.Id == Context.Interaction.GuildId.ToString()).FirstOrDefaultAsync();
+        var guild = Collections.Guilds.FindOne(g => g.Id == Context.Interaction.GuildId.ToString());
 
         if (guild == null)
         {
@@ -32,7 +32,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
                 Id = Context.Interaction.GuildId.ToString()!,
                 ChannelId = Context.Interaction.Channel.Id.ToString()
             };
-            await Program.Collections.Guilds.InsertOneAsync(guild);
+            Collections.Guilds.Insert(guild);
         }
 
         if (guild.Builds.Count >= 25)
@@ -48,6 +48,20 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
             await deferredMessage.EditAsync($"❌ Build with name `{name}` already exists.");
             return;
         }
+        
+        using var client = new HttpClient();
+        
+        string body = $"{{\"link\":\"{link}\"}}";
+        using var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
+        content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+
+        var response = await client.PostAsync("http://localhost:3000/verify", content);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            await deferredMessage.EditAsync("❌ Invalid build link!");
+            return;
+        }
 
         guild.Builds.Add(new Build
         {
@@ -58,13 +72,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
             Color = color?.TrimStart('#')
         });
 
-        var res = await Program.Collections.Guilds.ReplaceOneAsync(g => g.Id == guild.Id, guild);
-
-        if (!res.IsAcknowledged)
-        {
-            await deferredMessage.EditAsync("❌ Error adding build to database.");
-            return;
-        }
+        Collections.Guilds.Update(guild);
 
         await deferredMessage.EditAsync($"✅ Added build: `{name}`");
     }
@@ -79,7 +87,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
 
         await Program.WaitForUpdateAsync();
 
-        var guild = await Program.Collections.Guilds.Find(g => g.Id == Context.Interaction.GuildId.ToString()).FirstOrDefaultAsync();
+        var guild = Collections.Guilds.FindOne(g => g.Id == Context.Interaction.GuildId.ToString());
         if (guild == null || guild.Builds.Count == 0)
         {
             await deferredMessage.EditAsync("❌ No builds found in the database.");
@@ -95,25 +103,22 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
 
         guild.Builds.Remove(build);
 
-        var res = await Program.Collections.Guilds.ReplaceOneAsync(g => g.Id == guild.Id, guild);
-        if (!res.IsAcknowledged)
-        {
-            await deferredMessage.EditAsync("❌ Error removing build from database.");
-            return;
-        }
+        var res = Collections.Guilds.Update(guild);
 
         await deferredMessage.EditAsync($"✅ Removed build: `{name}`");
     }
 
     [SlashCommand("builds_get", "Get a build from server database")]
     public async Task BuildsGetAsync(
-        [SlashCommandParameter(Name = "name", Description = "Build name", AutocompleteProviderType = typeof(BuildAutocomplete))] string name)
+        [SlashCommandParameter(Name = "name", Description = "Build name", AutocompleteProviderType = typeof(BuildAutocomplete))] string name,
+        [SlashCommandParameter(Name = "info", Description = "Get metadata or image of the build. Default: Image")] BuildData data = BuildData.Image
+    )
     {
         var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
         
         await deferredMessage.SendAsync();
         
-        var guild = await Program.Collections.Guilds.Find(g => g.Id == Context.Interaction.GuildId.ToString()).FirstOrDefaultAsync();
+        var guild = Collections.Guilds.FindOne(g => g.Id == Context.Interaction.GuildId.ToString());
         if (guild == null || guild.Builds.Count == 0)
         {
             await deferredMessage.EditAsync("❌ No builds found in the database.");
@@ -126,57 +131,60 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
             await deferredMessage.EditAsync($"❌ Build with name `{name}` not found.");
             return;
         }
-        
-        using var client = new HttpClient();
 
-        string body = $"{{\"link\":\"{build.Link}\"}}";
-        using var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
-        content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
-
-        var response = await client.PostAsync("http://localhost:3000/build", content);
-
-        if (!response.IsSuccessStatusCode)
+        if (data == BuildData.Image)
         {
-            await deferredMessage.EditAsync("❌ Invalid build link!");
-            return;
-        }
+            using var client = new HttpClient();
 
-        var embed = new EmbedProperties()
-            .WithTitle(build.Name)
-            .WithFields(
-                new List<EmbedFieldProperties>
-                {
-                    new EmbedFieldProperties()
-                        .WithName("Description")
-                        .WithValue(build.Description ?? "No description")
-                        .WithInline(false),
-                    new EmbedFieldProperties()
-                        .WithName("Link")
-                        .WithValue(build.Link)
-                        .WithInline(false),
-                    new EmbedFieldProperties()
-                        .WithName("Creator")
-                        .WithValue(build.CreatorName)
-                        .WithInline(false)
-                });
+            string body = $"{{\"link\":\"{build.Link}\"}}";
+            using var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
+            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
 
-        if (!string.IsNullOrEmpty(build.Color))
-            embed.WithColor(new Color(Convert.ToInt32(build.Color, 16)));
+            var response = await client.PostAsync("http://localhost:3000/build", content);
+
         
-        string guildId = Context.Interaction.GuildId.ToString()!;
-        string parsedName = build.Name.ToLower().Replace(" ", "_");
-
-        await deferredMessage.EditAsync(embed);
-
-        if (response.Content != null)
-        {
+        
+            string guildId = Context.Interaction.GuildId.ToString()!;
+            string parsedName = build.Name.ToLower().Replace(" ", "_");
+        
             var imageBytes = await response.Content.ReadAsByteArrayAsync();
             using var stream = new MemoryStream(imageBytes);
-
             await deferredMessage.Interaction.SendFollowupMessageAsync(
                 new InteractionMessageProperties()
                     .WithAttachments([new AttachmentProperties($"{guildId}_{parsedName}.png", stream)])
             );
         }
+        else if (data == BuildData.Metadata)
+        {
+            var embed = new EmbedProperties()
+                .WithTitle(build.Name)
+                .WithFields(
+                    new List<EmbedFieldProperties>
+                    {
+                        new EmbedFieldProperties()
+                            .WithName("Description")
+                            .WithValue(build.Description ?? "No description")
+                            .WithInline(false),
+                        new EmbedFieldProperties()
+                            .WithName("Link")
+                            .WithValue(build.Link)
+                            .WithInline(false),
+                        new EmbedFieldProperties()
+                            .WithName("Creator")
+                            .WithValue(build.CreatorName)
+                            .WithInline(false)
+                    });
+
+            if (!string.IsNullOrEmpty(build.Color))
+                embed.WithColor(new Color(Convert.ToInt32(build.Color, 16)));
+            
+            await deferredMessage.EditAsync(embed);
+        }
     }
+    
+    public enum BuildData
+    {
+        Image,
+        Metadata
+    }   
 }

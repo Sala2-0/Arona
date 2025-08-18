@@ -39,7 +39,7 @@ internal class ClanAutocomplete: IAutocompleteProvider<AutocompleteInteractionCo
 
         List<ClanSearchStructure> clans = [];
 
-        var res = client.GetAsync($"https://api.worldofwarships.{region}/wows/clans/list/?application_id={Program.Config!.WgApi}&search={input}")
+        var res = client.GetAsync($"https://api.worldofwarships.{region}/wows/clans/list/?application_id={Config.WgApi}&search={input}")
             .Result.Content.ReadAsStringAsync().Result;
         JsonElement doc = JsonDocument.Parse(res).RootElement.GetProperty("data");
 

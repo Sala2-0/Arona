@@ -4,7 +4,7 @@ obj/
 riderModule.iml
 /_ReSharper.Caches/
 /.vs
-Arona/Config/config.json
+config.json
 /Arona/Database/dist
 /Arona/Database/node_modules
 Arona/Properties/PublishProfiles/FolderProfile.pubxml.user

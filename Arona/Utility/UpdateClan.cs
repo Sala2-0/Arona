@@ -2,9 +2,9 @@
 using System.Text.Json;
 using NetCord;
 using NetCord.Rest;
-using MongoDB.Driver;
 using Arona.ApiModels;
 using Arona.Commands;
+using Arona.Database;
 
 namespace Arona.Utility;
 
@@ -16,7 +16,7 @@ internal class UpdateClan
 
         using var client = new HttpClient();
 
-        foreach (var dbClan in await Program.Collections.Clans.Find(_ => true).ToListAsync())
+        foreach (var dbClan in Collections.Clans.Find(_ => true).ToList())
         {
             List<string> channelIds = [];
 
@@ -24,7 +24,7 @@ internal class UpdateClan
             {
                 foreach (var guildId in dbClan.Guilds.ToList())
                 {
-                    var guild = await Program.Collections.Guilds.Find(g => g.Id == guildId).FirstOrDefaultAsync();
+                    var guild = Collections.Guilds.FindOne(g => g.Id == guildId);
                     if (guild != null) channelIds.Add(guild.ChannelId);
                     else dbClan.Guilds.Remove(guildId);
                 }
@@ -85,10 +85,11 @@ internal class UpdateClan
                 {
                     foreach (var guildId in dbClan.Guilds)
                     {
-                        var guild = await Program.Collections.Guilds.Find(g => g.Id == guildId).FirstOrDefaultAsync();
+                        var guild = Collections.Guilds.FindOne(g => g.Id == guildId);
                         if (guild == null) continue;
 
                         dbClan.SessionEndTime = GetEndSession(primeTime);
+                        Console.WriteLine(dbClan.SessionEndTime);
 
                         await Program.Client.Rest.SendMessageAsync(
                             channelId: ulong.Parse(guild.ChannelId),
@@ -252,7 +253,7 @@ internal class UpdateClan
 
                     if (played)
                     {
-                        dbClan.RecentBattles.Add(new Database.RecentBattle
+                        dbClan.RecentBattles.Add(new RecentBattle
                         {
                             BattleTime = lastBattleUnix,
                             GameResult = msgProp.GameResult,
@@ -281,12 +282,9 @@ internal class UpdateClan
                 }
 
                 if (dbClan.Guilds.Count == 0)
-                    await Program.Collections.Clans.DeleteOneAsync(c => c.Id == dbClan.Id);
+                    Collections.Clans.Delete(dbClan.Id);
                 else
-                    await Program.Collections.Clans.ReplaceOneAsync(
-                        filter: c => c.Id == dbClan.Id,
-                        replacement: dbClan
-                    );
+                    Collections.Clans.Update(dbClan);
             }
             catch (Exception ex)
             {

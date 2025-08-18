@@ -10,17 +10,19 @@ app.post("/verify", async (req, res) => {
     const buildLink: string = req.body.link;
 
     if (!buildLink.includes("share.wowssb.com"))
-        return res.status(400).send("Invalid build link format");
+        return res.status(400).send("Invalid build link");
 
     const page = await browser.newPage();
 
     try {
         await page.goto(buildLink, { timeout: 10000 });
 
-        if (await page.title() !== "WoWs ShipBuilder")
+        const title = await page.title();
+
+        if (title !== "WoWs ShipBuilder")
             return res.status(400).send("Invalid build link");
 
-        return res.status(200);
+        return res.status(200).send();
     }
     catch (error) {
         console.error("Error processing build link:", error);
@@ -42,16 +44,12 @@ app.post("/build", async (req, res) => {
         if (await page.title() !== "WoWs ShipBuilder")
             return res.status(400).send("Invalid build link");
 
-        await page.getByRole('button', { name: 'Share Build Image' }).click();
+        const shareLinkButton = await page.waitForSelector("button:has-text('Share Build Image')", { timeout: 5000 });
+        await shareLinkButton?.click();
 
-        const element = await page.$("#image");
+        const element = await page.waitForSelector("#image", { timeout: 5000 });
 
         const screenshotBuffer = await element?.screenshot({ type: "png" });
-
-        if (!screenshotBuffer) {
-            await browser.close();
-            return res.type("text/plain").send(null);
-        }
 
         res.type("png").send(screenshotBuffer);
     }
@@ -64,4 +62,4 @@ app.post("/build", async (req, res) => {
     }
 });
 
-app.listen(3000);
+app.listen(3000, () => console.log("Server started, port 3000"));

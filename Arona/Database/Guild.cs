@@ -1,20 +1,20 @@
-﻿using MongoDB.Bson.Serialization.Attributes;
+﻿using LiteDB;
 
 namespace Arona.Database;
 
 internal class Guild
 {
     [BsonId] public required string Id { get; set; }
-    [BsonElement("channel_id")] public required string ChannelId { get; set; }
-    [BsonElement("clans")] public List<long> Clans { get; set; } = [];
-    [BsonElement("builds")] public List<Build> Builds { get; set; } = [];
+    [BsonField("channel_id")] public required string ChannelId { get; set; }
+    [BsonField("clans")] public List<long> Clans { get; set; } = [];
+    [BsonField("builds")] public List<Build> Builds { get; set; } = [];
 }
 
 internal class Build
 {
-    [BsonElement("name")] public required string Name { get; set; }
-    [BsonElement("link")] public required string Link { get; set; }
-    [BsonElement("creator_name")] public required string CreatorName { get; set; }
-    [BsonElement("description")] public string? Description { get; set; } = null;
-    [BsonElement("color")] public string? Color { get; set; } = null; // SKALL VARA I HEX-FORMAT
+    [BsonField("name")] public required string Name { get; set; }
+    [BsonField("link")] public required string Link { get; set; }
+    [BsonField("creator_name")] public required string CreatorName { get; set; }
+    [BsonField("description")] public string? Description { get; set; } = null;
+    [BsonField("color")] public string? Color { get; set; } = null; // SKALL VARA I HEX-FORMAT
 }

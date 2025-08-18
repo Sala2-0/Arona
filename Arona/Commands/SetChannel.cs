@@ -44,18 +44,16 @@ public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
                 await deferredMessage.EditAsync($"❌ I don't have permission to send messages in <#{channelIdParsed}>!");
                 return;
             }
-
-            var res = await Program.Collections.Guilds.UpdateOneAsync(
-                g => g.Id == Context.Guild.Id.ToString(),
-                Builders<Guild>.Update.Set(g => g.ChannelId, channelIdParsed.ToString()),
-                new UpdateOptions{ IsUpsert = true }
-            );
-
-            if (!res.IsAcknowledged)
-            {
-                await deferredMessage.EditAsync("❌ Error setting channel in database.");
-                return;
-            }
+            
+            var guildDb = Collections.Guilds.FindOne(g => g.Id == Context.Guild.Id.ToString());
+            if (guildDb == null)
+                Collections.Guilds.Insert(new Guild
+                {
+                    Id = Context.Guild.Id.ToString(),
+                    ChannelId = channelIdParsed.ToString()
+                });
+            else
+                Collections.Guilds.Update(guildDb);
 
             await deferredMessage.EditAsync($"✅ Channel set to <#{channelIdParsed}>");
         }

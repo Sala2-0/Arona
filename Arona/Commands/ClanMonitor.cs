@@ -1,7 +1,6 @@
 ﻿using System.Text.Json;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using MongoDB.Driver;
 using Arona.ApiModels;
 using Arona.Autocomplete;
 using Arona.Database;
@@ -35,7 +34,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
 
         long clanIdParsed = long.Parse(clanId);
 
-        var guild = await Program.Collections.Guilds.Find(g => g.Id == guildId).FirstOrDefaultAsync();
+        var guild = Collections.Guilds.FindOne(g => g.Id == guildId);
 
         // Om guild inte finns, skapa en ny
         if (guild == null)
@@ -45,7 +44,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
                 Id = guildId,
                 ChannelId = channelId
             };
-            await Program.Collections.Guilds.InsertOneAsync(guild);
+            Collections.Guilds.Insert(guild);
         }
 
         if (guild.Clans.Contains(clanIdParsed))
@@ -68,26 +67,17 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
             var globalRank = JsonSerializer.Deserialize<LadderStructure[]>(results[1]);
             var regionRank = JsonSerializer.Deserialize<LadderStructure[]>(results[2]);
 
-            var dbClan = await Program.Collections.Clans.Find(c => c.Id == clanIdParsed).FirstOrDefaultAsync();
+            var dbClan = Collections.Clans.FindOne(c => c.Id == clanIdParsed);
 
             if (dbClan is not null)
             {
                 dbClan.Guilds.Add(guild.Id);
 
-                var clanRes = await Program.Collections.Clans.ReplaceOneAsync(
-                    c => c.Id == clanIdParsed,
-                    dbClan
-                );
-
-                if (!clanRes.IsAcknowledged)
-                {
-                    await deferredMessage.EditAsync("❌ Error saving clan to database.");
-                    return;
-                }
+                Collections.Clans.Update(dbClan);
             }
             else
             {
-                await Program.Collections.Clans.InsertOneAsync(
+                Collections.Clans.Insert(
                     new Database.Clan 
                     {
                         Id = clanIdParsed,
@@ -130,16 +120,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
 
             guild.Clans.Add(clanIdParsed);
 
-            var guildRes = await Program.Collections.Guilds.ReplaceOneAsync(
-                g => g.Id == guild.Id,
-                guild
-            );
-
-            if (!guildRes.IsAcknowledged)
-            {
-                await deferredMessage.EditAsync("❌ Error saving clan to database.");
-                return;
-            }
+            Collections.Guilds.Update(guild);
 
             await deferredMessage.EditAsync($"✅ Added clan: `[{clan.ClanView.Clan.Tag}] {clan.ClanView.Clan.Name}`");
 
@@ -175,8 +156,8 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
 
         long clanIdParsed = long.Parse(clanId);
 
-        var guild = await Program.Collections.Guilds.Find(g => g.Id == guildId).FirstOrDefaultAsync();
-        var clan = await Program.Collections.Clans.Find(c => c.Id == clanIdParsed).FirstOrDefaultAsync();
+        var guild = Collections.Guilds.FindOne(g => g.Id == guildId);
+        var clan = Collections.Clans.FindOne(c => c.Id == clanIdParsed);
 
         if (clan == null)
         {
@@ -191,17 +172,11 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         clan.Guilds.Remove(guildId);
 
         if (clan.Guilds.Count == 0)
-            await Program.Collections.Clans.DeleteOneAsync(c => c.Id == clanIdParsed);
+            Collections.Clans.Delete(clanIdParsed);
         else
-            await Program.Collections.Clans.ReplaceOneAsync(c => c.Id == clanIdParsed, clan);
+            Collections.Clans.Update(clan);
 
-        var res = await Program.Collections.Guilds.ReplaceOneAsync(g => g.Id == guildId, guild);
-
-        if (!res.IsAcknowledged)
-        {
-            await deferredMessage.EditAsync("❌ Error removing clan from database.");
-            return;
-        }
+        Collections.Guilds.Update(guild);
 
         await deferredMessage.EditAsync($"✅ Removed clan: `[{clanTag}] {clanName}`");
 
@@ -214,7 +189,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         string? guildName = Context.Interaction.Guild?.Name;
         string? guildId = Context.Interaction.GuildId.ToString();
 
-        Guild? guild = await Program.Collections.Guilds.Find(g => g.Id == guildId).FirstOrDefaultAsync();
+        Guild? guild = Collections.Guilds.FindOne(g => g.Id == guildId);
 
         if (guild == null)
         {
@@ -234,7 +209,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
 
         foreach (var clanId in guild.Clans)
         {
-            var clan = await Program.Collections.Clans.Find(c => c.Id == clanId).FirstOrDefaultAsync();
+            var clan = Collections.Clans.FindOne(c => c.Id == clanId);
 
             clans.Add($"`[{clan.ClanTag}] {clan.ClanName}` " +
                       $"({ClanSearchStructure.GetRegionCode(clan.Region)})");

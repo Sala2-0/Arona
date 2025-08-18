@@ -11,3 +11,7 @@ Arona/Properties/PublishProfiles/FolderProfile.pubxml.user
 Arona/Properties/PublishProfiles/FolderProfile.pubxml
 /.idea
 *.user
+/Service/node_modules
+*.js
+*.tsbuildinfo
+*.vscode

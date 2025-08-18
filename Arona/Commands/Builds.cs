@@ -2,7 +2,6 @@
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using MongoDB.Driver;
-using Microsoft.Playwright;
 using Arona.Autocomplete;
 using Arona.Database;
 using Arona.Utility;
@@ -128,34 +127,19 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
             return;
         }
         
-        using var playwright = await Playwright.CreateAsync();
-        await using var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions { Headless = true });
-        
-        var page = await browser.NewPageAsync();
-        await page.GotoAsync(build.Link);
-        
-        await Task.Delay(100);
+        using var client = new HttpClient();
 
-        if (await page.TitleAsync() != "WoWs ShipBuilder")
+        string body = $"{{\"link\":\"{build.Link}\"}}";
+        using var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
+        content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+
+        var response = await client.PostAsync("http://localhost:3000/build", content);
+
+        if (!response.IsSuccessStatusCode)
         {
-            await deferredMessage.EditAsync("❌ Not a valid build link!");
+            await deferredMessage.EditAsync("❌ Invalid build link!");
             return;
         }
-        
-        await page.GetByRole(AriaRole.Button, new() { Name = "Share Build Image" }).ClickAsync();
-        
-        await Task.Delay(500);
-        
-        var element = await page.QuerySelectorAsync("#image");
-        
-        await page.Mouse.MoveAsync(0, 0);
-            
-        var screenshotBytes = await element!.ScreenshotAsync(new ElementHandleScreenshotOptions
-        {
-            Type = ScreenshotType.Png
-        });
-        
-        using var stream = new MemoryStream(screenshotBytes);
 
         var embed = new EmbedProperties()
             .WithTitle(build.Name)
@@ -183,9 +167,16 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
         string parsedName = build.Name.ToLower().Replace(" ", "_");
 
         await deferredMessage.EditAsync(embed);
-        await deferredMessage.Interaction.SendFollowupMessageAsync(
-            new InteractionMessageProperties()
-                .WithAttachments([new AttachmentProperties($"{guildId}_{parsedName}.png", stream)])
-        );
+
+        if (response.Content != null)
+        {
+            var imageBytes = await response.Content.ReadAsByteArrayAsync();
+            using var stream = new MemoryStream(imageBytes);
+
+            await deferredMessage.Interaction.SendFollowupMessageAsync(
+                new InteractionMessageProperties()
+                    .WithAttachments([new AttachmentProperties($"{guildId}_{parsedName}.png", stream)])
+            );
+        }
     }
 }

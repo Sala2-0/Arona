@@ -1,6 +1,5 @@
 ﻿using NetCord;
 using NetCord.Services.ApplicationCommands;
-using MongoDB.Driver;
 using Arona.Database;
 using Arona.Utility;
 

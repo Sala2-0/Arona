@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using ConfigSerializer = System.Text.Json.JsonSerializer;
 using Timer = System.Timers.Timer;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;

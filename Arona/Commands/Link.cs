@@ -29,6 +29,7 @@ public class Link : ApplicationCommandModule<ApplicationCommandContext>
         if (user != null)
         {
             user.AccountId = playerId;
+            user.AccountRegion = region;
 
             Collections.Users.Update(user);
         }

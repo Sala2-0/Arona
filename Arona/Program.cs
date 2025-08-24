@@ -6,6 +6,7 @@ using NetCord.Gateway;
 using NetCord.Hosting.Gateway;
 using NetCord.Hosting.Services;
 using NetCord.Hosting.Services.ApplicationCommands;
+using NetCord.Hosting.Services.Commands;
 using LiteDB;
 using Arona.Database;
 using Arona.Utility;
@@ -33,8 +34,10 @@ internal class Program
                 options.Token = Debugger.IsAttached
                     ? Config.DevToken
                     : Config.Token;
+                options.Intents = GatewayIntents.GuildMessages | GatewayIntents.MessageContent | GatewayIntents.GuildUsers | GatewayIntents.Guilds;
             })
-            .AddApplicationCommands();
+            .AddApplicationCommands()
+            .AddCommands(options => options.Prefix = "arona?");
         
         var host = builder.Build();
         host.AddModules(typeof(Program).Assembly);

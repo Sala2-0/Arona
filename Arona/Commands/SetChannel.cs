@@ -52,7 +52,10 @@ public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
                     ChannelId = channelIdParsed.ToString()
                 });
             else
+            {
+                guildDb.ChannelId = channelIdParsed.ToString();
                 Collections.Guilds.Update(guildDb);
+            }
 
             await deferredMessage.EditAsync($"✅ Channel set to <#{channelIdParsed}>");
         }

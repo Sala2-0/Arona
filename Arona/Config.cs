@@ -1,12 +1,13 @@
-﻿using System.Text.Json;
+﻿using System.Diagnostics;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Arona;
 
 internal class Config
 {
-    public static string Token { get; private set; }
-    public static string DevToken { get; private set; }
+    private static string _token;
+    private static string _devToken;
     public static string? ClientId { get; private set; }
     public static string? GuildId { get; private set; }
     public static string WgApi { get; private set; }
@@ -25,8 +26,8 @@ internal class Config
         {
             var instance = JsonSerializer.Deserialize<ConfigInstance>(json);
 
-            Token = instance!.Token;
-            DevToken = instance.DevToken;
+            _token = instance!.Token;
+            _devToken = instance.DevToken;
             ClientId = instance.ClientId;
             GuildId = instance.GuildId;
             WgApi = instance.WgApi;
@@ -37,6 +38,8 @@ internal class Config
             throw new Exception("Failed to parse configuration file. Please ensure it is correctly formatted.", ex);
         }
     }
+    
+    public static string GetToken() => Debugger.IsAttached ? _devToken : _token;
 
     private class ConfigInstance
     {

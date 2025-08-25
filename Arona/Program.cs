@@ -31,13 +31,11 @@ internal class Program
         builder.Services
             .AddDiscordGateway(options =>
             {
-                options.Token = Debugger.IsAttached
-                    ? Config.DevToken
-                    : Config.Token;
+                options.Token = Config.GetToken();
                 options.Intents = GatewayIntents.GuildMessages | GatewayIntents.MessageContent | GatewayIntents.GuildUsers | GatewayIntents.Guilds;
             })
             .AddApplicationCommands()
-            .AddCommands(options => options.Prefix = "arona?");
+            .AddCommands(options => options.Prefix = Debugger.IsAttached ? "?" : "arona?");
         
         var host = builder.Build();
         host.AddModules(typeof(Program).Assembly);

@@ -21,6 +21,10 @@ internal class LadderStructure
     public static string GetApiGeneralUrl(int league, int division, string realm) =>
         $"https://clans.worldofwarships.eu/api/ladder/structure/?league={league}&division={division}&realm={realm}";
 
+    public static string GetUrl(int? season, int league, int division) => season.HasValue
+        ? $"https://clans.worldofwarships.eu/api/ladder/structure/?season={season.Value}&division={division}&league={league}"
+        : $"https://clans.worldofwarships.eu/api/ladder/structure/?division={division}&league={league}";
+
     public static string ConvertRegion(string region) => region switch
     {
         "eu" or "EU" => "eu",

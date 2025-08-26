@@ -1,9 +1,10 @@
-﻿using NetCord;
+﻿using System.Text.Json;
+using NetCord;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.Commands;
+using Arona.ApiModels;
 using Arona.Database;
 using Arona.Utility;
-using NetCord.Rest;
 
 namespace Arona.Commands;
 
@@ -57,7 +58,7 @@ public class OwnerCommands : CommandModule<CommandContext>
     }
 
     [Command("guilds")]
-    public async Task Guilds()
+    public async Task GuildsAsync()
     {
         if (!Owner.Check(Context.User.Id)) return;
 
@@ -67,6 +68,44 @@ public class OwnerCommands : CommandModule<CommandContext>
             message += $"\n`{guild.Name}` (ID: {guild.Id})";
 
         await Context.Message.ReplyAsync(message);
+    }
+
+    [Command("avgsf")]
+    public async Task AverageSuccessFactorAsync(int league = 0, int division = 1, int? season = null)
+    {
+        if (!Owner.Check(Context.User.Id)) return;
+
+        var leagueExponent = Ratings.GetLeagueExponent(league);
+        List<double> sf = new();
+
+        try
+        {
+            using var client = new HttpClient();
+
+            var res = await client.GetAsync(LadderStructure.GetUrl(season, league, division));
+            res.EnsureSuccessStatusCode();
+
+            var data = JsonSerializer.Deserialize<LadderStructure[]>(await res.Content.ReadAsStringAsync());
+
+            foreach (var clan in data!)
+            {
+                var successFactor = SuccessFactor.Calculate(
+                    clan.PublicRating,
+                    clan.BattlesCount,
+                    leagueExponent
+                );
+
+                sf.Add(successFactor);
+            }
+
+            var averageSuccessFactor = sf.Count > 0 ? Math.Round(sf.Average(), 2) : 0;
+            await Context.Message.ReplyAsync($"Genomsnittlig framgångsfaktor (S/F): {averageSuccessFactor}");
+        }
+        catch (Exception ex)
+        {
+            await Context.Message.ReplyAsync($"Något gick fel: {ex.Message}");
+            return;
+        }
     }
 }
 

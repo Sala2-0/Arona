@@ -31,6 +31,10 @@ internal class WowsLadder
     [JsonPropertyName("ratings")] public List<Rating> Ratings { get; set; } = [];
     [JsonPropertyName("season_number")] public int SeasonNumber { get; set; }
     [JsonPropertyName("last_battle_at")] public string LastBattleAt { get; set; }
+    [JsonPropertyName("league")] public int League { get; set; }
+    [JsonPropertyName("division")] public int Division { get; set; }
+    [JsonPropertyName("division_rating")] public int DivisionRating { get; set; }
+    [JsonPropertyName("leading_team_number")] public int LeadingTeamNumber { get; set; }
 }
 
 internal class Rating

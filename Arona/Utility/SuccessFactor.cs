@@ -9,6 +9,6 @@ public static class SuccessFactor
         int normalizedRating = rating - 1000;
         int battles = Math.Max(battlesCount, 1);
 
-        return (Math.Pow(normalizedRating, leagueExponent) / 15) * ((double)normalizedRating / battles) / 10;
+        return Math.Round((Math.Pow(normalizedRating, leagueExponent) / 15) * ((double)normalizedRating / battles) / 10, 2);
     }
 }

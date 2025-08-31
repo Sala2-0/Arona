@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using NetCord;
+using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.Commands;
 using Arona.ApiModels;
@@ -24,6 +25,8 @@ public class OwnerCommands : CommandModule<CommandContext>
 
         var guilds = Collections.Guilds.FindAll().ToList();
 
+        var attachments = Context.Message.Attachments;
+
         foreach (var guild in guilds)
         {
             try
@@ -44,10 +47,31 @@ public class OwnerCommands : CommandModule<CommandContext>
                     continue;
                 }
 
-                await Program.Client!.Rest.SendMessageAsync(
-                    channelId: parsedChannelId,
-                    message: content
-                );
+                if (attachments.Count > 0)
+                {
+                    using var client = new HttpClient();
+                    var files = new List<AttachmentProperties>();
+
+                    foreach (var a in attachments)
+                    {
+                        var data = await client.GetByteArrayAsync(a.Url);
+                        files.Add(new AttachmentProperties(a.FileName, new MemoryStream(data)));
+                    }
+
+                    var msgProperties = new MessageProperties()
+                        .WithContent(content)
+                        .WithAttachments(files);
+
+                    await Program.Client.Rest.SendMessageAsync(
+                        channelId: parsedChannelId,
+                        message: msgProperties
+                    );
+                }
+                else
+                    await Program.Client.Rest.SendMessageAsync(
+                        channelId: parsedChannelId,
+                        message: content
+                    );
             }
             // Arona har inte tillgång/kan inte se kanalen
             catch (Exception ex)

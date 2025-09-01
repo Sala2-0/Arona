@@ -2,10 +2,10 @@
 
 internal class ClanSearchStructure(string clanTag, string clanName, string clanId, string region)
 {
-    public string ClanTag = clanTag;
-    public string ClanName = clanName;
-    public string ClanId = clanId;
-    public string Region = region;
+    public string ClanTag { get; } = clanTag;
+    public string ClanName { get; } = clanName;
+    public string ClanId { get; } = clanId;
+    public string Region { get; } = region;
 
     public static string GetRegionCode(string region) => region switch
     {

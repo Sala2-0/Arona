@@ -18,7 +18,7 @@ internal class DeferredMessage
         await Interaction.ModifyResponseAsync(options => options.Embeds = [embed]);
 }
 
-internal class PrivateMessage
+internal static class PrivateMessage
 {
     public static async Task NoAccessMessage(ulong guildId, string channelId)
     {

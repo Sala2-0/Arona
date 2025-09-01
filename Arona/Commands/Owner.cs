@@ -138,7 +138,7 @@ public class OwnerAppCommands : ApplicationCommandModule<ApplicationCommandConte
 
 }
 
-internal class Owner
+internal static class Owner
 {
     internal static bool Check(ulong userId) => userId == 1203783301580460032;
 }

@@ -8,7 +8,7 @@ using Arona.Database;
 
 namespace Arona.Utility;
 
-internal class UpdateClan
+internal static class UpdateClan
 {
     public static async Task UpdateClansAsync()
     {

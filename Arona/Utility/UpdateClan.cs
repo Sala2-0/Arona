@@ -25,8 +25,11 @@ internal static class UpdateClan
                 foreach (var guildId in dbClan.Guilds.ToList())
                 {
                     var guild = Collections.Guilds.FindOne(g => g.Id == guildId);
-                    if (guild != null) channelIds.Add(guild.ChannelId);
-                    else dbClan.Guilds.Remove(guildId);
+
+                    if (guild == null || !guild.Clans.Exists(clanId => clanId == dbClan.Id))
+                        dbClan.Guilds.Remove(guildId);
+                    else
+                        channelIds.Add(guild.ChannelId);
                 }
 
                 long currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();

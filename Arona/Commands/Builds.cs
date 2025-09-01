@@ -21,7 +21,12 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
 
         await deferredMessage.SendAsync();
 
+        string guildId = Context.Interaction.GuildId.ToString()!;
+
+        await Program.WaitForWriteAsync(guildId);
         await Program.WaitForUpdateAsync();
+
+        Program.ActiveWrites.Add(guildId);
 
         var guild = Collections.Guilds.FindOne(g => g.Id == Context.Interaction.GuildId.ToString());
 
@@ -75,6 +80,8 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
         Collections.Guilds.Update(guild);
 
         await deferredMessage.EditAsync($"✅ Added build: `{name}`");
+
+        Program.ActiveWrites.Remove(guildId);
     }
 
     [SlashCommand("builds_remove", "Remove a build from server database")]
@@ -85,7 +92,12 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
 
         await deferredMessage.SendAsync();
 
+        string guildId = Context.Interaction.GuildId.ToString()!;
+
+        await Program.WaitForWriteAsync(guildId);
         await Program.WaitForUpdateAsync();
+
+        Program.ActiveWrites.Add(guildId);
 
         var guild = Collections.Guilds.FindOne(g => g.Id == Context.Interaction.GuildId.ToString());
         if (guild == null || guild.Builds.Count == 0)
@@ -106,6 +118,8 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
         var res = Collections.Guilds.Update(guild);
 
         await deferredMessage.EditAsync($"✅ Removed build: `{name}`");
+
+        Program.ActiveWrites.Remove(guildId);
     }
 
     [SlashCommand("builds_get", "Get a build from server database")]

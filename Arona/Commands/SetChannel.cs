@@ -15,7 +15,12 @@ public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
 
         await deferredMessage.SendAsync();
 
+        string guildId = Context.Interaction.GuildId.ToString()!;
+
+        await Program.WaitForWriteAsync(guildId);
         await Program.WaitForUpdateAsync();
+
+        Program.ActiveWrites.Add(guildId);
 
         try
         {
@@ -58,6 +63,8 @@ public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
             }
 
             await deferredMessage.EditAsync($"✅ Channel set to <#{channelIdParsed}>");
+
+            Program.ActiveWrites.Remove(guildId);
         }
         catch (Exception ex)
         {

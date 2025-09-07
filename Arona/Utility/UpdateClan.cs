@@ -12,6 +12,9 @@ internal static class UpdateClan
 {
     public static async Task UpdateClansAsync()
     {
+        await Program.WaitForWriteAsync();
+        await Program.WaitForUpdateAsync();
+
         Program.UpdateProgress = true;
 
         using var client = new HttpClient();

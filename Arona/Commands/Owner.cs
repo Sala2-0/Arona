@@ -1,8 +1,9 @@
-﻿using System.Text.Json;
+﻿using JsonSerializer = System.Text.Json.JsonSerializer;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.Commands;
+using LiteDB;
 using Arona.ApiModels;
 using Arona.Database;
 using Arona.Utility;
@@ -129,6 +130,44 @@ public class OwnerCommands : CommandModule<CommandContext>
         {
             await Context.Message.ReplyAsync($"Något gick fel: {ex.Message}");
             return;
+        }
+    }
+
+    [Command("dbcopy")]
+    public async Task DBCopyAsync()
+    {
+        if (!Owner.Check(Context.User.Id)) return;
+
+        await Program.WaitForWriteAsync();
+        await Program.WaitForUpdateAsync();
+
+        Program.UpdateProgress = true;
+
+        try
+        {
+            Program.DB.Dispose();
+
+            await using var fileStream = File.OpenRead(Config.Database);
+            using var memoryStream = new MemoryStream();
+
+            await fileStream.CopyToAsync(memoryStream);
+
+            memoryStream.Position = 0;
+
+            await Context.Message.ReplyAsync(new ReplyMessageProperties()
+                .WithAttachments([new AttachmentProperties("data.db", memoryStream)])
+            );
+        }
+        catch (Exception ex)
+        {
+            await Context.Message.ReplyAsync($"Något gick fel: {ex.Message}");
+        }
+        finally
+        {
+            Program.DB = new LiteDatabase(Path.Combine(AppContext.BaseDirectory, "Arona_DB.db"));
+            Collections.Initialize(Program.DB);
+
+            Program.UpdateProgress = false;
         }
     }
 }

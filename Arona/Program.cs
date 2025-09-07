@@ -15,7 +15,7 @@ namespace Arona;
 
 internal class Program
 {
-    public static LiteDatabase DB;
+    public static LiteDatabase DB { get; set; }
     public static GatewayClient? Client { get; private set; }
     public static bool UpdateProgress { get; set; } = false;
     public static readonly List<string> ActiveWrites = [];
@@ -59,7 +59,7 @@ internal class Program
     public static void Error(Exception ex) =>
         Console.WriteLine("Error: " + ex.Message);
 
-    // Väntar på att UpdateClansAsync slutförs om det pågår en
+    // Väntar på att UpdateClansAsync eller ?dbcopy slutförs om det pågår en
     // Används bara för kommandon som skriver till databasen
     public static async Task WaitForUpdateAsync()
     {
@@ -75,6 +75,17 @@ internal class Program
     public static async Task WaitForWriteAsync(string guildId)
     {
         while (ActiveWrites.Contains(guildId))
+        {
+            Console.WriteLine("Waiting for database write to finish...");
+
+            await Task.Delay(1000);
+        }
+    }
+
+    // Vänta tills alla pågående databasskrivningar är klara
+    public static async Task WaitForWriteAsync()
+    {
+        while (ActiveWrites.Count > 0)
         {
             Console.WriteLine("Waiting for database write to finish...");
 

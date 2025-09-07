@@ -156,6 +156,8 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         if (clanId == "undefined")
         {
             await deferredMessage.EditAsync("❌ No clan selected to remove.");
+
+            Program.ActiveWrites.Remove(guildId);
             return;
         }
 
@@ -167,6 +169,8 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         if (clan == null)
         {
             await deferredMessage.EditAsync("❌ Clan does not exist in database.");
+
+            Program.ActiveWrites.Remove(guildId);
             return;
         }
 

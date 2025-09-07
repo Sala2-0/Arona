@@ -43,14 +43,16 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
         if (guild.Builds.Count >= 25)
         {
             await deferredMessage.EditAsync("❌ Maximum number of builds reached (25).");
+
+            Program.ActiveWrites.Remove(guildId);
             return;
         }
 
-        foreach (var build in guild.Builds)
+        if (guild.Builds.Exists(build => build.Name == name))
         {
-            if (build.Name != name) continue;
-            
             await deferredMessage.EditAsync($"❌ Build with name `{name}` already exists.");
+
+            Program.ActiveWrites.Remove(guildId);
             return;
         }
         
@@ -65,6 +67,8 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
         if (!response.IsSuccessStatusCode)
         {
             await deferredMessage.EditAsync("❌ Invalid build link!");
+
+            Program.ActiveWrites.Remove(guildId);
             return;
         }
 
@@ -103,6 +107,8 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
         if (guild == null || guild.Builds.Count == 0)
         {
             await deferredMessage.EditAsync("❌ No builds found in the database.");
+
+            Program.ActiveWrites.Remove(guildId);
             return;
         }
 
@@ -110,6 +116,8 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
         if (build == null)
         {
             await deferredMessage.EditAsync($"❌ Build `{name}` not found.");
+
+            Program.ActiveWrites.Remove(guildId);
             return;
         }
 

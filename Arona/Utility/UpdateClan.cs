@@ -18,6 +18,12 @@ internal static class UpdateClan
 
         foreach (var dbClan in Collections.Clans.Find(_ => true).ToList())
         {
+            if (dbClan.Guilds.Count == 0)
+            {
+                Collections.Clans.Delete(dbClan.Id);
+                continue;
+            }
+
             List<string> channelIds = [];
 
             try
@@ -115,26 +121,18 @@ internal static class UpdateClan
                                 Stage = null, // Stage skall vara null när ny säsong startas
                                 BattlesCount = r.BattlesCount
                             }).ToList();
-                    
-                    Program.UpdateProgress = false;
-                    return;
+
+                    Collections.Clans.Update(dbClan);
+                    continue;
                 }
 
                 if (dbClan.PrimeTime.Active == null && primeTime != null)
                 {
-                    foreach (var guildId in dbClan.Guilds)
-                    {
-                        var guild = Collections.Guilds.FindOne(g => g.Id == guildId);
-                        if (guild == null) continue;
-
-                        dbClan.SessionEndTime = GetEndSession(primeTime);
-                        Console.WriteLine(dbClan.SessionEndTime);
-
+                    foreach (var channel in channelIds)
                         await Program.Client.Rest.SendMessageAsync(
-                            channelId: ulong.Parse(guild.ChannelId),
+                            channelId: ulong.Parse(channel),
                             message: $"`[{tag}] {name} has started playing`"
                         );
-                    }
                 }
                 dbClan.PrimeTime.Active = primeTime;
                 dbClan.PrimeTime.Planned = plannedPrimeTime;
@@ -308,10 +306,7 @@ internal static class UpdateClan
                     } : null;
                 }
 
-                if (dbClan.Guilds.Count == 0)
-                    Collections.Clans.Delete(dbClan.Id);
-                else
-                    Collections.Clans.Update(dbClan);
+                Collections.Clans.Update(dbClan);
             }
             catch (Exception ex)
             {

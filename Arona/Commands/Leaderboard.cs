@@ -33,27 +33,27 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
             return;
         }
 
-        using HttpClient client = new HttpClient();
+        using HttpClient client = new();
         string apiUrl = LadderStructure.GetApiGeneralUrl(league, division, realm);
 
-        if (leaderboardType == "ratings")
+        try
         {
-            try
+            var res = await client.GetAsync(apiUrl);
+
+            var structure = JsonSerializer.Deserialize<LadderStructure[]>(await res.Content.ReadAsStringAsync());
+
+            if (structure == null || structure.Length == 0)
             {
-                var res = await client.GetAsync(apiUrl);
+                await deferredMessage.EditAsync("❌ No data found for the specified league and division.");
+                return;
+            }
 
-                var structure = JsonSerializer.Deserialize<LadderStructure[]>(await res.Content.ReadAsStringAsync());
-
-                if (structure == null || structure.Length == 0)
-                {
-                    await deferredMessage.EditAsync("❌ No data found for the specified league and division.");
-                    return;
-                }
-
+            if (leaderboardType == "ratings")
+            {
                 var embed = new EmbedProperties()
                     .WithTitle(
                         $"Leaderboard - {Ratings.GetLeague(league)} {Ratings.GetDivision(division)} ({LadderStructure.ConvertRealm(realm)}) [Ratings]")
-                    .WithColor(new Color(Convert.ToInt32(Ratings.GetLeagueColor(league), 16)));
+                    .WithColor(new Color(Convert.ToInt32(Ratings.GetLeagueColor(league).TrimStart('#'), 16)));
 
                 var fields = new List<EmbedFieldProperties>();
 
@@ -71,27 +71,9 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
 
                 await Context.Interaction.ModifyResponseAsync(options => options.Embeds = [embed]);
             }
-            catch (Exception ex)
-            {
-                Program.Error(ex);
-                await deferredMessage.EditAsync("❌ Error fetching leaderboard data from API.");
-            }
-        }
-        
-        else if (leaderboardType == "success_factor")
-        {
-            try
-            {
-                var res = await client.GetAsync(apiUrl);
 
-                var structure = JsonSerializer.Deserialize<LadderStructure[]>(await res.Content.ReadAsStringAsync());
-
-                if (structure == null || structure.Length == 0)
-                {
-                    await deferredMessage.EditAsync("❌ No data found for the specified league and division.");
-                    return;
-                }
-            
+            else if (leaderboardType == "success_factor")
+            {
                 foreach (var clan in structure)
                 {
                     clan.SuccessFactor = Math.Round(
@@ -113,7 +95,7 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
                 {
                     var clan = sortedStructure[i];
                     var successFactor = clan.SuccessFactor?.ToString(CultureInfo.InvariantCulture);
-                
+
                     fields.Add(
                         new EmbedFieldProperties()
                             .WithName($"**#{i + 1}** ({LadderStructure.ConvertRealm(clan.Realm)}) `[{clan.Tag}]` ({clan.DivisionRating}) `S/F: {successFactor}` `BTL: {clan.BattlesCount}`")
@@ -121,14 +103,14 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
                 }
 
                 embed.WithFields(fields);
-            
+
                 await deferredMessage.EditAsync(embed);
             }
-            catch (Exception ex)
-            {
-                Program.Error(ex);
-                await deferredMessage.EditAsync("❌ Error fetching leaderboard data from API.");
-            }
+        }
+        catch (Exception ex)
+        {
+            Program.Error(ex);
+            await deferredMessage.EditAsync("❌ Error fetching leaderboard data from API.");
         }
     }
 }

@@ -15,6 +15,7 @@ internal class Clan
     [BsonField("region_rank")] public required int RegionRank { get; set; }
     [BsonField("guilds")] public required List<string> Guilds { get; set; } = []; // Guild IDs
     [BsonField("session_end_time")] public required long? SessionEndTime { get; set; } = null;
+    [BsonField("season_number")] public required int SeasonNumber { get; set; }
 }
 
 internal class RecentBattle
@@ -27,18 +28,19 @@ internal class RecentBattle
 
 internal class PrimeTime
 {
-    [BsonField("planned")] public int? Planned { get; set; }
-    [BsonField("active")] public int? Active { get; set; }
+    [BsonField("planned")] public required int? Planned { get; set; }
+    [BsonField("active")] public required int? Active { get; set; }
 }
 
 internal class Rating
 {
-    [BsonField("team_number")] public int TeamNumber { get; set; }
-    [BsonField("league")] public int League { get; set; }
-    [BsonField("division")] public int Division { get; set; }
-    [BsonField("division_rating")] public int DivisionRating { get; set; }
-    [BsonField("public_rating")] public int PublicRating { get; set; }
-    [BsonField("stage")] public Stage? Stage { get; set; }
+    [BsonField("team_number")] public required int TeamNumber { get; set; }
+    [BsonField("league")] public required int League { get; set; }
+    [BsonField("division")] public required int Division { get; set; }
+    [BsonField("division_rating")] public required int DivisionRating { get; set; }
+    [BsonField("public_rating")] public required int PublicRating { get; set; }
+    [BsonField("stage")] public required Stage? Stage { get; set; }
+    [BsonField("battles_count")] public required int BattlesCount { get; set; }
 }
 
 internal class Stage

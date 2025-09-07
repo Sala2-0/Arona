@@ -29,7 +29,7 @@ public class PrimeTime : ApplicationCommandModule<ApplicationCommandContext>
         {
             var res = await client.GetAsync($"https://clans.worldofwarships.{region}/api/clanbase/{clanId}/claninfo/");
 
-            Clanbase clan = JsonSerializer.Deserialize<Clanbase>(await res.Content.ReadAsStringAsync())!;
+            Clanbase clan = JsonSerializer.Deserialize<Clanbase>(await res.Content.ReadAsStringAsync(), Converter.Options)!;
 
             int? primeTime = clan.ClanView.WowsLadder.PrimeTime;
             int? plannedPrimeTime = clan.ClanView.WowsLadder.PlannedPrimeTime;

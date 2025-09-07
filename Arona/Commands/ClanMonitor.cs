@@ -61,7 +61,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         {
             var results = await Task.WhenAll(apiTask, apiGlobalRankTask, apiRegionRankTask);
 
-            var clan = JsonSerializer.Deserialize<Clanbase>(results[0]);
+            var clan = JsonSerializer.Deserialize<Clanbase>(results[0], Converter.Options);
             int latestSeason = clan!.ClanView.WowsLadder.SeasonNumber;
 
             var globalRank = JsonSerializer.Deserialize<LadderStructure[]>(results[1]);
@@ -78,7 +78,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
             else
             {
                 Collections.Clans.Insert(
-                    new Database.Clan 
+                    new Database.Clan
                     {
                         Id = clanIdParsed,
                         Region = region,
@@ -90,30 +90,33 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
                             Planned = clan.ClanView.WowsLadder.PlannedPrimeTime,
                             Active = clan.ClanView.WowsLadder.PrimeTime
                         },
-                        Ratings = clan.ClanView.WowsLadder.Ratings.Where(r => r.SeasonNumber == latestSeason).Select(r =>
-                            new Database.Rating
-                            {
-                                TeamNumber = r.TeamNumber,
-                                League = r.League,
-                                Division = r.Division,
-                                DivisionRating = r.DivisionRating,
-                                PublicRating = r.PublicRating,
-                                Stage = r.Stage != null
-                                    ? new Database.Stage
-                                    {
-                                        Type = r.Stage.Type,
-                                        TargetLeague = r.Stage.TargetLeague,
-                                        TargetDivision = r.Stage.TargetDivision,
-                                        Progress = r.Stage.Progress.ToList(),
-                                        Battles = r.Stage.Battles,
-                                        VictoriesRequired = r.Stage.VictoriesRequired
-                                    }
-                                    : null
-                            }).ToList(),
+                        Ratings = clan.ClanView.WowsLadder.Ratings.Where(r => r.SeasonNumber == latestSeason)
+                            .Select(r =>
+                                new Database.Rating
+                                {
+                                    TeamNumber = r.TeamNumber,
+                                    League = r.League,
+                                    Division = r.Division,
+                                    DivisionRating = r.DivisionRating,
+                                    PublicRating = r.PublicRating,
+                                    Stage = r.Stage != null
+                                        ? new Database.Stage
+                                        {
+                                            Type = r.Stage.Type,
+                                            TargetLeague = r.Stage.TargetLeague,
+                                            TargetDivision = r.Stage.TargetDivision,
+                                            Progress = r.Stage.Progress.ToList(),
+                                            Battles = r.Stage.Battles,
+                                            VictoriesRequired = r.Stage.VictoriesRequired
+                                        }
+                                        : null,
+                                    BattlesCount = r.BattlesCount
+                                }).ToList(),
                         GlobalRank = globalRank!.FirstOrDefault(r => r.Id == clanIdParsed)!.Rank,
                         RegionRank = regionRank!.FirstOrDefault(r => r.Id == clanIdParsed)!.Rank,
                         Guilds = [guild.Id],
-                        SessionEndTime = UpdateClan.GetEndSession(clan.ClanView.WowsLadder.PrimeTime)
+                        SessionEndTime = UpdateClan.GetEndSession(clan.ClanView.WowsLadder.PrimeTime),
+                        SeasonNumber = latestSeason
                     }
                 );
             }
@@ -123,13 +126,15 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
             Collections.Guilds.Update(guild);
 
             await deferredMessage.EditAsync($"✅ Added clan: `[{clan.ClanView.Clan.Tag}] {clan.ClanView.Clan.Name}`");
-
-            Program.ActiveWrites.Remove(guildId);
         }
         catch (Exception ex)
         {
             Program.Error(ex);
             await deferredMessage.EditAsync("❌ Error fetching clan data from API.");
+        }
+        finally
+        {
+            Program.ActiveWrites.Remove(guildId);
         }
     }
     

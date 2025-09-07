@@ -48,7 +48,7 @@ public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
                 await deferredMessage.EditAsync($"❌ I don't have permission to send messages in <#{channelIdParsed}>!");
                 return;
             }
-            
+
             var guildDb = Collections.Guilds.FindOne(g => g.Id == Context.Guild.Id.ToString());
             if (guildDb == null)
                 Collections.Guilds.Insert(new Guild
@@ -63,13 +63,15 @@ public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
             }
 
             await deferredMessage.EditAsync($"✅ Channel set to <#{channelIdParsed}>");
-
-            Program.ActiveWrites.Remove(guildId);
         }
         catch (Exception ex)
         {
             await deferredMessage.EditAsync("❌ Invalid channel ID format. Please provide a valid channel ID." +
                                             "\nCould also be that Arona doesn't have permissions to see specified channel");
+        }
+        finally
+        {
+            Program.ActiveWrites.Remove(guildId);
         }
     }
 }

@@ -72,7 +72,7 @@ internal static class UpdateClan
 
                 var res = await client.GetAsync(Clanbase.GetApiUrl(dbClan.Id.ToString(), dbClan.Region));
 
-                var apiClan = JsonSerializer.Deserialize<Clanbase>(await res.Content.ReadAsStringAsync())!;
+                var apiClan = JsonSerializer.Deserialize<Clanbase>(await res.Content.ReadAsStringAsync(), Converter.Options)!;
 
                 int clanId = apiClan.ClanView.Clan.Id;
 
@@ -83,6 +83,42 @@ internal static class UpdateClan
 
                 int? primeTime = apiClan.ClanView.WowsLadder.PrimeTime;
                 int? plannedPrimeTime = apiClan.ClanView.WowsLadder.PlannedPrimeTime;
+                
+                // Hämta rankningar
+                Task<string> globalRankTask = client.GetStringAsync(LadderStructure.GetApiTargetClanUrl(clanId.ToString(), dbClan.Region));
+                Task<string> regionRankTask = client.GetStringAsync(LadderStructure.GetApiTargetClanUrl(clanId.ToString(), dbClan.Region, LadderStructure.ConvertRegion(dbClan.Region)));
+
+                var results = await Task.WhenAll(globalRankTask, regionRankTask);
+
+                var globalRank = JsonSerializer.Deserialize<LadderStructure[]>(results[0]);
+                var regionRank = JsonSerializer.Deserialize<LadderStructure[]>(results[1]);
+
+                dbClan.GlobalRank = globalRank!.FirstOrDefault(r => r.Id == clanId)!.Rank;
+                dbClan.RegionRank = regionRank!.FirstOrDefault(r => r.Id == clanId)!.Rank;
+
+                // Vid ett nytt säsong
+                if (dbClan.SeasonNumber != latestSeason)
+                {
+                    dbClan.SeasonNumber = latestSeason;
+                    dbClan.RecentBattles.Clear();
+                    dbClan.SessionEndTime = null;
+
+                    dbClan.Ratings = apiClan.ClanView.WowsLadder.Ratings.Where(r => r.SeasonNumber == latestSeason)
+                        .Select(r =>
+                            new Database.Rating
+                            {
+                                TeamNumber = r.TeamNumber,
+                                League = r.League,
+                                Division = r.Division,
+                                DivisionRating = r.DivisionRating,
+                                PublicRating = r.PublicRating,
+                                Stage = null, // Stage skall vara null när ny säsong startas
+                                BattlesCount = r.BattlesCount
+                            }).ToList();
+                    
+                    Program.UpdateProgress = false;
+                    return;
+                }
 
                 if (dbClan.PrimeTime.Active == null && primeTime != null)
                 {
@@ -105,25 +141,13 @@ internal static class UpdateClan
 
                 long lastBattleUnix = DateTimeOffset.Parse(apiClan.ClanView.WowsLadder.LastBattleAt).ToUnixTimeSeconds();
 
-                // Hämta rankningar
-                Task<string> globalRankTask = client.GetStringAsync(LadderStructure.GetApiTargetClanUrl(clanId.ToString(), dbClan.Region));
-                Task<string> regionRankTask = client.GetStringAsync(LadderStructure.GetApiTargetClanUrl(clanId.ToString(), dbClan.Region, LadderStructure.ConvertRegion(dbClan.Region)));
-
-                var results = await Task.WhenAll(globalRankTask, regionRankTask);
-
-                var globalRank = JsonSerializer.Deserialize<LadderStructure[]>(results[0]);
-                var regionRank = JsonSerializer.Deserialize<LadderStructure[]>(results[1]);
-
-                dbClan.GlobalRank = globalRank!.FirstOrDefault(r => r.Id == clanId)!.Rank;
-                dbClan.RegionRank = regionRank!.FirstOrDefault(r => r.Id == clanId)!.Rank;
-
                 // Slag resultat
                 foreach (var dbRating in dbClan.Ratings)
                 {
                     var apiRating = apiClan.ClanView.WowsLadder.Ratings
                         .FirstOrDefault(r => r.TeamNumber == dbRating.TeamNumber && r.SeasonNumber == latestSeason) ?? null;
 
-                    if (apiRating == null) continue;
+                    if (apiRating == null || apiRating.BattlesCount == dbRating.BattlesCount) continue;
 
                     var msgProp = new MsgProperties
                     {

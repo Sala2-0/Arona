@@ -32,7 +32,7 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
         {
             string[] results = await Task.WhenAll(generalTask, globalRankTask, regionRankTask);
 
-            var general = JsonSerializer.Deserialize<Clanbase>(results[0]);
+            var general = JsonSerializer.Deserialize<Clanbase>(results[0], Converter.Options)!;
 
             int latestSeason = general!.ClanView.WowsLadder.SeasonNumber;
 
@@ -80,7 +80,9 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
                     Color = GetLeagueColor(rating.League),
                     Battles = rating.BattlesCount,
                     SuccessFactor = SuccessFactor.Calculate(rating.PublicRating, rating.BattlesCount, GetLeagueExponent(rating.League)),
-                    WinRate = Math.Round((double)rating.WinsCount / rating.BattlesCount * 100, 2),
+                    WinRate = rating.BattlesCount > 0
+                        ? Math.Round((double)rating.WinsCount / rating.BattlesCount * 100, 2)
+                        : 0,
                     League = rating.League,
                     Division = rating.Division,
                     DivisionRating = rating.DivisionRating,
@@ -99,24 +101,12 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
 
             // Hämta klanens ranking
             var globalRankDoc = JsonSerializer.Deserialize<LadderStructure[]>(results[1])!;
-
-            foreach (var c in globalRankDoc)
-            {
-                if (c.Id != int.Parse(clanId)) continue;
-
-                clan.GlobalRank = c.Rank;
-                break;
-            }
-
             var regionRankDoc = JsonSerializer.Deserialize<LadderStructure[]>(results[2])!;
 
-            foreach (var c in regionRankDoc)
-            {
-                if (c.Id != int.Parse(clanId)) continue;
-
-                clan.RegionRank = c.Rank;
-                break;
-            }
+            clan.GlobalRank = globalRankDoc.Where(c => c.Id == int.Parse(clanId))
+                .Select(c => c.Rank).FirstOrDefault();
+            clan.RegionRank = regionRankDoc.Where(c => c.Id == int.Parse(clanId))
+                .Select(c => c.Rank).FirstOrDefault();
 
             var json = JsonSerializer.Serialize(clan);
 
@@ -128,6 +118,7 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
 
             var imageBytes = await response.Content.ReadAsByteArrayAsync();
             using var stream = new MemoryStream(imageBytes);
+            
             await deferredMessage.Interaction.SendFollowupMessageAsync(
                 new InteractionMessageProperties()
                     .WithAttachments([new AttachmentProperties($"{clanId}.png", stream)])

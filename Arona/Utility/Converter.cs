@@ -7,6 +7,7 @@ namespace Arona.Utility;
 // Denna klass finns för att hantera enstaka felaktiga ratingsdata
 // där parametrar inom stage kan vara null eller andra data som inte är förväntad
 // som INTE ska finnas
+// Används för data från APIn https://clans.worldofwarships.<region>/api/clanbase/<clan id>/claninfo/
 internal class Converter : JsonConverter<Stage>
 {
     public static JsonSerializerOptions Options { get; } = new(){ Converters = { new Converter() } };
@@ -28,7 +29,7 @@ internal class Converter : JsonConverter<Stage>
         }
 
         // Deserialisera normalt
-        return JsonSerializer.Deserialize<Stage>(root.GetRawText(), options)!;
+        return JsonSerializer.Deserialize<Stage>(root.GetRawText())!;
     }
 
     public override void Write(Utf8JsonWriter writer, Stage value, JsonSerializerOptions options) =>

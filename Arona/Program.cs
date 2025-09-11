@@ -43,8 +43,8 @@ internal class Program
         
         Client = host.Services.GetRequiredService<GatewayClient>();
 
-        // Varje minut, hämta API och kolla klan aktiviteter
-        Timer clanMonitorTask = new(10000); // 300000
+        // Varje 5 minut, hämta API och kolla klan aktiviteter
+        Timer clanMonitorTask = new(300000); // 300000
         clanMonitorTask.Elapsed += async (sender, e) =>
         {
             await UpdateClan.UpdateClansAsync();

@@ -131,6 +131,8 @@ internal static class UpdateClan
 
                 if (dbClan.PrimeTime.Active == null && primeTime != null)
                 {
+                    dbClan.SessionEndTime = GetEndSession(primeTime);
+
                     foreach (var channel in channelIds)
                         await Program.Client.Rest.SendMessageAsync(
                             channelId: ulong.Parse(channel),

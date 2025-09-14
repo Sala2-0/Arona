@@ -460,13 +460,22 @@ internal static class UpdateClan
 
         var utcNow = DateTime.UtcNow;
 
-        DateTime endSession = sessionNum switch
+        DateTime endSession;
+        switch (sessionNum)
         {
-            0 or 1 or 2 or 3 => new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 16, 0, 0, DateTimeKind.Utc),
-            4 or 5 or 6 or 7 => new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 21, 30, 0, DateTimeKind.Utc),
-            8 or 9 or 10 or 11 => new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 4, 0, 0, DateTimeKind.Utc),
-            _ => throw new ArgumentOutOfRangeException(nameof(sessionNum), "Unexpected region value")
-        };
+            case 0 or 1 or 2 or 3:
+                endSession = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 16, 0, 0, DateTimeKind.Utc);
+                break;
+            case 4 or 5 or 6 or 7:
+                endSession = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 21, 30, 0, DateTimeKind.Utc);
+                break;
+            case 8 or 9 or 10 or 11:
+                endSession = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 4, 0, 0, DateTimeKind.Utc);
+                if (utcNow.Hour >= 4) endSession = endSession.AddDays(1);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(sessionNum), "Unexpected region value");
+        }
 
         if (utcNow >= endSession) return null;
         return ((DateTimeOffset)endSession).ToUnixTimeSeconds();

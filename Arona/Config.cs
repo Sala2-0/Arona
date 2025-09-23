@@ -12,6 +12,7 @@ internal static class Config
     public static string? GuildId { get; private set; }
     public static string WgApi { get; private set; }
     public static string Database { get; private set; }
+    public static ulong BackdoorChannel { get; private set; } // Används för att skicka potentiella fel, missbruk osv
 
     public static void Initialize()
     {
@@ -32,6 +33,7 @@ internal static class Config
             GuildId = instance.GuildId;
             WgApi = instance.WgApi;
             Database = instance.Database;
+            BackdoorChannel = ulong.Parse(instance.BackdoorChannel);
         }
         catch (JsonException ex)
         {
@@ -49,5 +51,6 @@ internal static class Config
         [JsonPropertyName("guild_id")] public string? GuildId { get; set; }
         [JsonPropertyName("wg_api")] public required string WgApi { get; set; }
         [JsonPropertyName("database")] public required string Database { get; set; }
+        [JsonPropertyName("backdoor_channel")] public required string BackdoorChannel { get; set; }
     }
 }

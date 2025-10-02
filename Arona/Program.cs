@@ -56,8 +56,16 @@ internal class Program
         await host.RunAsync();
     }
 
-    public static void Error(Exception ex) =>
+    public static async Task Error(Exception ex)
+    {
         Console.WriteLine("Error: " + ex.Message);
+        Console.WriteLine(ex.StackTrace);
+
+        await Client!.Rest.SendMessageAsync(
+            channelId: Config.BackdoorChannel,
+            message: $"Bot error: `{ex.Message} \n{ex.StackTrace}`"
+        );
+    }
 
     // Väntar på att UpdateClansAsync eller ?dbcopy slutförs om det pågår en
     // Används bara för kommandon som skriver till databasen

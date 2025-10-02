@@ -77,6 +77,9 @@ internal static class UpdateClan
 
                     dbClan.RecentBattles.Clear();
                     dbClan.SessionEndTime = null;
+
+                    Collections.Clans.Update(dbClan);
+                    continue;
                 }
 
                 var res = await client.GetAsync(Clanbase.GetApiUrl(dbClan.Id.ToString(), dbClan.Region));
@@ -315,7 +318,7 @@ internal static class UpdateClan
             }
             catch (Exception ex)
             {
-                Program.Error(ex);
+                await Program.Error(ex);
             }
         }
 

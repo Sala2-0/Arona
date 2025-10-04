@@ -1,4 +1,5 @@
-﻿using JsonSerializer = System.Text.Json.JsonSerializer;
+﻿using System.Text.Json;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
@@ -129,7 +130,6 @@ public class OwnerCommands : CommandModule<CommandContext>
         catch (Exception ex)
         {
             await Context.Message.ReplyAsync($"Något gick fel: {ex.Message}");
-            return;
         }
     }
 
@@ -191,7 +191,19 @@ public class OwnerCommands : CommandModule<CommandContext>
 
             var data = JsonSerializer.Deserialize<Dictionary<long, VehicleInfo>>(await res.Content.ReadAsStringAsync())!;
 
+            res = await client.GetAsync("https://api.wows-numbers.com/personal/rating/expected/json/");
+            JsonElement doc = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement.GetProperty("data");
+
+            Dictionary<long, JsonElement> filtered = doc.EnumerateObject()
+                .Where(p => p.Value.ValueKind != JsonValueKind.Array)
+                .ToDictionary(p => long.Parse(p.Name), p => p.Value);
+
+            int count = 0;
+
             foreach (var ship in data)
+            {
+                if (!filtered.ContainsKey(ship.Key)) continue;
+
                 Collections.Ships.Insert(new Ship
                 {
                     Id = ship.Value.Id,
@@ -199,8 +211,11 @@ public class OwnerCommands : CommandModule<CommandContext>
                     ShortName = ship.Value.ShortName,
                     Tier = ship.Value.Tier
                 });
+
+                ++count;
+            }
             
-            await Context.Message.ReplyAsync($"Cache för {data.Count} fartyg uppdaterad.");
+            await Context.Message.ReplyAsync($"Cache för {count} fartyg uppdaterad.");
         }
         catch (Exception ex)
         {

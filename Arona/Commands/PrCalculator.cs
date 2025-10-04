@@ -21,9 +21,10 @@ public class PrCalculator : ApplicationCommandModule<ApplicationCommandContext>
         
         string id = split[0];
         string name = split[1];
-        double avgDamage = double.Parse(split[2]);
-        double avgKills = double.Parse(split[3]);
-        double winRate = double.Parse(split[4]);
+        string tier = split[2];
+        double avgDamage = double.Parse(split[3]);
+        double avgKills = double.Parse(split[4]);
+        double winRate = double.Parse(split[5]);
         
         using var client = new HttpClient();
         var res = await client.GetAsync($"https://api.worldofwarships.eu/wows/encyclopedia/ships/?application_id={Config.WgApi}&ship_id={id}");
@@ -44,7 +45,7 @@ public class PrCalculator : ApplicationCommandModule<ApplicationCommandContext>
         int pr = (int)Math.Round((700 * normalization.damage) + (300 * normalization.kills) + (150 * normalization.win));
 
         var embed = new EmbedProperties()
-            .WithTitle(name)
+            .WithTitle($"{tier} {name}")
             .WithColor(new Color(Convert.ToInt32(PersonalRatingColors.GetColor(pr), 16)))
             .AddFields(
                 new EmbedFieldProperties()

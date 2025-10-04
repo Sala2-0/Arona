@@ -170,6 +170,47 @@ public class OwnerCommands : CommandModule<CommandContext>
             Program.UpdateProgress = false;
         }
     }
+
+    [Command("cacheShips")]
+    public async Task CacheShipsAsync()
+    {
+        if (!Owner.Check(Context.User.Id)) return;
+
+        await Program.WaitForWriteAsync();
+        await Program.WaitForUpdateAsync();
+
+        Program.UpdateProgress = true;
+
+        try
+        {
+            Collections.Ships.DeleteAll();
+
+            using var client = new HttpClient();
+            var res = await client.GetAsync("https://clans.worldofwarships.eu/api/encyclopedia/vehicles_info/");
+            res.EnsureSuccessStatusCode();
+
+            var data = JsonSerializer.Deserialize<Dictionary<long, VehicleInfo>>(await res.Content.ReadAsStringAsync())!;
+
+            foreach (var ship in data)
+                Collections.Ships.Insert(new Ship
+                {
+                    Id = ship.Value.Id,
+                    Name = ship.Value.Name,
+                    ShortName = ship.Value.ShortName,
+                    Tier = ship.Value.Tier
+                });
+            
+            await Context.Message.ReplyAsync($"Cache för {data.Count} fartyg uppdaterad.");
+        }
+        catch (Exception ex)
+        {
+            await Context.Message.ReplyAsync($"Något gick fel: `{ex.Message}`");
+        }
+        finally
+        {
+            Program.UpdateProgress = false;
+        }
+    }
 }
 
 public class OwnerAppCommands : ApplicationCommandModule<ApplicationCommandContext>

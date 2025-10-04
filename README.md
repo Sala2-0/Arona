@@ -30,31 +30,110 @@ where L is based on what league the clan currently resides in.
 
 Since exponent is different per league, each league would have their own ranges on what's considered "good" or "bad" S/F.
 
-### Clan Monitor
+<h3>Clan Monitor</h3>
+<p>Monitors a clans CB activity and displays it to you.</p>
+<table border="0.5" cellspacing="0" cellpadding="5">
+  <tr>
+    <th>Command Name</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td>/clan_monitor_add</td>
+    <td>Add a clan to server database</td>
+  </tr>
+  <tr>
+    <td>/clan_monitor_remove</td>
+    <td>Remove a clan from server database</td>
+  </tr>
+  <tr>
+    <td>/clan_monitor_list</td>
+    <td>List all clans currently monitored in the server where the command is used</td>
+  </tr>
+</table>
 
-Monitors a clans CB activity and displays it to you.
-| Command Name         | Description                                                              |
-|----------------------|--------------------------------------------------------------------------|
-|`/clan_monitor_add`   |Add a clan to server database                                             |
-|`/clan_monitor_remove`|Remove a clan from server database                                        |
-|`/clan_monitor_list`  |List all clans currently monitored in the server where the command is used|
+<h3>Builds</h3>
+<p>Store your <a href="https://app.wowssb.com" target="_blank">WoWs ShipBuilder</a> builds/links for ease of access later on.</p>
+<table border="0.5" cellspacing="0" cellpadding="5">
+  <tr>
+    <th>Command Name</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td>/builds_add</td>
+    <td>Add a build to server database</td>
+  </tr>
+  <tr>
+    <td>/builds_remove</td>
+    <td>Remove a build from server database</td>
+  </tr>
+  <tr>
+    <td>/builds_get</td>
+    <td>Get a build saved in server database</td>
+  </tr>
+</table>
 
-### Builds
-Store your [WoWs ShipBuilder](https://app.wowssb.com) builds/links for ease of access later on.
-| Command Name         | Description                                                              |
-|----------------------|--------------------------------------------------------------------------|
-|`/builds_add`         |Add a build to server database                                            |
-|`/builds_remove`      |Remove a build from server database                                       |
-|`/builds_get`         |Get a build saved in server database                                      |
-
-### Other commands
-| Command Name         | Description                                                                                                                                        |
-|----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
-|`/pr_calculator`      |Calculates the personal rating of any publically available ship <br> Values and formula from [wows-numbers](https://wows-numbers.com)               |
-|`/prime_time`         |Get a clans current CB session selection and activity                                                                                               |
-|`/leaderboard`        |Latest CB seasons leaderboards, globally and regionally                                                                                             |
-|`/ratings`            |Get detailed info about a clans CB rating on latest season, their progress on league qualifications <br> as well as their global and region rankings|
-|`/set_channel`        |Set a text channel for Arona to log events in                                                                                                       |
+<h3>Other commands</h3>
+<table border="0.5" cellspacing="0" cellpadding="5">
+  <tr>
+    <th>Command Name</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td>/pr_calculator single</td>
+    <td>
+      Calculates PR of a ship for one battle. Values and formula from <a href="https://wows-numbers.com" target="_blank">wows-numbers</a>
+    </td>
+  </tr>
+  <tr>
+    <td>/pr_calculator session</td>
+    <td>
+      Calculates PR of one session. Each battle should have 4 parameters (name, damage, kills, outcome (win, loss)) separated by commas and should be separated by underscores
+      <table border="0.5" cellspacing="0" cellpadding="3" style="margin-top:5px;">
+        <tr>
+          <th>Parameter</th>
+          <th>Description</th>
+        </tr>
+        <tr>
+          <td>name</td>
+          <td>Name of the ship. You don't need to type the full name, but enough for the bot to figure it out.</td>
+        </tr>
+        <tr>
+          <td>damage</td>
+          <td>Damage dealt. Must be whole number</td>
+        </tr>
+        <tr>
+          <td>kills</td>
+          <td>Number of kills. Must be whole number</td>
+        </tr>
+        <tr>
+          <td>Outcome</td>
+          <td>Win or loss. Must be 'win' or 'loss'</td>
+        </tr>
+      </table>
+      Example input:
+      <pre><code>Småland,120000,3,win_Kurfurst,220000,1,loss</code></pre>
+    </td>
+  </tr>
+  <tr>
+    <td>/prime_time</td>
+    <td>Get a clan's current CB session selection and activity</td>
+  </tr>
+  <tr>
+    <td>/leaderboard</td>
+    <td>Latest CB seasons leaderboards, globally and regionally</td>
+  </tr>
+  <tr>
+    <td>/ratings</td>
+    <td>
+      Get detailed info about a clan's CB rating on latest season, their progress on league qualifications<br>
+      as well as their global and region rankings
+    </td>
+  </tr>
+  <tr>
+    <td>/set_channel</td>
+    <td>Set a text channel for Arona to log events in</td>
+  </tr>
+</table>
 
 ## License
 Licensed under MIT.

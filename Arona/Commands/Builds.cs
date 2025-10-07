@@ -1,16 +1,16 @@
 ﻿using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using LiteDB;
 using Arona.Autocomplete;
 using Arona.Database;
 using Arona.Utility;
 
 namespace Arona.Commands;
 
+[SlashCommand("builds", "Store WoWs builds for ease of access later on")]
 public class Builds : ApplicationCommandModule<ApplicationCommandContext>
 {
-    [SlashCommand("builds_add", "Add a ship build to server database in form of WoWs-ShipBuilder link")]
+    [SubSlashCommand("add", "Add a ship build to server database in form of WoWs-ShipBuilder link")]
     public async Task BuildsAddAsync(
         [SlashCommandParameter(Name = "name", Description = "Build name")] string name,
         [SlashCommandParameter(Name = "link", Description = "ShipBuilder link")] string link,
@@ -88,7 +88,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
         Program.ActiveWrites.Remove(guildId);
     }
 
-    [SlashCommand("builds_remove", "Remove a build from server database")]
+    [SubSlashCommand("remove", "Remove a build from server database")]
     public async Task BuildsRemoveAsync(
         [SlashCommandParameter(Name = "name", Description = "Build name", AutocompleteProviderType = typeof(BuildAutocomplete))] string name)
     {
@@ -130,7 +130,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
         Program.ActiveWrites.Remove(guildId);
     }
 
-    [SlashCommand("builds_get", "Get a build from server database")]
+    [SubSlashCommand("get", "Get a build from server database")]
     public async Task BuildsGetAsync(
         [SlashCommandParameter(Name = "name", Description = "Build name", AutocompleteProviderType = typeof(BuildAutocomplete))] string name,
         [SlashCommandParameter(Name = "info", Description = "Get metadata or image of the build. Default: Image")] BuildData data = BuildData.Image

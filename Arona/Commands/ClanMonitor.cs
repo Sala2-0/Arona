@@ -8,9 +8,10 @@ using Arona.Utility;
 
 namespace Arona.Commands;
 
+[SlashCommand("clan_monitor", "Monitors a clan's clan battle activity")]
 public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
 {
-    [SlashCommand("clan_monitor_add", "Add a clan to server database")]
+    [SubSlashCommand("add", "Add a clan to server database")]
     public async Task ClanMonitorAddAsync(
         [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag to add", AutocompleteProviderType = typeof(ClanAutocomplete))] string clanIdAndRegion)
     {
@@ -138,7 +139,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         }
     }
     
-    [SlashCommand("clan_monitor_remove", "Remove a clan from server database")]
+    [SubSlashCommand("remove", "Remove a clan from server database")]
     public async Task ClanMonitorRemoveAsync(
         [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag to remove", AutocompleteProviderType = typeof(ClanRemoveAutocomplete))] string clanId)
     {
@@ -192,7 +193,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         Program.ActiveWrites.Remove(guildId);
     }
 
-    [SlashCommand("clan_monitor_list", "List all clans in server database")]
+    [SubSlashCommand("list", "List all clans in server database")]
     public async Task ClanMonitorListAsync()
     {
         string? guildName = Context.Interaction.Guild?.Name;

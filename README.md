@@ -38,15 +38,15 @@ Since exponent is different per league, each league would have their own ranges 
     <th>Description</th>
   </tr>
   <tr>
-    <td>/clan_monitor_add</td>
+    <td>/clan_monitor add</td>
     <td>Add a clan to server database</td>
   </tr>
   <tr>
-    <td>/clan_monitor_remove</td>
+    <td>/clan_monitor remove</td>
     <td>Remove a clan from server database</td>
   </tr>
   <tr>
-    <td>/clan_monitor_list</td>
+    <td>/clan_monitor list</td>
     <td>List all clans currently monitored in the server where the command is used</td>
   </tr>
 </table>
@@ -59,15 +59,15 @@ Since exponent is different per league, each league would have their own ranges 
     <th>Description</th>
   </tr>
   <tr>
-    <td>/builds_add</td>
+    <td>/builds add</td>
     <td>Add a build to server database</td>
   </tr>
   <tr>
-    <td>/builds_remove</td>
+    <td>/builds remove</td>
     <td>Remove a build from server database</td>
   </tr>
   <tr>
-    <td>/builds_get</td>
+    <td>/builds get</td>
     <td>Get a build saved in server database</td>
   </tr>
 </table>

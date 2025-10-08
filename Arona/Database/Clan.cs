@@ -4,7 +4,7 @@ namespace Arona.Database;
 
 internal class Clan
 {
-    [BsonId] public required long Id { get; set; }
+    [BsonId] public required int Id { get; set; }
     [BsonField("region")] public required string Region { get; set; }
     [BsonField("clan_tag")] public required string ClanTag { get; set; }
     [BsonField("clan_name")] public required string ClanName { get; set; }

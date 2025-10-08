@@ -33,7 +33,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         string region = split[1];
         string clanId = split[0];
 
-        long clanIdParsed = long.Parse(clanId);
+        int clanIdParsed = int.Parse(clanId);
 
         var guild = Collections.Guilds.FindOne(g => g.Id == guildId);
 
@@ -162,7 +162,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
             return;
         }
 
-        long clanIdParsed = long.Parse(clanId);
+        int clanIdParsed = int.Parse(clanId);
 
         var guild = Collections.Guilds.FindOne(g => g.Id == guildId);
         var clan = Collections.Clans.FindOne(c => c.Id == clanIdParsed);

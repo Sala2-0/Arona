@@ -4,7 +4,7 @@ namespace Arona.ApiModels;
 
 internal class LadderStructure
 {
-    [JsonPropertyName("id")] public required long Id { get; init; }
+    [JsonPropertyName("id")] public required int Id { get; init; }
     [JsonPropertyName("tag")] public required string Tag { get; init; }
     [JsonPropertyName("name")] public required string Name { get; init; }
     [JsonPropertyName("rank")] public required int Rank { get; init; }

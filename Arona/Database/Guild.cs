@@ -6,7 +6,7 @@ internal class Guild
 {
     [BsonId] public required string Id { get; set; }
     [BsonField("channel_id")] public required string ChannelId { get; set; }
-    [BsonField("clans")] public List<long> Clans { get; set; } = [];
+    [BsonField("clans")] public List<int> Clans { get; set; } = [];
     [BsonField("builds")] public List<Build> Builds { get; set; } = [];
 }
 

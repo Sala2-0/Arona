@@ -1,7 +1,7 @@
-﻿using NetCord.Services.ApplicationCommands;
+﻿using NetCord.Rest;
+using NetCord.Services.ApplicationCommands;
 using Arona.Autocomplete;
-using Arona.Utility;
-using NetCord.Rest;
+using Arona.Models;
 
 namespace Arona.Commands;
 
@@ -11,18 +11,18 @@ public class BaseExp : ApplicationCommandModule<ApplicationCommandContext>
     public async Task BaseExpAddAsync(
         [SlashCommandParameter(Name = "ship", AutocompleteProviderType = typeof(ShipAutocomplete))]
         string shipData,
+
         [SlashCommandParameter(Name = "base_xp", Description = "Base XP amount")]
         int baseExp
     )
     {
         var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
-
         await deferredMessage.SendAsync();
 
         var user = deferredMessage.Interaction.User.Username;
         var userId = deferredMessage.Interaction.User.Id;
 
-        var split = shipData.Split('|');
+        var split = shipData.Split(',');
         long shipId = long.Parse(split[0]);
         string shipName = split[1];
 

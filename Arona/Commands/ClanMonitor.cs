@@ -1,9 +1,9 @@
-﻿using System.Text.Json;
-using NetCord.Rest;
+﻿using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using Arona.ApiModels;
 using Arona.Autocomplete;
 using Arona.Database;
+using Arona.Models;
 using Arona.Utility;
 
 namespace Arona.Commands;
@@ -13,120 +13,73 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SubSlashCommand("add", "Add a clan to server database")]
     public async Task ClanMonitorAddAsync(
-        [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag to add", AutocompleteProviderType = typeof(ClanAutocomplete))] string clanIdAndRegion)
+        [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag to add", AutocompleteProviderType = typeof(ClanAutocomplete))]
+        string clanIdAndRegion
+    )
     {
         var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
-
         await deferredMessage.SendAsync();
 
-        string guildId = Context.Interaction.GuildId.ToString()!;
-        string channelId = Context.Interaction.Channel.Id.ToString();
+        var guild = Guild.Find(Context.Interaction);
 
-        await Program.WaitForWriteAsync(guildId);
+        await Program.WaitForWriteAsync(guild.Id);
         await Program.WaitForUpdateAsync();
 
-        Program.ActiveWrites.Add(guildId);
+        Program.ActiveWrites.Add(guild.Id);
 
-        using var client = new HttpClient();
-
-        string[] split = clanIdAndRegion.Split('|');
+        string[] split = clanIdAndRegion.Split(',');
         string region = split[1];
-        string clanId = split[0];
+        int clanId = int.Parse(split[0]);
 
-        int clanIdParsed = int.Parse(clanId);
-
-        var guild = Collections.Guilds.FindOne(g => g.Id == guildId);
-
-        // Om guild inte finns, skapa en ny
-        if (guild == null)
-        {
-            guild = new Guild
-            {
-                Id = guildId,
-                ChannelId = channelId
-            };
-            Collections.Guilds.Insert(guild);
-        }
-
-        if (guild.Clans.Contains(clanIdParsed))
+        if (guild.Clans.Contains(clanId))
         {
             await deferredMessage.EditAsync("❌ Clan already exists in database.");
             return;
         }
 
-        Task<string> apiTask = client.GetStringAsync(Clanbase.GetApiUrl(clanId, region));
-        Task<string> apiGlobalRankTask = client.GetStringAsync(LadderStructure.GetApiTargetClanUrl(clanId, region));
-        Task<string> apiRegionRankTask = client.GetStringAsync(LadderStructure.GetApiTargetClanUrl(clanId, region, LadderStructure.ConvertRegion(region)));
+        Task<ClanBase.ClanView> apiTask = ClanBase.GetAsync(clanId, region);
+        Task<LadderStructure[]> apiGlobalRankTask = LadderStructure.GetAsync(clanId, region);
+        Task<LadderStructure[]> apiRegionRankTask = LadderStructure.GetAsync(clanId, region, LadderStructure.ConvertRegion(region));
 
         try
         {
-            var results = await Task.WhenAll(apiTask, apiGlobalRankTask, apiRegionRankTask);
+            await Task.WhenAll(apiTask, apiGlobalRankTask, apiRegionRankTask);
 
-            var clan = JsonSerializer.Deserialize<Clanbase>(results[0], Converter.Options);
-            int latestSeason = clan!.ClanView.WowsLadder.SeasonNumber;
+            var data = new
+            {
+                Clan = apiTask.Result,
+                Global = apiGlobalRankTask.Result.First(c => c.Id == clanId),
+                Region = apiRegionRankTask.Result.First(c => c.Id == clanId)
+            };
 
-            var globalRank = JsonSerializer.Deserialize<LadderStructure[]>(results[1]);
-            var regionRank = JsonSerializer.Deserialize<LadderStructure[]>(results[2]);
-
-            var dbClan = Collections.Clans.FindOne(c => c.Id == clanIdParsed);
+            var dbClan = Collections.Clans.FindOne(c => c.Clan.Id == clanId);
 
             if (dbClan is not null)
             {
-                dbClan.Guilds.Add(guild.Id);
+                dbClan.ExternalData.Guilds.Add(guild.Id);
 
                 Collections.Clans.Update(dbClan);
             }
             else
             {
-                Collections.Clans.Insert(
-                    new Database.Clan
-                    {
-                        Id = clanIdParsed,
-                        Region = region,
-                        ClanTag = clan.ClanView.Clan.Tag,
-                        ClanName = clan.ClanView.Clan.Name,
-                        RecentBattles = [],
-                        PrimeTime = new Database.PrimeTime
-                        {
-                            Planned = clan.ClanView.WowsLadder.PlannedPrimeTime,
-                            Active = clan.ClanView.WowsLadder.PrimeTime
-                        },
-                        Ratings = clan.ClanView.WowsLadder.Ratings.Where(r => r.SeasonNumber == latestSeason)
-                            .Select(r =>
-                                new Database.Rating
-                                {
-                                    TeamNumber = r.TeamNumber,
-                                    League = r.League,
-                                    Division = r.Division,
-                                    DivisionRating = r.DivisionRating,
-                                    PublicRating = r.PublicRating,
-                                    Stage = r.Stage != null
-                                        ? new Database.Stage
-                                        {
-                                            Type = r.Stage.Type,
-                                            TargetLeague = r.Stage.TargetLeague,
-                                            TargetDivision = r.Stage.TargetDivision,
-                                            Progress = r.Stage.Progress.ToList(),
-                                            Battles = r.Stage.Battles,
-                                            VictoriesRequired = r.Stage.VictoriesRequired
-                                        }
-                                        : null,
-                                    BattlesCount = r.BattlesCount
-                                }).ToList(),
-                        GlobalRank = globalRank!.FirstOrDefault(r => r.Id == clanIdParsed)!.Rank,
-                        RegionRank = regionRank!.FirstOrDefault(r => r.Id == clanIdParsed)!.Rank,
-                        Guilds = [guild.Id],
-                        SessionEndTime = UpdateClan.GetEndSession(clan.ClanView.WowsLadder.PrimeTime),
-                        SeasonNumber = latestSeason
-                    }
-                );
+                data.Clan.WowsLadder.Ratings.RemoveAll(r => r.SeasonNumber != data.Clan.WowsLadder.SeasonNumber);
+
+                data.Clan.ExternalData.Region = region;
+                data.Clan.ExternalData.GlobalRank = data.Global.Rank;
+                data.Clan.ExternalData.RegionRank = data.Region.Rank;
+
+                if (data.Clan.WowsLadder.PrimeTime != null)
+                    data.Clan.ExternalData.SessionEndTime = ClanUtils.GetEndSession(data.Clan.WowsLadder.PrimeTime);
+
+                data.Clan.ExternalData.Guilds.Add(guild.Id);
+                Collections.Clans.Insert(data.Clan.Clan.Id, data.Clan);
             }
 
-            guild.Clans.Add(clanIdParsed);
+            guild.Clans.Add(clanId);
 
             Collections.Guilds.Update(guild);
 
-            await deferredMessage.EditAsync($"✅ Added clan: `[{clan.ClanView.Clan.Tag}] {clan.ClanView.Clan.Name}`");
+            await deferredMessage.EditAsync($"✅ Added clan: `[{data.Clan.Clan.Tag}] {data.Clan.Clan.Name}`");
         }
         catch (Exception ex)
         {
@@ -135,104 +88,84 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         }
         finally
         {
-            Program.ActiveWrites.Remove(guildId);
+            Program.ActiveWrites.Remove(guild.Id);
         }
     }
     
     [SubSlashCommand("remove", "Remove a clan from server database")]
     public async Task ClanMonitorRemoveAsync(
-        [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag to remove", AutocompleteProviderType = typeof(ClanRemoveAutocomplete))] string clanId)
+        [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag to remove", AutocompleteProviderType = typeof(ClanListAutocomplete))]
+        string input
+    )
     {
         var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
-
         await deferredMessage.SendAsync();
 
-        string guildId = Context.Interaction.GuildId.ToString()!;
+        var guild = Guild.Find(Context.Interaction);
 
-        await Program.WaitForWriteAsync(guildId);
+        await Program.WaitForWriteAsync(guild.Id);
         await Program.WaitForUpdateAsync();
 
-        Program.ActiveWrites.Add(guildId);
+        Program.ActiveWrites.Add(guild.Id);
 
-        if (clanId == "undefined")
+        if (input == "undefined")
         {
             await deferredMessage.EditAsync("❌ No clan selected to remove.");
 
-            Program.ActiveWrites.Remove(guildId);
+            Program.ActiveWrites.Remove(guild.Id);
             return;
         }
 
-        int clanIdParsed = int.Parse(clanId);
-
-        var guild = Collections.Guilds.FindOne(g => g.Id == guildId);
-        var clan = Collections.Clans.FindOne(c => c.Id == clanIdParsed);
+        int clanId = int.Parse(input);
+        var clan = Collections.Clans.FindOne(c => c.Clan.Id == clanId);
 
         if (clan == null)
         {
             await deferredMessage.EditAsync("❌ Clan does not exist in database.");
 
-            Program.ActiveWrites.Remove(guildId);
+            Program.ActiveWrites.Remove(guild.Id);
             return;
         }
 
-        var clanTag = clan.ClanTag;
-        var clanName = clan.ClanName;
+        guild.Clans.Remove(clanId);
+        clan.ExternalData.Guilds.Remove(guild.Id);
 
-        guild.Clans.Remove(clanIdParsed);
-        clan.Guilds.Remove(guildId);
-
-        if (clan.Guilds.Count == 0)
-            Collections.Clans.Delete(clanIdParsed);
+        if (clan.ExternalData.Guilds.Count == 0)
+            Collections.Clans.Delete(clanId);
         else
             Collections.Clans.Update(clan);
 
         Collections.Guilds.Update(guild);
 
-        await deferredMessage.EditAsync($"✅ Removed clan: `[{clanTag}] {clanName}`");
+        await deferredMessage.EditAsync($"✅ Removed clan: `[{clan.Clan.Tag}] {clan.Clan.Name}`");
 
-        Program.ActiveWrites.Remove(guildId);
+        Program.ActiveWrites.Remove(guild.Id);
     }
 
     [SubSlashCommand("list", "List all clans in server database")]
     public async Task ClanMonitorListAsync()
     {
         string? guildName = Context.Interaction.Guild?.Name;
-        string? guildId = Context.Interaction.GuildId.ToString();
 
-        Guild? guild = Collections.Guilds.FindOne(g => g.Id == guildId);
-
-        if (guild == null)
-        {
-            await Context.Interaction.SendResponseAsync(
-                InteractionCallback.Message("❌ No database exists for this server. **Add a clan to initialize one.**"));
-            return;
-        }
+        var guild = Guild.Find(Context.Interaction);
 
         if (guild.Clans.Count == 0)
         {
-            await Context.Interaction.SendResponseAsync(
-                InteractionCallback.Message($"No clans currently monitored in `{guildName}`"));
+            await Context.Interaction.SendResponseAsync(InteractionCallback.Message($"No clans currently monitored in `{guildName}`"));
             return;
         }
         
-        List<string> clans = new List<string>();
+        List<string> clans = guild.Clans
+            .Select(id =>
+            {
+                var clan = Collections.Clans.FindById(id);
+                return $"`[{clan.Clan.Tag}] {clan.Clan.Name}` ({ClanUtils.GetRegionCode(clan.ExternalData.Region)})";
+            })
+            .ToList();
 
-        foreach (var clanId in guild.Clans)
-        {
-            var clan = Collections.Clans.FindOne(c => c.Id == clanId);
-
-            clans.Add($"`[{clan.ClanTag}] {clan.ClanName}` " +
-                      $"({ClanSearchStructure.GetRegionCode(clan.Region)})");
-        }
-
-        var field = new List<EmbedFieldProperties>();
-
-        foreach (string clanName in clans)
-        {
-            field.Add(new EmbedFieldProperties()
-                .WithName(clanName)
-                .WithInline(false));
-        }
+        List<EmbedFieldProperties> field = clans
+            .Select(n => new EmbedFieldProperties{ Name = n })
+            .ToList();
         
         var embed = new EmbedProperties()
             .WithTitle($"Clans currently monitored in `{guildName}`")

@@ -6,7 +6,7 @@ using Arona.Utility;
 
 namespace Arona.Autocomplete;
 
-internal class ClanRemoveAutocomplete : IAutocompleteProvider<AutocompleteInteractionContext>
+internal class ClanListAutocomplete : IAutocompleteProvider<AutocompleteInteractionContext>
 {
     public ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(
         ApplicationCommandInteractionDataOption option,
@@ -14,7 +14,6 @@ internal class ClanRemoveAutocomplete : IAutocompleteProvider<AutocompleteIntera
     )
     {
         string guildId = context.Interaction.GuildId.ToString()!;
-
         var guild = Collections.Guilds.FindOne(g => g.Id == guildId);
 
         if (guild == null)
@@ -27,24 +26,16 @@ internal class ClanRemoveAutocomplete : IAutocompleteProvider<AutocompleteIntera
                 new ApplicationCommandOptionChoiceProperties("No clans in database", "undefined")
             ]);
 
-        List<Clan> clans = [];
+        var clans = Collections.Clans.Find(c => guild.Clans.Contains(c.Clan.Id)).ToList();
 
-        foreach (long clanId in guild.Clans)
-        {
-            Clan dbClan = Collections.Clans.FindOne(c => c.Id == clanId);
-            
-            clans.Add(dbClan);
-        }
-
-        var choices = clans
+        return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>(clans
             .Take(20)
             .Select(clan =>
                 new ApplicationCommandOptionChoiceProperties(
-                    name: $"[{clan.ClanTag}] {clan.ClanName} ({ClanSearchStructure.GetRegionCode(clan.Region)})",
-                    stringValue: clan.Id.ToString()
+                    name: $"[{clan.Clan.Name}] {clan.Clan.Name} ({ClanUtils.GetRegionCode(clan.ExternalData.Region)})",
+                    stringValue: clan.Clan.Id.ToString()
                 )
-            );
-
-        return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>(choices);
+            )
+        );
     }
 }

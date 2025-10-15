@@ -1,10 +1,10 @@
-﻿using System.Text.Json;
-using NetCord;
+﻿using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using Arona.ApiModels;
 using Arona.Autocomplete;
-using Arona.Utility;
+using Arona.Database;
+using Arona.Models;
 
 namespace Arona.Commands;
 
@@ -12,53 +12,35 @@ public class PrimeTime : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("prime_time", "Get a clans active clan battle regions")]
     public async Task PrimeTimeAsync(
-        [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag search for",
-            AutocompleteProviderType = typeof(ClanAutocomplete))] string clanIdAndRegion)
+        [SlashCommandParameter(Name = "clan_tag", Description = "The clan tag search for", AutocompleteProviderType = typeof(ClanAutocomplete))]
+        string clanIdAndRegion
+    )
     {
         var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
-
         await deferredMessage.SendAsync();
 
-        using HttpClient client = new HttpClient();
-        
+        Guild.Exists(Context.Interaction);
+
         var split = clanIdAndRegion.Split('|');
         string region = split[1];
-        string clanId = split[0];
+        int clanId = int.Parse(split[0]);
 
         try
         {
-            var res = await client.GetAsync($"https://clans.worldofwarships.{region}/api/clanbase/{clanId}/claninfo/");
+            var clan = await ClanBase.GetAsync(clanId, region);
 
-            Clanbase clan = JsonSerializer.Deserialize<Clanbase>(await res.Content.ReadAsStringAsync(), Converter.Options)!;
+            int? primeTime = clan.WowsLadder.PrimeTime;
+            int? plannedPrimeTime = clan.WowsLadder.PlannedPrimeTime;
 
-            int? primeTime = clan.ClanView.WowsLadder.PrimeTime;
-            int? plannedPrimeTime = clan.ClanView.WowsLadder.PlannedPrimeTime;
-
-            string tag = clan.ClanView.Clan.Tag;
-            string name = clan.ClanView.Clan.Name;
-
-            var embed = new EmbedProperties()
-                .WithTitle($"`[{tag}] {name}`")
-                .WithColor(new Color(Convert.ToInt32("a4fff7", 16)))
-                .AddFields(
-                    new EmbedFieldProperties()
-                        .WithName("Selected region")
-                        .WithValue(
-                            plannedPrimeTime != null
-                                ? GetPrimeTimeRegions(plannedPrimeTime)
-                                : "Not selected"
-                        )
-                        .WithInline(false),
-                    new EmbedFieldProperties()
-                        .WithName("Active region")
-                        .WithValue(
-                            primeTime != null
-                                ? GetPrimeTimeRegions(primeTime)
-                                : "Not playing"
-                        )
-                );
-
-            await deferredMessage.EditAsync(embed);
+            await deferredMessage.EditAsync(new EmbedProperties
+            {
+                Title = $"`[{clan.Clan.Tag}] {clan.Clan.Name}`",
+                Color = new Color(Convert.ToInt32("a4fff7", 16)),
+                Fields = [
+                    new EmbedFieldProperties{ Name = "Selected region", Value = plannedPrimeTime != null ? GetPrimeTimeRegions(plannedPrimeTime) : "Not selected" },
+                    new EmbedFieldProperties{ Name = "Active region", Value = primeTime != null ? GetPrimeTimeRegions(primeTime) : "Not playing" }
+                ]
+            });
         }
         catch (Exception ex)
         {

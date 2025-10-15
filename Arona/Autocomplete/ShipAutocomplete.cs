@@ -44,7 +44,7 @@ internal class ShipAutocomplete : IAutocompleteProvider<AutocompleteInteractionC
             .Take(8)
             .Select(s => new ApplicationCommandOptionChoiceProperties(
                     name: $"{s.Tier} {s.Name}",
-                    stringValue: $"{s.Id}|{s.Name}|{s.Tier}|{s.AverageDamageDealt}|{s.AverageKills}|{s.WinRate}"
+                    stringValue: $"{s.Id},{s.Name},{s.Tier},{s.AverageDamageDealt},{s.AverageKills},{s.WinRate}"
                 )
             )
             .ToArray();

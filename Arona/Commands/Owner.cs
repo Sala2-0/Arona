@@ -8,6 +8,9 @@ using LiteDB;
 using Arona.ApiModels;
 using Arona.Database;
 using Arona.Utility;
+using Arona.Models;
+
+using League = Arona.Utility.ClanUtils.League;
 
 namespace Arona.Commands;
 
@@ -101,17 +104,14 @@ public class OwnerCommands : CommandModule<CommandContext>
     {
         if (!Owner.Check(Context.User.Id)) return;
 
-        var leagueExponent = Ratings.GetLeagueExponent(league);
+        var leagueExponent = ClanUtils.GetLeagueExponent((League)league);
         List<double> sf = new();
 
         try
         {
             using var client = new HttpClient();
 
-            var res = await client.GetAsync(LadderStructure.GetUrl(season, league, division));
-            res.EnsureSuccessStatusCode();
-
-            var data = JsonSerializer.Deserialize<LadderStructure[]>(await res.Content.ReadAsStringAsync());
+            var data = await LadderStructure.GetAsync(season, league, division);
 
             foreach (var clan in data!)
             {

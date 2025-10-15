@@ -1,19 +1,17 @@
-﻿using System.Text.Json;
-using NetCord;
+﻿using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using Arona.Utility;
+using Arona.ApiModels;
 
 namespace Arona.Autocomplete;
 
 internal class ClanAutocomplete: IAutocompleteProvider<AutocompleteInteractionContext>
 {
-    public ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(
+    public async ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(
         ApplicationCommandInteractionDataOption option,
         AutocompleteInteractionContext context)
     {
-        using HttpClient client = new HttpClient();
-        
         var input = option.Value ?? string.Empty;
         
         string region = "eu"; // Förvalt region is EU
@@ -29,32 +27,32 @@ internal class ClanAutocomplete: IAutocompleteProvider<AutocompleteInteractionCo
             region = region.ToLower();
         }
 
-        if (String.IsNullOrEmpty(input) || input.Length < 2 || !ValidRegion(region))
+        if (string.IsNullOrEmpty(input) || input.Length < 2 || !ValidRegion(region))
         {
-            return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>([
-                new ApplicationCommandOptionChoiceProperties("Ex: NTT", "500205591|eu"),
-                new ApplicationCommandOptionChoiceProperties("Ex: NA RESIN", "1000048416|com"),
-            ]);
+            return [
+                new ApplicationCommandOptionChoiceProperties("Ex: NTT", "500205591,eu"),
+                new ApplicationCommandOptionChoiceProperties("Ex: NA RESIN", "1000048416,com"),
+            ];
         }
 
-        List<ClanSearchStructure> clans = [];
-
-        var res = client.GetAsync($"https://api.worldofwarships.{region}/wows/clans/list/?application_id={Config.WgApi}&search={input}")
-            .Result.Content.ReadAsStringAsync().Result;
-        JsonElement doc = JsonDocument.Parse(res).RootElement.GetProperty("data");
-
-        foreach (JsonElement clan in doc.EnumerateArray())
+        try
         {
-            // Console.WriteLine(clan); // Debug
-            clans.Add(new ClanSearchStructure(clan.GetProperty("tag").GetString()!, clan.GetProperty("name").GetString()!, clan.GetProperty("clan_id").GetInt32().ToString(), region));
-        }
+            var data = await OfficialApi.Clan.GetAsync(input, region);
+            var clans = data.Select(c => new { Tag = c.Tag, Name = c.Name, Id = c.ClanId, Region = region }).ToList();
 
-        var choices = clans
-            .Take(8)
-            .Select(s =>
-                new ApplicationCommandOptionChoiceProperties($"[{s.ClanTag}] {s.ClanName} ({ClanSearchStructure.GetRegionCode(s.Region)})", $"{s.ClanId}|{s.Region}"));
-        
-        return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>(choices);
+            var choices = clans
+                .Take(8)
+                .Select(s =>
+                    new ApplicationCommandOptionChoiceProperties(
+                        $"[{s.Tag}] {s.Name} ({ClanUtils.GetRegionCode(s.Region)})", $"{s.Id},{s.Region}"));
+
+            return choices;
+        }
+        catch (Exception ex)
+        {
+            await Program.Error(ex);
+            return [];
+        }
     }
 
     public static bool ValidRegion(string region) => 

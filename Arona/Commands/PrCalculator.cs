@@ -4,6 +4,7 @@ using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using Arona.Autocomplete;
 using Arona.Database;
+using Arona.Models;
 using Arona.Utility;
 
 namespace Arona.Commands;
@@ -13,12 +14,21 @@ public class PrCalculator : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SubSlashCommand("single", "PR of one ship for 1 game")]
     public async Task SingleAsync(
-        [SlashCommandParameter(Name = "ship", Description = "The ship to calculate PR for", AutocompleteProviderType = typeof(ShipAutocomplete))] string shipData,
-        [SlashCommandParameter(Name = "damage", Description = "Damage dealt")] int damage,
-        [SlashCommandParameter(Name = "kills", Description = "Number of kills", MinValue = 0, MaxValue = 12)] int kills,
-        [SlashCommandParameter(Name = "outcome", Description = "Win or loss")] GameOutcome outcome
+        [SlashCommandParameter(Name = "ship", Description = "The ship to calculate PR for", AutocompleteProviderType = typeof(ShipAutocomplete))]
+        string shipData,
+
+        [SlashCommandParameter(Name = "damage", Description = "Damage dealt")]
+        int damage,
+
+        [SlashCommandParameter(Name = "kills", Description = "Number of kills", MinValue = 0, MaxValue = 12)]
+        int kills,
+
+        [SlashCommandParameter(Name = "outcome", Description = "Win or loss")]
+        GameOutcome outcome
     )
     {
+        Guild.Exists(Context.Interaction);
+
         string[] split = shipData.Split('|');
         
         string id = split[0];
@@ -46,42 +56,28 @@ public class PrCalculator : ApplicationCommandModule<ApplicationCommandContext>
                 
         int pr = (int)Math.Round((700 * normalization.damage) + (300 * normalization.kills) + (150 * normalization.win));
 
-        var embed = new EmbedProperties()
-            .WithTitle($"{tier} {name}")
-            .WithColor(new Color(Convert.ToInt32(PersonalRatingColors.GetColor(pr), 16)))
-            .AddFields(
-                new EmbedFieldProperties()
-                    .WithName("PR")
-                    .WithValue($"**{pr}**")
-                    .WithInline(false),
-                new EmbedFieldProperties()
-                    .WithName("Damage")
-                    .WithValue(damage.ToString())
-                    .WithInline(), // True, WithInline() förvald parameter är true
-                new EmbedFieldProperties()
-                    .WithName("Kills")
-                    .WithValue(kills.ToString())
-                    .WithInline(),
-                new EmbedFieldProperties()
-                    .WithName("Outcome")
-                    .WithValue(outcome.ToString())
-                    .WithInline()
-            )
-            .WithThumbnail(new EmbedThumbnailProperties(imageUrl));
-                
-        var props = new InteractionMessageProperties()
-            .WithEmbeds([ embed ]);
-
-        await Context.Interaction.SendResponseAsync(InteractionCallback.Message(props));
+        await Context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties{ Embeds = [ new EmbedProperties
+        {
+            Title = $"{tier} {name}",
+            Color = new Color(Convert.ToInt32(PersonalRatingColors.GetColor(pr), 16)),
+            Thumbnail = imageUrl,
+            Description = $"**PR:** {pr}\n\n" +
+                          $"**Damage:** {damage}\n" +
+                          $"**Kills:** {kills}\n" +
+                          $"**Outcome:** {outcome}"
+        }] }));
     }
 
     [SubSlashCommand("session", "Detailed session PR. Input guide is in github repository (/help)")]
     public async Task SessionAsync(
-        [SlashCommandParameter(Name = "input_str", Description = "Input string of your session. Full guide on github repository")] string sessionStr
+        [SlashCommandParameter(Name = "input_str", Description = "Input string of your session. Full guide on github repository")]
+        string sessionStr
     )
     {
         var deferredMessage = new DeferredMessage{ Interaction = Context.Interaction};
         await deferredMessage.SendAsync();
+
+        Guild.Exists(Context.Interaction);
 
         string[] sessionData = sessionStr.Split('_');
 

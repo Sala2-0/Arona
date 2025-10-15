@@ -212,7 +212,7 @@
 
         <div id="ratings">
           <div class="rating" v-for="team in injected.Teams">
-            <p class="rating-name">{{ team.TeamName }}</p>
+            <p class="rating-name">{{ team.TeamNumber }}</p>
 
             <div class="circle" :style="{ color: team.Color }">
             <div class="line" v-for="_ in team.Division"></div>

@@ -1,10 +1,14 @@
 ﻿using System.Globalization;
-using System.Text.Json;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using Arona.ApiModels;
+using Arona.Database;
+using Arona.Models;
 using Arona.Utility;
+
+using League = Arona.Utility.ClanUtils.League;  
+using Division = Arona.Utility.ClanUtils.Division;
 
 namespace Arona.Commands;
 
@@ -12,54 +16,52 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("leaderboard", "Latest clan battles season leaderboard. Default: Hurricane I (Global) [Ratings]")]
     public async Task LeaderboardAsync(
-        [SlashCommandParameter(Name = "league", Description = "League", AutocompleteProviderType = typeof(League))]
-        int league = 0,
-        [SlashCommandParameter(Name = "division", Description = "Division",
-            AutocompleteProviderType = typeof(Division))]
-        int division = 1,
-        [SlashCommandParameter(Name = "region", Description = "Region", AutocompleteProviderType = typeof(Realm))]
-        string realm = "global",
-        [SlashCommandParameter(Name = "type", Description = "The clan parameter rankings will base on", AutocompleteProviderType = typeof(LeaderboardType))]
-        string leaderboardType = "ratings"
+        [SlashCommandParameter(Name = "league", Description = "League")]
+        League league = League.Hurricane,
+
+        [SlashCommandParameter(Name = "division", Description = "Division")]
+        Division division = Division.I,
+
+        [SlashCommandParameter(Name = "region", Description = "Region")]
+        Realm realm = Realm.Global,
+
+        [SlashCommandParameter(Name = "type", Description = "The clan parameter rankings will base on")]
+        LeaderboardType leaderboardType = LeaderboardType.Ratings
     )
     {
         var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
-
         await deferredMessage.SendAsync();
 
-        if (league == 0 && division is 2 or 3)
+        Guild.Exists(Context.Interaction);
+
+        if (league == League.Hurricane && division is Division.II or Division.III)
         {
-            await deferredMessage.EditAsync($"❌ Hurricane {Ratings.GetDivision(division)} doesn't exist.");
+            await deferredMessage.EditAsync($"❌ Hurricane {division} doesn't exist.");
             return;
         }
 
-        using HttpClient client = new();
-        string apiUrl = LadderStructure.GetApiGeneralUrl(league, division, realm);
-
         try
         {
-            var res = await client.GetAsync(apiUrl);
+            var data = await LadderStructure.GetAsync((int)league, (int)division, realm.ToString().ToLower());
 
-            var structure = JsonSerializer.Deserialize<LadderStructure[]>(await res.Content.ReadAsStringAsync());
-
-            if (structure == null || structure.Length == 0)
+            if (data.Length == 0)
             {
                 await deferredMessage.EditAsync("❌ No data found for the specified league and division.");
                 return;
             }
 
-            if (leaderboardType == "ratings")
+            if (leaderboardType == LeaderboardType.Ratings)
             {
                 var embed = new EmbedProperties()
                     .WithTitle(
-                        $"Leaderboard - {Ratings.GetLeague(league)} {Ratings.GetDivision(division)} ({LadderStructure.ConvertRealm(realm)}) [Ratings]")
-                    .WithColor(new Color(Convert.ToInt32(Ratings.GetLeagueColor(league).TrimStart('#'), 16)));
+                        $"Leaderboard - {league} {division} ({LadderStructure.ConvertRealm(realm.ToString().ToLower())}) [Ratings]")
+                    .WithColor(new Color(Convert.ToInt32(ClanUtils.GetLeagueColor(league).TrimStart('#'), 16)));
 
                 var fields = new List<EmbedFieldProperties>();
 
-                foreach (var clan in structure)
+                foreach (var clan in data)
                 {
-                    string successFactor = SuccessFactor.Calculate(clan.PublicRating, clan.BattlesCount, Ratings.GetLeagueExponent(league))
+                    string successFactor = SuccessFactor.Calculate(clan.PublicRating, clan.BattlesCount, ClanUtils.GetLeagueExponent(league))
                         .ToString("0.##", CultureInfo.InvariantCulture);
 
                     fields.Add(new EmbedFieldProperties()
@@ -72,24 +74,24 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
                 await Context.Interaction.ModifyResponseAsync(options => options.Embeds = [embed]);
             }
 
-            else if (leaderboardType == "success_factor")
+            else if (leaderboardType == LeaderboardType.SuccessFactor)
             {
-                foreach (var clan in structure)
+                foreach (var clan in data)
                 {
                     clan.SuccessFactor = Math.Round(
-                        SuccessFactor.Calculate(clan.PublicRating, clan.BattlesCount, Ratings.GetLeagueExponent(league)),
+                        SuccessFactor.Calculate(clan.PublicRating, clan.BattlesCount, ClanUtils.GetLeagueExponent(league)),
                         2
                     );
                 }
 
                 var embed = new EmbedProperties()
                     .WithTitle(
-                        $"Leaderboard - {Ratings.GetLeague(league)} {Ratings.GetDivision(division)} ({LadderStructure.ConvertRealm(realm)}) [S/F]")
-                    .WithColor(new Color(Convert.ToInt32(Ratings.GetLeagueColor(league), 16)));
+                        $"Leaderboard - {league} {division} ({LadderStructure.ConvertRealm(realm.ToString().ToLower())}) [S/F]")
+                    .WithColor(new Color(Convert.ToInt32(ClanUtils.GetLeagueColor(league), 16)));
 
                 var fields = new List<EmbedFieldProperties>();
 
-                var sortedStructure = structure.OrderByDescending(s => s.SuccessFactor).ToList();
+                var sortedStructure = data.OrderByDescending(s => s.SuccessFactor).ToList();
 
                 for (int i = 0; i < sortedStructure.Count; i++)
                 {
@@ -115,68 +117,16 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
     }
 }
 
-internal class League : IAutocompleteProvider<AutocompleteInteractionContext>
+public enum Realm
 {
-    public ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(
-        ApplicationCommandInteractionDataOption option,
-        AutocompleteInteractionContext context)
-    {
-        var leagues = new[]
-        {
-            new ApplicationCommandOptionChoiceProperties("Hurricane", 0),
-            new ApplicationCommandOptionChoiceProperties("Typhoon", 1),
-            new ApplicationCommandOptionChoiceProperties("Storm", 2),
-            new ApplicationCommandOptionChoiceProperties("Gale", 3),
-            new ApplicationCommandOptionChoiceProperties("Squall", 4)
-        };
-        return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>(leagues);
-    }
+    [SlashCommandChoice(Name = "Global")] Global,
+    [SlashCommandChoice(Name = "EU")] Eu,
+    [SlashCommandChoice(Name = "NA")] Us,
+    [SlashCommandChoice(Name = "ASIA")] Sg
 }
 
-internal class Division : IAutocompleteProvider<AutocompleteInteractionContext>
+public enum LeaderboardType
 {
-    public ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(
-        ApplicationCommandInteractionDataOption option,
-        AutocompleteInteractionContext context)
-    {
-        var divisions = new[]
-        {
-            new ApplicationCommandOptionChoiceProperties("I", 1),
-            new ApplicationCommandOptionChoiceProperties("II", 2),
-            new ApplicationCommandOptionChoiceProperties("III", 3)
-        };
-        return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>(divisions);
-    }
-}
-
-internal class Realm : IAutocompleteProvider<AutocompleteInteractionContext>
-{
-    public ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(
-        ApplicationCommandInteractionDataOption option,
-        AutocompleteInteractionContext context)
-    {
-        var realms = new[]
-        {
-            new ApplicationCommandOptionChoiceProperties("Global", "global"),
-            new ApplicationCommandOptionChoiceProperties("EU", "eu"),
-            new ApplicationCommandOptionChoiceProperties("NA", "us"),
-            new ApplicationCommandOptionChoiceProperties("ASIA", "sg")
-        };
-        return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>(realms);
-    }
-}
-
-internal class LeaderboardType : IAutocompleteProvider<AutocompleteInteractionContext>
-{
-    public ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(
-        ApplicationCommandInteractionDataOption option,
-        AutocompleteInteractionContext context)
-    {
-        var types = new[]
-        {
-            new ApplicationCommandOptionChoiceProperties("Ratings", "ratings"),
-            new ApplicationCommandOptionChoiceProperties("S/F", "success_factor")
-        };
-        return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>(types);
-    }
+    [SlashCommandChoice(Name = "Ratings")] Ratings,
+    [SlashCommandChoice(Name = "S/F")] SuccessFactor
 }

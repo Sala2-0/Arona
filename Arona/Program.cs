@@ -24,7 +24,7 @@ internal class Program
     {
         Config.Initialize();
 
-        DB = new LiteDatabase(Path.Combine(AppContext.BaseDirectory, "Arona_DB.db"));
+        DB = new LiteDatabase(Path.Combine(AppContext.BaseDirectory, Config.Database));
         Collections.Initialize(DB);
 
         var builder = Host.CreateApplicationBuilder(args);
@@ -44,7 +44,7 @@ internal class Program
         Client = host.Services.GetRequiredService<GatewayClient>();
 
         // Varje 5 minut, hämta API och kolla klan aktiviteter
-        Timer clanMonitorTask = new(300000); // 300000
+        Timer clanMonitorTask = new(30000); // 300000
         clanMonitorTask.Elapsed += async (_, _) => await UpdateClan.UpdateClansAsync();
         clanMonitorTask.AutoReset = true;
         clanMonitorTask.Enabled = true;
@@ -64,8 +64,12 @@ internal class Program
         );
     }
 
-    // Väntar på att UpdateClansAsync eller ?dbcopy slutförs om det pågår en
-    // Används bara för kommandon som skriver till databasen
+    /// <summary>
+    /// Väntar på att UpdateClansAsync eller ?dbcopy slutförs om det pågår en
+    /// </summary>
+    /// <remarks>
+    /// Används bara för kommandon eller kod som skriver till databasen
+    /// </remarks>
     public static async Task WaitForUpdateAsync()
     {
         while (UpdateProgress)
@@ -76,7 +80,12 @@ internal class Program
         }
     }
 
-    // Vänta tills pågående databasskrivning för en guild är klar
+    /// <summary>
+    /// Vänta tills pågående databasskrivning för en guild är klar
+    /// </summary>
+    /// <param name="guildId">
+    /// Guild ID att vänta på
+    /// </param>
     public static async Task WaitForWriteAsync(string guildId)
     {
         while (ActiveWrites.Contains(guildId))
@@ -87,7 +96,9 @@ internal class Program
         }
     }
 
-    // Vänta tills alla pågående databasskrivningar är klara
+    /// <summary>
+    /// Vänta tills alla pågående databasskrivningar är klara
+    /// </summary>
     public static async Task WaitForWriteAsync()
     {
         while (ActiveWrites.Count > 0)

@@ -1,7 +1,7 @@
 ﻿using NetCord;
 using NetCord.Rest;
 
-namespace Arona.Utility;
+namespace Arona.Models;
 
 internal class DeferredMessage
 {
@@ -32,7 +32,7 @@ internal static class PrivateMessage
         await ownerPrivateMsg.SendMessageAsync(
             $"Heyyyy **{ownerName}**. Just a reminder that I don't have access to text channel `{channelId}` in your server `{parsedGuild.Name}`."
             + "\n\nPlease give me permission to see and send messages in the channel or give me another channel so I can continue announcing events :3"
-            + "\n\nArona-chan"
+            + "\n\n- Arona"
         );
     }
 
@@ -48,7 +48,7 @@ internal static class PrivateMessage
         await ownerPrivateMsg.SendMessageAsync(
             $"Heyyyy **{ownerName}**. Just a reminder that I don't have permission to send messages in channel `{channelName}` in your server `{parsedGuild.Name}`."
             + "\n\nPlease give me permission to send messages in the channel or give me another channel so I can continue announcing events :3"
-            + "\n\nArona-chan"
+            + "\n\n- Arona"
         );
     }
 }

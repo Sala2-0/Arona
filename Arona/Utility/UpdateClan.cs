@@ -1,10 +1,9 @@
 ﻿using System.Globalization;
-using System.Text.Json;
 using NetCord;
 using NetCord.Rest;
 using Arona.ApiModels;
-using Arona.Commands;
 using Arona.Database;
+using Arona.Models;
 
 namespace Arona.Utility;
 
@@ -17,302 +16,180 @@ internal static class UpdateClan
 
         Program.UpdateProgress = true;
 
-        using var client = new HttpClient();
+        Collections.Clans.DeleteMany(c => c.ExternalData.Guilds.Count == 0);
+
+        var self = await Program.Client!.Rest.GetCurrentUserAsync();
+        var botIconUrl = self.GetAvatarUrl()!.ToString();
 
         foreach (var dbClan in Collections.Clans.Find(_ => true).ToList())
         {
-            if (dbClan.Guilds.Count == 0)
-            {
-                Collections.Clans.Delete(dbClan.Id);
-                continue;
-            }
+            List<Guild> guilds = [];
 
-            List<string> channelIds = [];
+            foreach (var guildId in dbClan.ExternalData.Guilds.ToList())
+            {
+                var guild = Collections.Guilds.FindOne(g => g.Id == guildId);
+
+                if (guild == null || !guild.Clans.Exists(clanId => clanId == dbClan.Clan.Id))
+                    dbClan.ExternalData.Guilds.Remove(guildId);
+                else
+                    guilds.Add(guild);
+            }
 
             try
             {
-                foreach (var guildId in dbClan.Guilds.ToList())
-                {
-                    var guild = Collections.Guilds.FindOne(g => g.Id == guildId);
-
-                    if (guild == null || !guild.Clans.Exists(clanId => clanId == dbClan.Id))
-                        dbClan.Guilds.Remove(guildId);
-                    else
-                        channelIds.Add(guild.ChannelId);
-                }
-
                 long currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
-                var self = await Program.Client!.Rest.GetCurrentUserAsync();
-                var botIconUrl = self.GetAvatarUrl()!.ToString();
-
-                if (currentTime >= dbClan.SessionEndTime && dbClan.RecentBattles.Count > 0)
+                // Session ended
+                if (currentTime >= dbClan.ExternalData.SessionEndTime && dbClan.ExternalData.RecentBattles.Count > 0)
                 {
                     string currentDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
 
                     int wins = 0;
                     int totalPoints = 0;
 
-                    foreach (var battle in dbClan.RecentBattles)
+                    foreach (var battle in dbClan.ExternalData.RecentBattles)
                     {
-                        if (battle.GameResult == "Victory") wins++;
+                        if (battle.IsVictory) wins++;
 
                         totalPoints += battle.PointsEarned;
                     }
 
-                    var msg = new SessionMsgProperties
+                    var sessionEmbed = new SessionEmbed
                     {
                         IconUrl = botIconUrl,
-                        ClanTag = dbClan.ClanTag,
-                        ClanName = dbClan.ClanName,
+                        ClanFullName = $"[{dbClan.Clan.Tag}] {dbClan.Clan.Name}",
+                        BattlesCount = dbClan.ExternalData.RecentBattles.Count,
                         Date = currentDate,
-                        TotalBattlesValue = dbClan.RecentBattles.Count.ToString(),
-                        WinRateValue = Math.Round((double)wins / dbClan.RecentBattles.Count * 100, 2).ToString(CultureInfo.InvariantCulture) + "%",
-                        TotalPointsValue = totalPoints.ToString(),
-                        AveragePointsValue = Math.Round((double)totalPoints / dbClan.RecentBattles.Count, 2).ToString(CultureInfo.InvariantCulture)
-                    };
+                        Points = totalPoints,
+                        WinsCount = wins
+                    }.CreateEmbed();
 
-                    foreach (var channel in channelIds)
-                        await SendMessage(ulong.Parse(channel), CreateEmbed(msg));
+                    foreach (var guild in guilds)
+                        await SendMessage(ulong.Parse(guild.ChannelId), sessionEmbed);
 
-                    dbClan.RecentBattles.Clear();
-                    dbClan.SessionEndTime = null;
+                    dbClan.ExternalData.RecentBattles.Clear();
+                    dbClan.ExternalData.SessionEndTime = null;
 
                     Collections.Clans.Update(dbClan);
                     continue;
                 }
 
-                var res = await client.GetAsync(Clanbase.GetApiUrl(dbClan.Id.ToString(), dbClan.Region));
-
-                var apiClan = JsonSerializer.Deserialize<Clanbase>(await res.Content.ReadAsStringAsync(), Converter.Options)!;
-
-                int clanId = apiClan.ClanView.Clan.Id;
-
-                int latestSeason = apiClan.ClanView.WowsLadder.SeasonNumber;
-
-                string tag = apiClan.ClanView.Clan.Tag;
-                string name = apiClan.ClanView.Clan.Name;
-
-                int? primeTime = apiClan.ClanView.WowsLadder.PrimeTime;
-                int? plannedPrimeTime = apiClan.ClanView.WowsLadder.PlannedPrimeTime;
+                var apiClan = await ClanBase.GetAsync(dbClan.Clan.Id, dbClan.ExternalData.Region);
                 
                 // Hämta rankningar
-                Task<string> globalRankTask = client.GetStringAsync(LadderStructure.GetApiTargetClanUrl(clanId.ToString(), dbClan.Region));
-                Task<string> regionRankTask = client.GetStringAsync(LadderStructure.GetApiTargetClanUrl(clanId.ToString(), dbClan.Region, LadderStructure.ConvertRegion(dbClan.Region)));
+                Task<LadderStructure[]> globalRankTask = LadderStructure.GetAsync(apiClan.Clan.Id, dbClan.ExternalData.Region);
+                Task<LadderStructure[]> regionRankTask = LadderStructure.GetAsync(apiClan.Clan.Id, dbClan.ExternalData.Region, LadderStructure.ConvertRegion(dbClan.ExternalData.Region));
 
-                var results = await Task.WhenAll(globalRankTask, regionRankTask);
+                await Task.WhenAll(globalRankTask, regionRankTask);
 
-                var globalRank = JsonSerializer.Deserialize<LadderStructure[]>(results[0]);
-                var regionRank = JsonSerializer.Deserialize<LadderStructure[]>(results[1]);
-
-                dbClan.GlobalRank = globalRank!.FirstOrDefault(r => r.Id == clanId)!.Rank;
-                dbClan.RegionRank = regionRank!.FirstOrDefault(r => r.Id == clanId)!.Rank;
+                var apiClanData = new
+                {
+                    Id = apiClan.Clan.Id,
+                    Tag = apiClan.Clan.Tag,
+                    Name = apiClan.Clan.Name,
+                    LatestSeason = apiClan.WowsLadder.SeasonNumber,
+                    PrimeTime = apiClan.WowsLadder.PrimeTime,
+                    PlannedPrimeTime = apiClan.WowsLadder.PlannedPrimeTime,
+                    GlobalRank = globalRankTask.Result.First(c => c.Id == apiClan.Clan.Id).Rank,
+                    RegionRank = regionRankTask.Result.First(c => c.Id == apiClan.Clan.Id).Rank
+                };
 
                 // Vid ett nytt säsong
-                if (dbClan.SeasonNumber != latestSeason)
+                if (dbClan.WowsLadder.SeasonNumber != apiClanData.LatestSeason)
                 {
-                    dbClan.SeasonNumber = latestSeason;
-                    dbClan.RecentBattles.Clear();
-                    dbClan.SessionEndTime = null;
-
-                    dbClan.Ratings = apiClan.ClanView.WowsLadder.Ratings.Where(r => r.SeasonNumber == latestSeason)
-                        .Select(r =>
-                            new Database.Rating
-                            {
-                                TeamNumber = r.TeamNumber,
-                                League = r.League,
-                                Division = r.Division,
-                                DivisionRating = r.DivisionRating,
-                                PublicRating = r.PublicRating,
-                                Stage = null, // Stage skall vara null när ny säsong startas
-                                BattlesCount = r.BattlesCount
-                            }).ToList();
+                    dbClan.WowsLadder = apiClan.WowsLadder;
+                    dbClan.ExternalData.RecentBattles.Clear();
+                    dbClan.ExternalData.SessionEndTime = null;
+                    dbClan.WowsLadder.Ratings.RemoveAll(r => r.SeasonNumber != dbClan.WowsLadder.SeasonNumber);
+                    dbClan.ExternalData.GlobalRank = apiClanData.GlobalRank;
+                    dbClan.ExternalData.RegionRank = apiClanData.RegionRank;
 
                     Collections.Clans.Update(dbClan);
                     continue;
                 }
 
-                if (dbClan.PrimeTime.Active == null && primeTime != null)
+                if (dbClan.WowsLadder.PrimeTime == null && apiClanData.PrimeTime != null)
                 {
-                    dbClan.SessionEndTime = GetEndSession(primeTime);
+                    dbClan.ExternalData.SessionEndTime = ClanUtils.GetEndSession(apiClanData.PrimeTime);
 
-                    foreach (var channel in channelIds)
+                    foreach (var guild in guilds)
                         await Program.Client.Rest.SendMessageAsync(
-                            channelId: ulong.Parse(channel),
-                            message: $"`[{tag}] {name} has started playing`"
+                            channelId: ulong.Parse(guild.ChannelId),
+                            message: $"`[{apiClanData.Tag}] {apiClanData.Name} has started playing`"
                         );
                 }
-                dbClan.PrimeTime.Active = primeTime;
-                dbClan.PrimeTime.Planned = plannedPrimeTime;
 
-                long lastBattleUnix = DateTimeOffset.Parse(apiClan.ClanView.WowsLadder.LastBattleAt).ToUnixTimeSeconds();
+                long lastBattleUnix = DateTimeOffset.Parse(apiClan.WowsLadder.LastBattleAt).ToUnixTimeSeconds();
 
                 // Slag resultat
-                foreach (var dbRating in dbClan.Ratings)
+                for (int i = 0; i < dbClan.WowsLadder.Ratings.Count; i++)
                 {
-                    var apiRating = apiClan.ClanView.WowsLadder.Ratings
-                        .FirstOrDefault(r => r.TeamNumber == dbRating.TeamNumber && r.SeasonNumber == latestSeason) ?? null;
+                    var dbRating = dbClan.WowsLadder.Ratings[i];
+
+                    var apiRating = apiClan.WowsLadder.Ratings
+                        .FirstOrDefault(r => r.TeamNumber == dbRating.TeamNumber && r.SeasonNumber == apiClanData.LatestSeason) ?? null;
 
                     if (apiRating == null || apiRating.BattlesCount == dbRating.BattlesCount) continue;
 
-                    var msgProp = new MsgProperties
+                    bool isVictory = apiRating.WinsCount > dbRating.WinsCount;
+
+                    var embedSkeleton = new BattleEmbed
                     {
                         IconUrl = botIconUrl,
-                        ClanTag = tag,
-                        ClanName = name,
-                        LastBattleTime = lastBattleUnix,
+                        BattleTime = lastBattleUnix,
+                        ClanFullName = $"[{apiClanData.Tag}] {apiClanData.Name}",
                         TeamNumber = apiRating.TeamNumber,
-                        GlobalRank = $"#{dbClan.GlobalRank.ToString()}",
-                        RegionRank = $"#{dbClan.RegionRank.ToString()}",
+
+                        League = apiRating.League,
+                        Division = apiRating.Division,
+                        DivisionRating = apiRating.DivisionRating,
+
+                        GlobalRank = apiClanData.GlobalRank,
+                        RegionRank = apiClanData.RegionRank,
                         SuccessFactor = SuccessFactor.Calculate(
                             rating: apiRating.PublicRating,
                             battlesCount: apiRating.BattlesCount,
-                            leagueExponent: Ratings.GetLeagueExponent(apiRating.League)
-                        ).ToString("0.##", CultureInfo.InvariantCulture)
+                            leagueExponent: ClanUtils.GetLeagueExponent(apiRating.League)
+                        ),
+
+                        IsVictory = isVictory,
+                        Stage = apiRating.Stage
                     };
 
-                    bool played = false;
-
+                    // Entering stage
                     if (apiRating.Stage != null)
-                    {
-                        string type = apiRating.Stage.Type;
-                        string league = Ratings.GetLeague(apiRating.Stage.TargetLeague - (type == "demotion" ? 1 : 0));
-                        string division = Ratings.GetDivision(
-                            type == "promotion"
-                            ? apiRating.Stage.TargetDivision
-                            : apiRating.Division
-                        );
+                        embedSkeleton.StageProgressOutcome = apiRating.Stage.Progress.Last() == "victory" ? 1 : 0;
 
-                        msgProp.ResultMsg = (
-                            type == "promotion"
-                            ? "Qualification for"
-                            : "Qualification to stay in"
-                        ) + $" {league} {division}";
-
-                        if (apiRating.Stage?.Progress.Length == 0 && dbRating.Stage == null)
-                        {
-                            msgProp.GameResult = type == "promotion"
-                                ? "Victory"
-                                : "Defeat";
-
-                            msgProp.GameResultMsg = Ratings.GetProgress(apiRating.Stage.Progress);
-
-                            played = true;
-                        }
-
-                        else if (apiRating.Stage?.Progress.Length > dbRating.Stage?.Progress.Count)
-                        {
-                            msgProp.GameResult = apiRating.Stage.Progress.Last() == "victory"
-                                ? "Victory"
-                                : "Defeat";
-
-                            msgProp.GameResultMsg = Ratings.GetProgress(apiRating.Stage.Progress);
-
-                            played = true;
-                        }
-                    }
-
+                    // Leaving stage
                     else if (dbRating.Stage != null)
+                        embedSkeleton.StageProgressOutcome = apiRating.PublicRating > dbRating.PublicRating ? -1 : -2;
+
+                    // Regular battle
+                    else if (apiRating.PublicRating != dbRating.PublicRating)
+                        embedSkeleton.PointsDelta = apiRating.PublicRating - dbRating.PublicRating;
+                    else
+                        continue;
+
+                    foreach (var guild in guilds)
+                        await SendMessage(ulong.Parse(guild.ChannelId), embedSkeleton.CreateEmbed());
+
+                    dbClan.ExternalData.RecentBattles.Add(new ClanBase.RecentBattle
                     {
-                        var league = Ratings.GetLeague(apiRating.League);
-                        var division = Ratings.GetDivision(apiRating.Division);
-                        var divisionRating = apiRating.DivisionRating;
+                        BattleTime = lastBattleUnix,
+                        IsVictory = isVictory,
+                        PointsEarned = apiRating.PublicRating - dbRating.PublicRating,
+                        TeamNumber = apiRating.TeamNumber,
+                    });
 
-                        if (apiRating.League < dbRating.League)
-                        {
-                            msgProp.GameResult = "Victory";
-                            msgProp.ResultMsg = $"Promoted to {league} {division} ({divisionRating})";
-                            msgProp.GameResultMsg = "Qualified";
-                        }
-
-                        else if (apiRating.League > dbRating.League)
-                        {
-                            msgProp.GameResult = "Defeat";
-                            msgProp.ResultMsg = $"Demoted to {league} {division} ({divisionRating})";
-                            msgProp.GameResultMsg = "Failed to qualify";
-                        }
-
-                        else if (apiRating.League == dbRating.League && dbRating.Stage.Type == "demotion")
-                        {
-                            msgProp.GameResult = "Victory";
-                            msgProp.ResultMsg = $"Staying in {league} {division} ({divisionRating})";
-                            msgProp.GameResultMsg = "Qualified";
-                        }
-
-                        else if (apiRating.League == dbRating.League && dbRating.Stage.Type == "promotion")
-                        {
-                            msgProp.GameResult = "Defeat";
-                            msgProp.ResultMsg = $"Demoted to {league} {division} ({divisionRating})";
-                            msgProp.GameResultMsg = "Failed to qualify";
-                        }
-
-                        played = true;
-                    }
-
-                    else if (apiRating.Division != dbRating.Division)
-                    {
-                        bool promoted = apiRating.Division < dbRating.Division;
-
-                        string league = Ratings.GetLeague(apiRating.League);
-                        string division = Ratings.GetDivision(apiRating.Division);
-                        int divisionRating = apiRating.DivisionRating;
-
-                        msgProp.GameResult = promoted ? "Victory" : "Defeat";
-                        msgProp.GameResultMsg = promoted
-                            ? $"+{apiRating.DivisionRating + 100 - dbRating.DivisionRating}"
-                            : $"-{dbRating.DivisionRating + 100 - apiRating.DivisionRating}";
-                        msgProp.ResultMsg = $"{(promoted ? "Promoted to" : "Demoted to")} {league} {division} ({divisionRating})";
-
-                        played = true;
-                    }
-
-                    else if (apiRating.DivisionRating != dbRating.DivisionRating)
-                    {
-                        bool victory = apiRating.DivisionRating > dbRating.DivisionRating;
-
-                        string league = Ratings.GetLeague(apiRating.League);
-                        string division = Ratings.GetDivision(apiRating.Division);
-                        int divisionRating = apiRating.DivisionRating;
-
-                        msgProp.GameResult = victory ? "Victory" : "Defeat";
-                        msgProp.GameResultMsg = victory
-                            ? $"+{apiRating.DivisionRating - dbRating.DivisionRating}"
-                            : $"-{dbRating.DivisionRating - apiRating.DivisionRating}";
-
-                        msgProp.ResultMsg = $"{league} {division} ({divisionRating})";
-
-                        played = true;
-                    }
-
-                    if (played)
-                    {
-                        dbClan.RecentBattles.Add(new RecentBattle
-                        {
-                            BattleTime = lastBattleUnix,
-                            GameResult = msgProp.GameResult,
-                            PointsEarned = apiRating.PublicRating - dbRating.PublicRating,
-                            TeamNumber = apiRating.TeamNumber,
-                        });
-                        
-                        foreach (var channel in channelIds)
-                            await SendMessage(ulong.Parse(channel), CreateEmbed(msgProp));
-                    }
-
-                    dbRating.TeamNumber = apiRating.TeamNumber;
-                    dbRating.League = apiRating.League;
-                    dbRating.Division = apiRating.Division;
-                    dbRating.DivisionRating = apiRating.DivisionRating;
-                    dbRating.PublicRating = apiRating.PublicRating;
-                    dbRating.Stage = apiRating.Stage != null ? new Database.Stage
-                    {
-                        Type = apiRating.Stage.Type,
-                        TargetLeague = apiRating.Stage.TargetLeague,
-                        TargetDivision = apiRating.Stage.TargetDivision,
-                        Progress = apiRating.Stage.Progress.ToList(),
-                        Battles = apiRating.Stage.Battles,
-                        VictoriesRequired = apiRating.Stage.VictoriesRequired
-                    } : null;
+                    dbClan.WowsLadder.Ratings[i] = apiRating;
                 }
+
+                dbClan.ExternalData.GlobalRank = apiClanData.GlobalRank;
+                dbClan.ExternalData.RegionRank = apiClanData.RegionRank;
+                dbClan.WowsLadder.PrimeTime = apiClanData.PrimeTime;
+                dbClan.WowsLadder.PlannedPrimeTime = apiClanData.PlannedPrimeTime;
+
+                // throw new Exception("Stop update for debug");
 
                 Collections.Clans.Update(dbClan);
             }
@@ -325,162 +202,15 @@ internal static class UpdateClan
         Program.UpdateProgress = false;
     }
 
-    private class MsgProperties
-    {
-        public required string IconUrl { get; init; }
-        public required string ClanTag { get; init; }
-        public required string ClanName { get; init; }
-        public required long LastBattleTime { get; init; }
-        public required int TeamNumber { get; init; }
-        public string GameResult { get; set; } = string.Empty;
-        public string GameResultMsg { get; set; } = string.Empty;
-        public  string ResultMsg { get; set; } = string.Empty;
-        public required string GlobalRank { get; init; }
-        public required string RegionRank { get; init; }
-        public required string SuccessFactor { get; init; }
-    }
-
-    private class SessionMsgProperties
-    {
-        public required string IconUrl { get; init; }
-        public required string ClanTag { get; init; }
-        public required string ClanName { get; init; }
-        public required string Date { get; init; }
-        public required string TotalBattlesValue { get; init; }
-        public required string WinRateValue { get; init; }
-        public required string TotalPointsValue { get; init; }
-        public required string AveragePointsValue { get; init; }
-    }
-
     private static async Task SendMessage(ulong channelId, EmbedProperties embed)
     {
         try
         {
-            await Program.Client!.Rest.SendMessageAsync(
-                channelId,
-                new MessageProperties()
-                    .WithEmbeds([embed])
-            );
+            await Program.Client!.Rest.SendMessageAsync(channelId, new MessageProperties{ Embeds = [embed] });
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error sending message: {ex.Message}");
         }
-    }
-
-    private static EmbedProperties CreateEmbed(MsgProperties prop) =>
-        new EmbedProperties()
-            .WithColor(
-                new Color(
-                Convert.ToInt32(
-                        value: prop.GameResult == "Victory"
-                            ? "00FF00"
-                            : "FF0000", 
-                        fromBase: 16
-                    )
-                )
-            )
-            .WithAuthor(
-                new EmbedAuthorProperties()
-                    .WithName("Arona's activity report")
-                    .WithIconUrl(prop.IconUrl)
-            )
-            .WithTitle($"`[{prop.ClanTag}] {prop.ClanName}` finished a battle")
-            .AddFields(
-                new EmbedFieldProperties()
-                    .WithName("Time")
-                    .WithValue($"<t:{prop.LastBattleTime}:f>")
-                    .WithInline(false),
-                new EmbedFieldProperties()
-                    .WithName("Team")
-                    .WithValue(GetTeamString(prop.TeamNumber))
-                    .WithInline(false),
-                new EmbedFieldProperties()
-                    .WithName(prop.GameResult)
-                    .WithValue(prop.GameResultMsg)
-                    .WithInline(false),
-                new EmbedFieldProperties()
-                    .WithName("Result")
-                    .WithValue(prop.ResultMsg)
-                    .WithInline(false),
-                new EmbedFieldProperties()
-                    .WithName("Global rank")
-                    .WithValue(prop.GlobalRank)
-                    .WithInline(),
-                new EmbedFieldProperties()
-                    .WithName("Region rank")
-                    .WithValue(prop.RegionRank)
-                    .WithInline(),
-                new EmbedFieldProperties()
-                    .WithName("S/F")
-                    .WithValue(prop.SuccessFactor)
-                    .WithInline()
-            );
-
-    private static EmbedProperties CreateEmbed(SessionMsgProperties prop) =>
-        new EmbedProperties()
-            .WithColor(
-                new Color(Convert.ToInt32("FFEB85", 16))
-            )
-            .WithAuthor(
-                new EmbedAuthorProperties()
-                    .WithName("Arona's activity report")
-                    .WithIconUrl(prop.IconUrl)
-            )
-            .WithTitle($"`[{prop.ClanTag}] {prop.ClanName}`")
-            .WithDescription($"Clan Battles session [{prop.Date}]")
-            .AddFields(
-                new EmbedFieldProperties()
-                    .WithName("Total battles played")
-                    .WithValue(prop.TotalBattlesValue)
-                    .WithInline(),
-                new EmbedFieldProperties()
-                    .WithName("Win rate")
-                    .WithValue(prop.WinRateValue)
-                    .WithInline(),
-                new EmbedFieldProperties()
-                    .WithInline(false),
-                new EmbedFieldProperties()
-                    .WithName("Total points earned")
-                    .WithValue(prop.TotalPointsValue)
-                    .WithInline(),
-                new EmbedFieldProperties()
-                    .WithName("Average points")
-                    .WithValue(prop.AveragePointsValue)
-                    .WithInline()
-            );
-
-    private static string GetTeamString(int teamNumber) => teamNumber switch
-    {
-        1 => "Alpha",
-        2 => "Bravo",
-        _ => "Unknown"
-    };
-
-    public static long? GetEndSession(int? sessionNum)
-    {
-        if (sessionNum == null) return null;
-
-        var utcNow = DateTime.UtcNow;
-
-        DateTime endSession;
-        switch (sessionNum)
-        {
-            case 0 or 1 or 2 or 3:
-                endSession = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 16, 0, 0, DateTimeKind.Utc);
-                break;
-            case 4 or 5 or 6 or 7:
-                endSession = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 21, 30, 0, DateTimeKind.Utc);
-                break;
-            case 8 or 9 or 10 or 11:
-                endSession = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 4, 0, 0, DateTimeKind.Utc);
-                if (utcNow.Hour >= 4) endSession = endSession.AddDays(1);
-                break;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(sessionNum), "Unexpected region value");
-        }
-
-        if (utcNow >= endSession) return null;
-        return ((DateTimeOffset)endSession).ToUnixTimeSeconds();
     }
 }

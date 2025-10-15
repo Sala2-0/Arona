@@ -22,4 +22,16 @@ internal static class PersonalRatingColors
         > 2100 and <= 2450 => Unicum,
         _ => Superunicum,
     };
+
+    public static string GetColor(double winRate) => winRate switch
+    {
+        >= 0 and < 46 => SuperPotatium,
+        >= 47 and < 49 => BelowAverage,
+        >= 49 and < 52 => Average,
+        >= 52 and < 54 => Good,
+        >= 54 and < 56 => VeryGood,
+        >= 56 and < 60 => Great,
+        >= 60 and < 64 => Unicum,
+        _ => Superunicum,
+    };
 }

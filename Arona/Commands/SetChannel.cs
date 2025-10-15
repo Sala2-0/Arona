@@ -1,7 +1,7 @@
 ﻿using NetCord;
 using NetCord.Services.ApplicationCommands;
 using Arona.Database;
-using Arona.Utility;
+using Arona.Models;
 
 namespace Arona.Commands;
 
@@ -9,11 +9,13 @@ public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("set_channel", "Set the channel for Arona to log.")]
     public async Task SetChannelAsync(
-        [SlashCommandParameter(Name = "channel_id", Description = "Right click a channel and select \"Copy channel-ID\"")] string channelId)
+        [SlashCommandParameter(Name = "channel_id", Description = "Right click a channel and select \"Copy channel-ID\"")]
+        string input
+    )
     {
         var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
-
         await deferredMessage.SendAsync();
+        Guild.Exists(Context.Interaction);
 
         string guildId = Context.Interaction.GuildId.ToString()!;
 
@@ -22,11 +24,11 @@ public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
 
         Program.ActiveWrites.Add(guildId);
 
+        ulong channelId = ulong.Parse(input);
+
         try
         {
-            ulong channelIdParsed = ulong.Parse(channelId);
-
-            var channel = await Program.Client!.Rest.GetChannelAsync(channelIdParsed);
+            var channel = await Program.Client!.Rest.GetChannelAsync(channelId);
 
             if (channel.GetType() != typeof(TextGuildChannel))
             {
@@ -45,7 +47,7 @@ public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
 
             if ((permissions & Permissions.SendMessages) == 0)
             {
-                await deferredMessage.EditAsync($"❌ I don't have permission to send messages in <#{channelIdParsed}>!");
+                await deferredMessage.EditAsync($"❌ I don't have permission to send messages in <#{channelId}>!");
                 return;
             }
 
@@ -54,18 +56,19 @@ public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
                 Collections.Guilds.Insert(new Guild
                 {
                     Id = Context.Guild.Id.ToString(),
-                    ChannelId = channelIdParsed.ToString()
+                    ChannelId = channelId.ToString()
                 });
             else
             {
-                guildDb.ChannelId = channelIdParsed.ToString();
+                guildDb.ChannelId = channelId.ToString();
                 Collections.Guilds.Update(guildDb);
             }
 
-            await deferredMessage.EditAsync($"✅ Channel set to <#{channelIdParsed}>");
+            await deferredMessage.EditAsync($"✅ Channel set to <#{channelId}>");
         }
         catch (Exception ex)
         {
+            await Program.Error(ex);
             await deferredMessage.EditAsync("❌ Invalid channel ID format. Please provide a valid channel ID." +
                                             "\nCould also be that Arona doesn't have permissions to see specified channel");
         }

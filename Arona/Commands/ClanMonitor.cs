@@ -34,6 +34,8 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         if (guild.Clans.Contains(clanId))
         {
             await deferredMessage.EditAsync("❌ Clan already exists in database.");
+            
+            Program.ActiveWrites.Remove(guild.Id);
             return;
         }
 

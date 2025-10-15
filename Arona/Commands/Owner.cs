@@ -164,7 +164,7 @@ public class OwnerCommands : CommandModule<CommandContext>
         }
         finally
         {
-            Program.DB = new LiteDatabase(Path.Combine(AppContext.BaseDirectory, "Arona_DB.db"));
+            Program.DB = new LiteDatabase(Path.Combine(AppContext.BaseDirectory, Config.Database));
             Collections.Initialize(Program.DB);
 
             Program.UpdateProgress = false;

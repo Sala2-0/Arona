@@ -32,7 +32,7 @@ internal class ClanListAutocomplete : IAutocompleteProvider<AutocompleteInteract
             .Take(20)
             .Select(clan =>
                 new ApplicationCommandOptionChoiceProperties(
-                    name: $"[{clan.Clan.Name}] {clan.Clan.Name} ({ClanUtils.GetRegionCode(clan.ExternalData.Region)})",
+                    name: $"[{clan.Clan.Tag}] {clan.Clan.Name} ({ClanUtils.GetRegionCode(clan.ExternalData.Region)})",
                     stringValue: clan.Clan.Id.ToString()
                 )
             )

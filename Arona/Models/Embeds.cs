@@ -25,7 +25,7 @@ internal class SessionEmbed : Base
         {
             Author = new EmbedAuthorProperties { Name = "Arona's activity report", IconUrl = IconUrl },
             Title = $"`{ClanFullName}`",
-            Color = new Color(Convert.ToInt32(PersonalRatingColors.GetColor((double)WinsCount / BattlesCount * 100))),
+            Color = new Color(Convert.ToInt32(PersonalRatingColors.GetColor((double)WinsCount / BattlesCount * 100), 16)),
             Description =
                 $"**Battles played:** {BattlesCount}\n" +
                 $"**Win rate:** {Math.Round((double)WinsCount / BattlesCount * 100, 2).ToString(CultureInfo.InvariantCulture) + "%"}\n\n" +

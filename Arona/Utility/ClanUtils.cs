@@ -8,8 +8,11 @@ public static class ClanUtils
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum StageType
     {
-        [EnumMember(Value = "promotion")] Promotion,
-        [EnumMember(Value = "Demotion")] Demotion,
+        [JsonStringEnumMemberName("promotion")]
+        Promotion,
+
+        [JsonStringEnumMemberName("demotion")]
+        Demotion,
     }
 
     public enum League

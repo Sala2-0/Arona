@@ -155,9 +155,13 @@ internal static class UpdateClan
                         IsVictory = isVictory,
                         Stage = apiRating.Stage
                     };
-
+                    
                     // Entering stage
-                    if (apiRating.Stage != null)
+                    if (apiRating.Stage != null && apiRating.Stage.Progress.Length == 0)
+                        embedSkeleton.PointsDelta = apiRating.PublicRating - dbRating.PublicRating;
+                    
+                    // Stage progression
+                    else if (apiRating.Stage != null)
                         embedSkeleton.StageProgressOutcome = apiRating.Stage.Progress.Last() == "victory" ? 1 : 0;
 
                     // Leaving stage

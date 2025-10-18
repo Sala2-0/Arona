@@ -104,7 +104,7 @@ internal class BattleEmbed : Base
                 new EmbedFieldProperties { Name = "S/F", Value = SuccessFactor.ToString(CultureInfo.InvariantCulture), Inline = true }
             ]
         };
-
+        // TODO: Add stage entering logic
         if (StageProgressOutcome != null)
         {
             string outcomeEmoji = StageProgressOutcome switch

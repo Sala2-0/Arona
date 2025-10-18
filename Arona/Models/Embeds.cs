@@ -104,7 +104,7 @@ internal class BattleEmbed : Base
                 new EmbedFieldProperties { Name = "S/F", Value = SuccessFactor.ToString(CultureInfo.InvariantCulture), Inline = true }
             ]
         };
-        // TODO: Add stage entering logic
+
         if (StageProgressOutcome != null)
         {
             string outcomeEmoji = StageProgressOutcome switch
@@ -116,38 +116,39 @@ internal class BattleEmbed : Base
                 _ => string.Empty
             };
 
-            string currentRating;
+            embed.Description = $"**Time:** <t:{BattleTime}:f>\n\n" +
+                                $"**Outcome:** {(IsVictory ? "Victory" : "Defeat")} {outcomeEmoji}\n\n";
 
             if (Stage != null)
-            {
-                string targetLeague = Stage.Type == ClanUtils.StageType.Promotion
-                    ? Stage.TargetLeague.ToString()
-                    : League.ToString();
-
-                string targetDivision = Stage.Type == ClanUtils.StageType.Promotion
-                    ? Stage.TargetDivision.ToString()
-                    : Division.ToString();
-
-                currentRating = $"{ClanUtils.GetPromotionType(Stage.Type)} {targetLeague} {targetDivision}";
-            }
+                embed.Description += $"{ClanUtils.GetPromotionType(Stage.Type)} {TargetLeague(Stage.Type)} {TargetDivision(Stage.Type)}";
             else
-            {
-                currentRating = $"{League} {Division} ({DivisionRating})";
-            }
-
-            embed.Description = $"**Time:** <t:{BattleTime}:f>\n\n" +
-                                $"**Outcome:** {(IsVictory ? "Victory" : "Defeat")} {outcomeEmoji}\n\n" +
-                                currentRating;
+                embed.Description += $"{League} {Division} ({DivisionRating})";
         }
         else
         {
-            string pointsDeltaString = PointsDelta >= 0 ? $"+{PointsDelta}" : PointsDelta.ToString()!;
-
             embed.Description = $"**Time:** <t:{BattleTime}:f>\n\n" +
-                                $"**Outcome:** {(IsVictory ? "Victory" : "Defeat")} {pointsDeltaString}\n\n" +
-                                $"{League} {Division} ({DivisionRating})";
+                                $"**Outcome:** {(IsVictory ? "Victory" : "Defeat")} {PointsDelta:+0;-0;0}\n\n";
+
+            if (Stage != null)
+                embed.Description += $"{ClanUtils.GetPromotionType(Stage.Type)} {TargetLeague(Stage.Type)} {TargetDivision(Stage.Type)}";
+            else
+                embed.Description += $"{League} {Division} ({DivisionRating})";
         }
 
         return embed;
     }
+
+    private string TargetLeague(ClanUtils.StageType type) => type switch
+    {
+        ClanUtils.StageType.Promotion => Stage!.TargetLeague.ToString(),
+        ClanUtils.StageType.Demotion => League.ToString(),
+        _ => "undefined"
+    };
+
+    private string TargetDivision(ClanUtils.StageType type) => type switch
+    {
+        ClanUtils.StageType.Promotion => Stage!.TargetDivision.ToString(),
+        ClanUtils.StageType.Demotion => Division.ToString(),
+        _ => "undefined"
+    };
 }

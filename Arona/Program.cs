@@ -9,6 +9,7 @@ using NetCord.Hosting.Services.ApplicationCommands;
 using NetCord.Hosting.Services.Commands;
 using LiteDB;
 using Arona.Database;
+using Arona.Models;
 using Arona.Utility;
 
 namespace Arona;
@@ -50,6 +51,7 @@ internal class Program
         clanMonitorTask.Enabled = true;
         clanMonitorTask.Start();
 
+        await Emojis.InitializeAsync();
         await host.RunAsync();
     }
 

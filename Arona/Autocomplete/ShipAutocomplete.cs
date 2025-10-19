@@ -38,7 +38,7 @@ internal class ShipAutocomplete : IAutocompleteProvider<AutocompleteInteractionC
             double avgKills = stats.GetProperty("average_frags").GetDouble();
             double winRate = stats.GetProperty("win_rate").GetDouble();
             
-            ships.Add(new ShipStructure(ship.Name, ship.Id.ToString(), Text.GetRomanTier(ship.Tier), avgDmg, avgKills, winRate));
+            ships.Add(new ShipStructure(ship.Name, ship.Id.ToString(), ship.Tier, avgDmg, avgKills, winRate));
         }
         var choices = ships
             .Take(8)
@@ -53,11 +53,11 @@ internal class ShipAutocomplete : IAutocompleteProvider<AutocompleteInteractionC
     }
 }
 
-internal class ShipStructure(string name, string id, string tier, double avgDmg, double avgKills, double winRate)
+internal class ShipStructure(string name, string id, Text.Tier tier, double avgDmg, double avgKills, double winRate)
 {
     public readonly string Name = name;
     public readonly string Id = id;
-    public readonly string Tier = tier;
+    public readonly Text.Tier Tier = tier;
     public readonly double AverageDamageDealt = avgDmg;
     public readonly double AverageKills = avgKills;
     public readonly double WinRate = winRate;

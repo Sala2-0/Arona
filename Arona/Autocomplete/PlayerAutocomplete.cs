@@ -42,7 +42,7 @@ internal class PlayerAutocomplete : IAutocompleteProvider<AutocompleteInteractio
             return players
                 .Take(8)
                 .Select(s =>
-                    new ApplicationCommandOptionChoiceProperties($"[{s.Name} ({ClanUtils.GetRegionCode(s.Region)})", $"{s.AccountId},{s.Name},{s.Region}"));
+                    new ApplicationCommandOptionChoiceProperties($"{s.Name} ({ClanUtils.GetRegionCode(s.Region)})", $"{s.AccountId},{s.Name},{s.Region}"));
         }
         catch (Exception ex)
         {

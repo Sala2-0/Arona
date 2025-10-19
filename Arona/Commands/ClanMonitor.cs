@@ -1,4 +1,5 @@
-﻿using NetCord.Rest;
+﻿using System.Security.Authentication;
+using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using Arona.ApiModels;
 using Arona.Autocomplete;
@@ -178,5 +179,59 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
                 new InteractionMessageProperties()
                     .WithEmbeds([ embed ]))
         );
+    }
+
+    [SubSlashCommand("set_cookie", "Add cookie for one a clan for detailed data")]
+    public async Task SetCookieAsync(
+        [SlashCommandParameter(Name = "clan", AutocompleteProviderType = typeof(ClanAutocomplete))]
+        string clanMetadata,
+
+        [SlashCommandParameter(Name = "cookie")]
+        string cookie,
+
+        [SlashCommandParameter(Name = "player", Description = "The player the cookie belongs to", AutocompleteProviderType = typeof(PlayerAutocomplete))]
+        string accountMetadata
+    )
+    {
+        var dM = new DeferredMessage { Interaction = Context.Interaction };
+        await dM.SendAsync();
+
+        var guild = Guild.Find(Context.Interaction);
+
+        await Program.WaitForWriteAsync(guild.Id);
+        await Program.WaitForUpdateAsync();
+
+        Program.ActiveWrites.Add(guild.Id);
+
+        var s = (
+            account: accountMetadata.Split(','),
+            clan: clanMetadata.Split(',')
+        );
+        var accountId = long.Parse(s.account[0]);
+        var region = s.clan[1];
+        var clanId = int.Parse(s.clan[0]);
+
+        try
+        {
+            var data = await AccountInfoSync.GetAsync(cookie, region);
+
+            if (data.AccountId != accountId)
+                throw new InvalidCredentialException("Cookie does not belong to specified account.");
+            if (data.ClanId != clanId)
+                throw new InvalidCredentialException("Player is not a member of specified clan.");
+
+            guild.Cookies[clanId] = cookie;
+            Collections.Guilds.Update(guild);
+            await dM.EditAsync($"Cookies set for clan `{clanId}`");
+        }
+        catch (Exception ex)
+        {
+            await Program.Error(ex);
+            await dM.EditAsync($"Error >_<\n\n`{ex.Message}`");
+        }
+        finally
+        {
+            Program.ActiveWrites.Remove(guild.Id);
+        }
     }
 }

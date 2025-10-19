@@ -149,7 +149,7 @@ public class PrCalculator : ApplicationCommandModule<ApplicationCommandContext>
                 totalPr += pr;
 
                 games.Add(new EmbedFieldProperties()
-                    .WithName($"{Text.GetRomanTier(targetShip.Tier)} {targetShip.Name}")
+                    .WithName($"{targetShip.Tier} {targetShip.Name}")
                     .WithValue($"{pr.ToString()} PR")
                     .WithInline(false)
                 );

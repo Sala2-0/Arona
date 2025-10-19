@@ -17,6 +17,9 @@ internal class Guild
     [BsonField("builds")]
     public List<Build> Builds { get; set; } = [];
 
+    [BsonField("cookies")]
+    public Dictionary<int, string> Cookies { get; set; } = new();
+
     public static void Exists(ApplicationCommandInteraction interaction)
     {
         if (Collections.Guilds.Exists(g => g.Id == interaction.GuildId.ToString()))

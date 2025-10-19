@@ -1,4 +1,5 @@
 ﻿using LiteDB;
+using Arona.Utility;
 
 namespace Arona.Database;
 
@@ -14,5 +15,5 @@ internal class Ship
     public required string ShortName { get; set; }
 
     [BsonField("tier")]
-    public required int Tier { get; set; }
+    public required  Text.Tier Tier { get; set; }
 }

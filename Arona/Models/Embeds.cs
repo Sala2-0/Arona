@@ -1,8 +1,9 @@
 ﻿using System.Globalization;
+using NetCord;
 using NetCord.Rest;
 using Arona.ApiModels;
 using Arona.Utility;
-using NetCord;
+using static Arona.Utility.ClanUtils;
 
 namespace Arona.Models;
 
@@ -86,8 +87,8 @@ internal class BattleEmbed : Base
     /// </remarks>
     public int? StageProgressOutcome { get; set; } = null;
 
-    public required ClanUtils.League League { get; init; }
-    public required ClanUtils.Division Division { get; init; }
+    public required League League { get; init; }
+    public required Division Division { get; init; }
     public required int DivisionRating { get; init; }
     public required ClanBase.Stage? Stage { get; init; }
 
@@ -120,7 +121,7 @@ internal class BattleEmbed : Base
                                 $"**Outcome:** {(IsVictory ? "Victory" : "Defeat")} {outcomeEmoji}\n\n";
 
             if (Stage != null)
-                embed.Description += $"{ClanUtils.GetPromotionType(Stage.Type)} {TargetLeague(Stage.Type)} {TargetDivision(Stage.Type)}";
+                embed.Description += $"{GetPromotionType(Stage.Type)} {TargetLeague(Stage.Type)} {TargetDivision(Stage.Type)}";
             else
                 embed.Description += $"{League} {Division} ({DivisionRating})";
         }
@@ -130,7 +131,7 @@ internal class BattleEmbed : Base
                                 $"**Outcome:** {(IsVictory ? "Victory" : "Defeat")} {PointsDelta:+0;-0;0}\n\n";
 
             if (Stage != null)
-                embed.Description += $"{ClanUtils.GetPromotionType(Stage.Type)} {TargetLeague(Stage.Type)} {TargetDivision(Stage.Type)}";
+                embed.Description += $"{GetPromotionType(Stage.Type)} {TargetLeague(Stage.Type)} {TargetDivision(Stage.Type)}";
             else
                 embed.Description += $"{League} {Division} ({DivisionRating})";
         }
@@ -138,17 +139,80 @@ internal class BattleEmbed : Base
         return embed;
     }
 
-    private string TargetLeague(ClanUtils.StageType type) => type switch
+    private string TargetLeague(StageType type) => type switch
     {
-        ClanUtils.StageType.Promotion => Stage!.TargetLeague.ToString(),
-        ClanUtils.StageType.Demotion => League.ToString(),
+        StageType.Promotion => Stage!.TargetLeague.ToString(),
+        StageType.Demotion => League.ToString(),
         _ => "undefined"
     };
 
-    private string TargetDivision(ClanUtils.StageType type) => type switch
+    private string TargetDivision(StageType type) => type switch
     {
-        ClanUtils.StageType.Promotion => Stage!.TargetDivision.ToString(),
-        ClanUtils.StageType.Demotion => Division.ToString(),
+        StageType.Promotion => Stage!.TargetDivision.ToString(),
+        StageType.Demotion => Division.ToString(),
+        _ => "undefined"
+    };
+}
+
+internal class DetailedBattleEmbed : Base
+{
+    public required LadderBattle Data { get; init; }
+    public required bool IsVictory { get; init; }
+    public required long BattleTime { get; init; }
+    
+    public override EmbedProperties CreateEmbed()
+    {
+        var embed = new EmbedProperties
+        {
+            Author = new EmbedAuthorProperties { Name = "Arona's activity report", IconUrl = IconUrl },
+            Title = $"`[{Data.Teams[0].ClanInfo.Tag}] {Data.Teams[0].ClanInfo.Name}` finished a battle",
+            Color = new Color(Convert.ToInt32(IsVictory ? "54E894" : "EE5353", 16)),
+            Description = $"**{Data.Teams[0].ClanInfo.Tag}** vs **{Data.Teams[1].ClanInfo.Tag}**\n\n" +
+                          $"**Time:** <t:{BattleTime}:f>"
+        };
+
+        foreach (var team in Data.Teams)
+        {
+            var field = new EmbedFieldProperties { Name = $"{team.ClanInfo.Tag} ({team.TeamNumber})", Inline = true };
+            var resultEmoji = team.Result == "victory"
+                ? Emojis.StageProgressVictory
+                : Emojis.StageProgressDefeat;
+
+            if (team.Stage != null)
+            {
+                if (team.Stage.Progress.Length == 0)
+                    field.Value = $"{char.ToUpper(team.Result[0]) + team.Result[1..]} {team.RatingDelta:+0;-0;0}\n\n";
+                else
+                    field.Value = $"{char.ToUpper(team.Result[0]) + team.Result[1..]} {resultEmoji}\n\n";
+
+                field.Value += $"{GetPromotionType(team.Stage.Type)} {TargetLeague(team)} {TargetDivision(team)}\n\n";
+            }
+            else
+                field.Value = $"{char.ToUpper(team.Result[0]) + team.Result[1..]} {team.RatingDelta:+0;-0;0}\n\n" +
+                              $"{team.League} {team.Division} ({team.DivisionRating})\n\n";
+
+            field.Value += "**Lineup:**\n";
+
+            foreach (var player in team.Players)
+                field.Value += $"`{player.Name}`\n{player.Ship.Level} {player.Ship.Name}\n\n";
+
+            embed.AddFields(field);
+        }
+
+        return embed;
+    }
+
+    private static string TargetLeague(LadderBattle.Team team) => team.Stage!.Type switch
+    {
+        StageType.Promotion => team.Stage.TargetLeague.ToString(),
+        StageType.Demotion => team.League.ToString(),
+        _ => "undefined"
+    };
+
+    private static string TargetDivision(LadderBattle.Team team) => team.Stage!.Type switch
+    {
+        StageType.Promotion => team.Stage.TargetDivision.ToString(),
+        StageType.Demotion => team.Division.ToString(),
         _ => "undefined"
     };
 }

@@ -1,5 +1,5 @@
-﻿using System.Globalization;
-using NetCord;
+﻿using System.Runtime.InteropServices;
+using System.Security.Authentication;
 using NetCord.Rest;
 using Arona.ApiModels;
 using Arona.Database;
@@ -175,7 +175,28 @@ internal static class UpdateClan
                         continue;
 
                     foreach (var guild in guilds)
-                        await SendMessage(ulong.Parse(guild.ChannelId), embedSkeleton.CreateEmbed());
+                    {
+                        if (guild.Cookies.TryGetValue(apiClan.Clan.Id, out string? cookie))
+                            try
+                            {
+                                var detailedData = (await LadderBattle.GetAsync(cookie, dbClan.ExternalData.Region, apiRating.TeamNumber))[0];
+                                var embed = new DetailedBattleEmbed
+                                {
+                                    IconUrl = botIconUrl,
+                                    Data = detailedData,
+                                    BattleTime = lastBattleUnix,
+                                    IsVictory = isVictory
+                                }.CreateEmbed();
+
+                                await SendMessage(ulong.Parse(guild.ChannelId), embed);
+                            }
+                            catch (InvalidCredentialException ex)
+                            {
+                                await Program.Error(ex);
+                            }
+                        else
+                            await SendMessage(ulong.Parse(guild.ChannelId), embedSkeleton.CreateEmbed());
+                    }
 
                     dbClan.ExternalData.RecentBattles.Add(new ClanBase.RecentBattle
                     {

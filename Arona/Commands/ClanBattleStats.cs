@@ -138,15 +138,21 @@ public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContex
             var embed = new EmbedProperties
             {
                 Author = new EmbedAuthorProperties { Name = "Arona's intelligence report", IconUrl = botIconUrl },
-                Title = $"{name} ({ClanUtils.GetHumanRegion(region)})",
+                Title = $"{name} ({ClanUtils.GetHumanRegion(region)}) - Most active seasons",
             };
 
+            var iteration = 0;
             foreach (var season in processed)
+            {
+                if (iteration++ == 25)
+                    break;
+
                 embed.AddFields(new EmbedFieldProperties
                 {
                     Name = $"S{season.Id} {season.Name}",
                     Value = $"`{season.BattlesCount}` BTL -> `{Math.Round((double)season.WinsCount / season.BattlesCount * 100, 2)}%` W/B\n"
                 });
+            }
 
             await deferredMessage.EditAsync(embed);
         }

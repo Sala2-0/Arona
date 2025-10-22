@@ -2,10 +2,10 @@
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using Arona.Database;
+using Arona.Models.DB;
 using Arona.Utility;
 
-namespace Arona.Autocomplete;
+namespace Arona.Commands.Autocomplete;
 
 internal class ShipAutocomplete : IAutocompleteProvider<AutocompleteInteractionContext>
 {

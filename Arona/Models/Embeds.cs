@@ -1,8 +1,9 @@
 ﻿using System.Globalization;
 using NetCord;
 using NetCord.Rest;
-using Arona.ApiModels;
+using Arona.Models.Api.Clans;
 using Arona.Utility;
+
 using static Arona.Utility.ClanUtils;
 
 namespace Arona.Models;
@@ -48,7 +49,7 @@ internal class BattleEmbed : Base
 {
     public required string ClanFullName { get; init; }
     public required long BattleTime { get; init; }
-    public required ClanUtils.Team TeamNumber { get; init; }
+    public required Team TeamNumber { get; init; }
     public required int GlobalRank { get; init; }
     public required int RegionRank { get; init; }
     public required double SuccessFactor { get; init; }
@@ -58,7 +59,7 @@ internal class BattleEmbed : Base
     /// Change of points after the battle.
     /// </summary>
     /// <remarks>Should be null if clan rating is in stage</remarks>
-    public int? PointsDelta { get; set; } = null;
+    public int? PointsDelta { get; set; }
 
     /// <summary>
     /// Gets the outcome of the stage progress, represented as an integer.
@@ -85,12 +86,12 @@ internal class BattleEmbed : Base
     ///   </item>
     /// </list>
     /// </remarks>
-    public int? StageProgressOutcome { get; set; } = null;
+    public int? StageProgressOutcome { get; set; }
 
     public required League League { get; init; }
     public required Division Division { get; init; }
     public required int DivisionRating { get; init; }
-    public required ClanBase.Stage? Stage { get; init; }
+    public required Stage? Stage { get; init; }
 
     public override EmbedProperties CreateEmbed()
     {

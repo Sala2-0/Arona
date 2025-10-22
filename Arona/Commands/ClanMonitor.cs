@@ -2,9 +2,10 @@
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using Arona.ApiModels;
-using Arona.Autocomplete;
-using Arona.Database;
+using Arona.Commands.Autocomplete;
 using Arona.Models;
+using Arona.Models.DB;
+using Arona.Models.Api.Clans;
 using Arona.Utility;
 
 namespace Arona.Commands;
@@ -40,9 +41,9 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
             return;
         }
 
-        Task<ClanBase.ClanView> apiTask = ClanBase.GetAsync(clanId, region);
+        Task<ClanView> apiTask = ClanView.GetAsync(clanId, region);
         Task<LadderStructure[]> apiGlobalRankTask = LadderStructure.GetAsync(clanId, region);
-        Task<LadderStructure[]> apiRegionRankTask = LadderStructure.GetAsync(clanId, region, LadderStructure.ConvertRegion(region));
+        Task<LadderStructure[]> apiRegionRankTask = LadderStructure.GetAsync(clanId, region, ClanUtils.ConvertRegion(region));
 
         try
         {
@@ -162,7 +163,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
             .Select(id =>
             {
                 var clan = Collections.Clans.FindById(id);
-                return $"`[{clan.Clan.Tag}] {clan.Clan.Name}` ({ClanUtils.GetRegionCode(clan.ExternalData.Region)})";
+                return $"`[{clan.Clan.Tag}] {clan.Clan.Name}` ({ClanUtils.GetHumanRegion(clan.ExternalData.Region)})";
             })
             .ToList();
 

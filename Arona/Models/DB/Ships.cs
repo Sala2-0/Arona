@@ -1,7 +1,7 @@
 ﻿using LiteDB;
 using Arona.Utility;
 
-namespace Arona.Database;
+namespace Arona.Models.DB;
 
 internal class Ship
 {

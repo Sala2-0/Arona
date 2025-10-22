@@ -8,7 +8,7 @@ using NetCord.Hosting.Services;
 using NetCord.Hosting.Services.ApplicationCommands;
 using NetCord.Hosting.Services.Commands;
 using LiteDB;
-using Arona.Database;
+using Arona.Models.DB;
 using Arona.Models;
 using Arona.Utility;
 

@@ -5,12 +5,10 @@ using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.Commands;
 using LiteDB;
-using Arona.ApiModels;
-using Arona.Database;
 using Arona.Utility;
 using Arona.Models;
-
-using League = Arona.Utility.ClanUtils.League;
+using Arona.Models.DB;
+using Arona.Models.Api.Clans;
 
 namespace Arona.Commands;
 

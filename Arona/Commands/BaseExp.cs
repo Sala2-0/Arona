@@ -1,6 +1,6 @@
 ﻿using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using Arona.Autocomplete;
+using Arona.Commands.Autocomplete;
 using Arona.Models;
 
 namespace Arona.Commands;

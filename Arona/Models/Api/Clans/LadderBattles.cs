@@ -3,12 +3,12 @@ using System.Security.Authentication;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Arona.Utility;
-using static Arona.ApiModels.ClanBase;
-using static Arona.Utility.ClanUtils;
 
-namespace Arona.ApiModels;
+using TeamNumber = Arona.Models.Team;
 
-internal partial class LadderBattle
+namespace Arona.Models.Api.Clans;
+
+internal class LadderBattle
 {
     [JsonPropertyName("season_number")]
     public required int SeasonNumber { get; set; }
@@ -16,7 +16,7 @@ internal partial class LadderBattle
     [JsonPropertyName("teams")]
     public required Team[] Teams { get; set; }
 
-    public static async Task<LadderBattle[]> GetAsync(string cookie, string region, ClanUtils.Team team)
+    public static async Task<LadderBattle[]> GetAsync(string cookie, string region, TeamNumber team)
     {
         using HttpClient client = new();
         client.DefaultRequestHeaders.Add("Cookie", $"wsauth_token={cookie};");
@@ -53,7 +53,7 @@ internal partial class LadderBattle
         public required int RatingDelta { get; set; }
 
         [JsonPropertyName("team_number")]
-        public required ClanUtils.Team TeamNumber { get; set; }
+        public required TeamNumber TeamNumber { get; set; }
 
         [JsonPropertyName("players")]
         public required Player[] Players { get; set; }

@@ -1,45 +1,14 @@
-﻿using System.Text.Json.Serialization;
+﻿using Arona.Models;
 
 namespace Arona.Utility;
 
 public static class ClanUtils
 {
-    [JsonConverter(typeof(JsonStringEnumConverter))]
-    public enum StageType
-    {
-        [JsonStringEnumMemberName("promotion")]
-        Promotion,
-
-        [JsonStringEnumMemberName("demotion")]
-        Demotion,
-    }
-
-    public enum League
-    {
-        Hurricane = 0,
-        Typhoon = 1,
-        Storm = 2,
-        Gale = 3,
-        Squall = 4,
-    }
-
-    public enum Division
-    {
-        I = 1,
-        II = 2,
-        III = 3,
-    }
-
-    public enum Team
-    {
-        Alpha = 1,
-        Bravo = 2,
-    }
-
     public static string GetPromotionType(StageType type) => type switch
     {
         StageType.Promotion => "Q+",
         StageType.Demotion => "Q-",
+        _ => throw new ArgumentException("Invalid stage type", nameof(type))
     };
 
     public static double GetLeagueExponent(League league) => league switch
@@ -59,7 +28,7 @@ public static class ClanUtils
     /// Integer value representing day and region
     /// </param>
     /// <returns>
-    /// Unix time seconds of the end of the current clan battle session.
+    /// Unix time in seconds of the end of the current clan battle session.
     /// </returns>
     /// <exception cref="ArgumentOutOfRangeException">
     /// Where <paramref name="primeTime"/> is not between 0 and 11.
@@ -91,21 +60,64 @@ public static class ClanUtils
         return ((DateTimeOffset)endSession).ToUnixTimeSeconds();
     }
 
+    
+    /// <summary>
+    /// Gets the color of a clan's league.
+    /// </summary>
+    /// <param name="league">
+    /// League enum value.
+    /// </param>
+    /// <returns></returns>
     public static string GetLeagueColor(League league) => league switch
     {
-        League.Hurricane => "cda4ff", // Hurricane
-        League.Typhoon => "bee7bd", // Typhoon
-        League.Storm => "e3d6a0", // Storm
-        League.Gale => "cce4e4", // Gale
-        League.Squall => "cc9966", // Squall
-        _ => "ffffff"  // Undefined
+        League.Hurricane => "cda4ff",   // Hurricane
+        League.Typhoon => "bee7bd",     // Typhoon
+        League.Storm => "e3d6a0",       // Storm
+        League.Gale => "cce4e4",        // Gale
+        League.Squall => "cc9966",      // Squall
+        _ => "ffffff"                   // Undefined
     };
 
-    public static string GetRegionCode(string region) => region switch
+    /// <summary>
+    /// Converts a top-level domain name to a human-readable format.
+    /// </summary>
+    /// <param name="region">
+    /// Top-level domain name.
+    /// </param>
+    public static string GetHumanRegion(string region) => region switch
     {
         "eu" or "EU" => "EU",
         "asia" or "ASIA" => "ASIA",
         "com" => "NA",
         _ => "undefined"
+    };
+    
+    /// <summary>
+    /// Converts a region string to a region code returned/used by clans.worldofwarships subdomain.
+    /// </summary>
+    /// <param name="region">
+    /// Top-level domain name.
+    /// </param>
+    public static string ConvertRegion(string region) => region switch
+    {
+        "eu" or "EU" => "eu",
+        "com" or "COM" => "us",
+        "asia" or "ASIA" => "sg",
+        _ => throw new ArgumentException("Invalid region", nameof(region))
+    };
+
+    /// <summary>
+    /// Converts region code back to a region string.
+    /// </summary>
+    /// <param name="realm">
+    /// Region code returned/used by clans.worldofwarships subdomain.
+    /// </param>
+    public static string ConvertRealm(string realm) => realm switch
+    {
+        "global" => "Global",
+        "eu" => "EU",
+        "sg" => "ASIA",
+        "us" => "NA",
+        _ => throw new ArgumentException("Invalid realm", nameof(realm))
     };
 }

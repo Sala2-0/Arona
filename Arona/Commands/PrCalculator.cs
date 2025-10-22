@@ -2,9 +2,9 @@
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using Arona.Autocomplete;
-using Arona.Database;
+using Arona.Commands.Autocomplete;
 using Arona.Models;
+using Arona.Models.DB;
 using Arona.Utility;
 
 namespace Arona.Commands;

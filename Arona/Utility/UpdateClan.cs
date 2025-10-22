@@ -1,8 +1,8 @@
 ﻿using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using NetCord.Rest;
-using Arona.ApiModels;
-using Arona.Database;
+using Arona.Models.Api.Clans;
+using Arona.Models.DB;
 using Arona.Models;
 
 namespace Arona.Utility;
@@ -74,11 +74,11 @@ internal static class UpdateClan
                     continue;
                 }
 
-                var apiClan = await ClanBase.GetAsync(dbClan.Clan.Id, dbClan.ExternalData.Region);
+                var apiClan = await ClanView.GetAsync(dbClan.Clan.Id, dbClan.ExternalData.Region);
                 
                 // Hämta rankningar
                 Task<LadderStructure[]> globalRankTask = LadderStructure.GetAsync(apiClan.Clan.Id, dbClan.ExternalData.Region);
-                Task<LadderStructure[]> regionRankTask = LadderStructure.GetAsync(apiClan.Clan.Id, dbClan.ExternalData.Region, LadderStructure.ConvertRegion(dbClan.ExternalData.Region));
+                Task<LadderStructure[]> regionRankTask = LadderStructure.GetAsync(apiClan.Clan.Id, dbClan.ExternalData.Region, ClanUtils.ConvertRegion(dbClan.ExternalData.Region));
 
                 await Task.WhenAll(globalRankTask, regionRankTask);
 
@@ -198,7 +198,7 @@ internal static class UpdateClan
                             await SendMessage(ulong.Parse(guild.ChannelId), embedSkeleton.CreateEmbed());
                     }
 
-                    dbClan.ExternalData.RecentBattles.Add(new ClanBase.RecentBattle
+                    dbClan.ExternalData.RecentBattles.Add(new RecentBattle
                     {
                         BattleTime = lastBattleUnix,
                         IsVictory = isVictory,

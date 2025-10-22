@@ -1,9 +1,9 @@
 ﻿using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using Arona.Database;
+using Arona.Models.DB;
 
-namespace Arona.Autocomplete;
+namespace Arona.Commands.Autocomplete;
 
 internal class BuildAutocomplete : IAutocompleteProvider<AutocompleteInteractionContext>
 {

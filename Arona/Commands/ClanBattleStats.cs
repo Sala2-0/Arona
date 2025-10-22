@@ -1,9 +1,9 @@
 ﻿using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using Arona.ApiModels;
-using Arona.Autocomplete;
-using Arona.Database;
+using Arona.Models.Api.Official;
+using Arona.Commands.Autocomplete;
+using Arona.Models.DB;
 using Arona.Models;
 using Arona.Utility;
 
@@ -43,8 +43,8 @@ public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContex
 
         try
         {
-            var data = await OfficialApi.ClanBattlesSeasonStats.GetAsync(accountId.ToString(), region);
-            var seasonData = await OfficialApi.ClanBattleSeasons.GetAsync();
+            var data = await ClanBattleSeasonStats.GetAsync(accountId.ToString(), region);
+            var seasonData = await ClanBattleSeasons.GetAsync();
 
             if (seasonNumber == -1)
                 seasonNumber = seasonData
@@ -71,7 +71,7 @@ public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContex
             await deferredMessage.EditAsync(new EmbedProperties
             {
                 Author = new EmbedAuthorProperties { Name = "Arona's intelligence report", IconUrl = botIconUrl },
-                Title = $"{name} ({ClanUtils.GetRegionCode(region)})",
+                Title = $"{name} ({ClanUtils.GetHumanRegion(region)})",
                 Color = new Color(Convert.ToInt32(PersonalRatingColors.GetColor((double)playerSeasonData.Wins / playerSeasonData.Battles * 100), 16)),
                 Description =
                     $"**Season:** {season.Name} ({seasonNumber})\n" +

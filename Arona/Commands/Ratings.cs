@@ -1,12 +1,14 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
-using Arona.ApiModels;
-using Arona.Autocomplete;
+using Arona.Commands.Autocomplete;
 using Arona.Models;
-using Arona.Database;
+using Arona.Models.DB;
+using Arona.Models.Api.Clans;
 using Arona.Utility;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
+
+using TeamNumber = Arona.Models.Team;
 
 namespace Arona.Commands;
 
@@ -31,9 +33,9 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
         int clanId = int.Parse(split[0]);
 
         using HttpClient client = new();
-        Task<ClanBase.ClanView> generalTask = ClanBase.GetAsync(clanId, region);
+        Task<ClanView> generalTask = ClanView.GetAsync(clanId, region);
         Task<LadderStructure[]> globalRankTask = LadderStructure.GetAsync(clanId: clanId, region: region);
-        Task<LadderStructure[]> regionRankTask = LadderStructure.GetAsync(clanId: clanId, region: region, realm: LadderStructure.ConvertRegion(region));
+        Task<LadderStructure[]> regionRankTask = LadderStructure.GetAsync(clanId: clanId, region: region, realm: ClanUtils.ConvertRegion(region));
 
         try
         {
@@ -62,7 +64,7 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
                 await deferredMessage.EditAsync(new EmbedProperties 
                 {
                     Author = new EmbedAuthorProperties { Name = "Arona's intelligence report", IconUrl = botIconUrl },
-                    Title = $"`[{data.Clan.Clan.Tag}] {data.Clan.Clan.Name}` ({ClanUtils.GetRegionCode(region)})",
+                    Title = $"`[{data.Clan.Clan.Tag}] {data.Clan.Clan.Name}` ({ClanUtils.GetHumanRegion(region)})",
                     Fields = [new EmbedFieldProperties{ Name = "Clan doesn't play clan battles." }]
                 });
 
@@ -129,8 +131,8 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
     {
         public string Name { get; init; }
         public string Color { get; init; }
-        public ClanUtils.League League { get; init; }
-        public ClanUtils.Division Division { get; init; }
+        public League League { get; init; }
+        public Division Division { get; init; }
         public int DivisionRating { get; init; }
         public int GlobalRank { get; set; }
         public int RegionRank { get; set; }
@@ -141,20 +143,20 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
     private class Team
     {
         [JsonConverter(typeof(JsonStringEnumConverter))]
-        public required ClanUtils.Team TeamNumber { get; init; }
+        public required TeamNumber TeamNumber { get; init; }
         public string Color { get; init; }
         public required int Battles { get; init; }
         public required double WinRate { get; init; }
         public required double SuccessFactor { get; init; }
-        public required ClanUtils.League League { get; init; }
-        public required ClanUtils.Division Division { get; init; }
+        public required League League { get; init; }
+        public required Division Division { get; init; }
         public required int DivisionRating { get; init; }
         public required Stage? Stage { get; init; }
     }
 
-    private class Stage(ClanUtils.StageType type, string[] progress)
+    private class Stage(StageType type, string[] progress)
     {
-        public ClanUtils.StageType Type { get; } = type;
+        public StageType Type { get; } = type;
         public string[] Progress { get; } = progress;
     }
 }

@@ -1,18 +1,18 @@
 ﻿using System.Text.Json.Serialization;
 using System.Text.Json;
-using Arona.ApiModels;
+using Arona.Models.Api.Clans;
 
 namespace Arona.Utility;
 
 // Denna klass finns för att hantera enstaka felaktiga ratingsdata
 // där parametrar inom stage kan vara null eller andra data som inte är förväntad
 // som INTE ska finnas
-// Används för data från APIn https://clans.worldofwarships.<region>/api/clanbase/<clan id>/claninfo/
-internal class Converter : JsonConverter<ClanBase.Stage>
+// Används för data från API:n https://clans.worldofwarships.<region>/api/clanbase/<clan id>/claninfo/
+internal class Converter : JsonConverter<Stage>
 {
     public static JsonSerializerOptions Options { get; } = new(){ Converters = { new Converter() } };
     
-    public override ClanBase.Stage? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override Stage? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         if (reader.TokenType == JsonTokenType.Null)
             return null;
@@ -29,9 +29,9 @@ internal class Converter : JsonConverter<ClanBase.Stage>
         }
 
         // Deserialisera normalt
-        return JsonSerializer.Deserialize<ClanBase.Stage>(root.GetRawText())!;
+        return JsonSerializer.Deserialize<Stage>(root.GetRawText())!;
     }
 
-    public override void Write(Utf8JsonWriter writer, ClanBase.Stage value, JsonSerializerOptions options) =>
+    public override void Write(Utf8JsonWriter writer, Stage value, JsonSerializerOptions options) =>
         JsonSerializer.Serialize(writer, value, options);
 }

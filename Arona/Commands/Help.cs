@@ -1,6 +1,6 @@
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using Arona.Database;
+using Arona.Models.DB;
 
 namespace Arona.Commands;
 

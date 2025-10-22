@@ -2,13 +2,10 @@
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using Arona.ApiModels;
-using Arona.Database;
 using Arona.Models;
+using Arona.Models.DB;
+using Arona.Models.Api.Clans;
 using Arona.Utility;
-
-using League = Arona.Utility.ClanUtils.League;  
-using Division = Arona.Utility.ClanUtils.Division;
 
 namespace Arona.Commands;
 
@@ -54,7 +51,7 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
             {
                 var embed = new EmbedProperties()
                     .WithTitle(
-                        $"Leaderboard - {league} {division} ({LadderStructure.ConvertRealm(realm.ToString().ToLower())}) [Ratings]")
+                        $"Leaderboard - {league} {division} ({ClanUtils.ConvertRealm(realm.ToString().ToLower())}) [Ratings]")
                     .WithColor(new Color(Convert.ToInt32(ClanUtils.GetLeagueColor(league).TrimStart('#'), 16)));
 
                 var fields = new List<EmbedFieldProperties>();
@@ -66,7 +63,7 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
 
                     fields.Add(new EmbedFieldProperties()
                         .WithName(
-                            $"**#{clan.Rank}** ({LadderStructure.ConvertRealm(clan.Realm)}) `[{clan.Tag}]` ({clan.DivisionRating}) `BTL: {clan.BattlesCount}` `S/F: {successFactor}`"));
+                            $"**#{clan.Rank}** ({ClanUtils.ConvertRealm(clan.Realm)}) `[{clan.Tag}]` ({clan.DivisionRating}) `BTL: {clan.BattlesCount}` `S/F: {successFactor}`"));
                 }
 
                 embed.WithFields(fields);
@@ -86,7 +83,7 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
 
                 var embed = new EmbedProperties()
                     .WithTitle(
-                        $"Leaderboard - {league} {division} ({LadderStructure.ConvertRealm(realm.ToString().ToLower())}) [S/F]")
+                        $"Leaderboard - {league} {division} ({ClanUtils.ConvertRealm(realm.ToString().ToLower())}) [S/F]")
                     .WithColor(new Color(Convert.ToInt32(ClanUtils.GetLeagueColor(league), 16)));
 
                 var fields = new List<EmbedFieldProperties>();
@@ -100,7 +97,7 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
 
                     fields.Add(
                         new EmbedFieldProperties()
-                            .WithName($"**#{i + 1}** ({LadderStructure.ConvertRealm(clan.Realm)}) `[{clan.Tag}]` ({clan.DivisionRating}) `S/F: {successFactor}` `BTL: {clan.BattlesCount}`")
+                            .WithName($"**#{i + 1}** ({ClanUtils.ConvertRealm(clan.Realm)}) `[{clan.Tag}]` ({clan.DivisionRating}) `S/F: {successFactor}` `BTL: {clan.BattlesCount}`")
                     );
                 }
 

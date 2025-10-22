@@ -2,9 +2,9 @@
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using Arona.Utility;
-using Arona.ApiModels;
+using Arona.Models.Api.Official;
 
-namespace Arona.Autocomplete;
+namespace Arona.Commands.Autocomplete;
 
 internal class ClanAutocomplete: IAutocompleteProvider<AutocompleteInteractionContext>
 {
@@ -37,14 +37,14 @@ internal class ClanAutocomplete: IAutocompleteProvider<AutocompleteInteractionCo
 
         try
         {
-            var data = await OfficialApi.Clan.GetAsync(input, region);
+            var data = await Clan.GetAsync(input, region);
             var clans = data.Select(c => new { Tag = c.Tag, Name = c.Name, Id = c.ClanId, Region = region }).ToList();
 
             var choices = clans
                 .Take(8)
                 .Select(s =>
                     new ApplicationCommandOptionChoiceProperties(
-                        $"[{s.Tag}] {s.Name} ({ClanUtils.GetRegionCode(s.Region)})", $"{s.Id},{s.Region}"));
+                        $"[{s.Tag}] {s.Name} ({ClanUtils.GetHumanRegion(s.Region)})", $"{s.Id},{s.Region}"));
 
             return choices;
         }

@@ -1,10 +1,10 @@
 ﻿using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using Arona.ApiModels;
-using Arona.Autocomplete;
-using Arona.Database;
+using Arona.Commands.Autocomplete;
 using Arona.Models;
+using Arona.Models.DB;
+using Arona.Models.Api.Clans;
 
 namespace Arona.Commands;
 
@@ -27,7 +27,7 @@ public class PrimeTime : ApplicationCommandModule<ApplicationCommandContext>
 
         try
         {
-            var clan = await ClanBase.GetAsync(clanId, region);
+            var clan = await ClanView.GetAsync(clanId, region);
 
             int? primeTime = clan.WowsLadder.PrimeTime;
             int? plannedPrimeTime = clan.WowsLadder.PlannedPrimeTime;

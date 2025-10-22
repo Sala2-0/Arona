@@ -2,9 +2,9 @@
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using Arona.Utility;
-using Arona.ApiModels;
+using Arona.Models.Api.Official;
 
-namespace Arona.Autocomplete;
+namespace Arona.Commands.Autocomplete;
 
 internal class PlayerAutocomplete : IAutocompleteProvider<AutocompleteInteractionContext>
 {
@@ -36,13 +36,13 @@ internal class PlayerAutocomplete : IAutocompleteProvider<AutocompleteInteractio
 
         try
         {
-            var data = await OfficialApi.Player.GetAsync(input, region);
+            var data = await Player.GetAsync(input, region);
             var players = data.Select(c => new { AccountId = c.AccountId, Name = c.Nickname, Region = region }).ToList();
 
             return players
                 .Take(8)
                 .Select(s =>
-                    new ApplicationCommandOptionChoiceProperties($"{s.Name} ({ClanUtils.GetRegionCode(s.Region)})", $"{s.AccountId},{s.Name},{s.Region}"));
+                    new ApplicationCommandOptionChoiceProperties($"{s.Name} ({ClanUtils.GetHumanRegion(s.Region)})", $"{s.AccountId},{s.Name},{s.Region}"));
         }
         catch (Exception ex)
         {

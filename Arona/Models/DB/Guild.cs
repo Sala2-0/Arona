@@ -1,7 +1,7 @@
 ﻿using NetCord;
 using LiteDB;
 
-namespace Arona.Database;
+namespace Arona.Models.DB;
 
 internal class Guild
 {

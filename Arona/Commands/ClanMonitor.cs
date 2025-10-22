@@ -1,7 +1,6 @@
 ﻿using System.Security.Authentication;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using Arona.ApiModels;
 using Arona.Commands.Autocomplete;
 using Arona.Models;
 using Arona.Models.DB;
@@ -220,6 +219,8 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
                 throw new InvalidCredentialException("Cookie does not belong to specified account.");
             if (data.ClanId != clanId)
                 throw new InvalidCredentialException("Player is not a member of specified clan.");
+            if (data.Rank < Role.Midshipman)
+                throw new InvalidCredentialException("Player is too high ranking.");
 
             guild.Cookies[clanId] = cookie;
             Collections.Guilds.Update(guild);

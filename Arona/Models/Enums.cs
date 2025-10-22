@@ -33,3 +33,25 @@ public enum Team
     Alpha = 1,
     Bravo = 2,
 }
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum Role
+{
+    [JsonStringEnumMemberName("commander")]
+    Commander,
+
+    [JsonStringEnumMemberName("executive_officer")]
+    DeputyCommander,
+
+    [JsonStringEnumMemberName("recruitment_officer")]
+    Recruiter,
+
+    [JsonStringEnumMemberName("commissioned_officer")]
+    CommissionedOfficer,
+
+    [JsonStringEnumMemberName("officer")]
+    LineOfficer,
+
+    [JsonStringEnumMemberName("private")]
+    Midshipman,
+}

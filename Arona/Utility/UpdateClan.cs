@@ -1,9 +1,8 @@
-﻿using System.Runtime.InteropServices;
-using System.Security.Authentication;
+﻿using System.Security.Authentication;
 using NetCord.Rest;
+using Arona.Models;
 using Arona.Models.Api.Clans;
 using Arona.Models.DB;
-using Arona.Models;
 
 namespace Arona.Utility;
 
@@ -179,6 +178,12 @@ internal static class UpdateClan
                         if (guild.Cookies.TryGetValue(apiClan.Clan.Id, out string? cookie))
                             try
                             {
+                                var cookieValidationData = await AccountInfoSync.GetAsync(cookie, dbClan.ExternalData.Region);
+                                if (cookieValidationData.ClanId != apiClan.Clan.Id)
+                                    throw new InvalidCredentialException($"Cookie for clan `{apiClan.Clan.Tag}` is invalid: Player is not a member of the clan.");
+                                if (cookieValidationData.Rank < Role.Midshipman)
+                                    throw new InvalidCredentialException($"Cookie for clan `{apiClan.Clan.Tag}` is invalid: Player is too high ranking.");
+
                                 var detailedData = (await LadderBattle.GetAsync(cookie, dbClan.ExternalData.Region, apiRating.TeamNumber))[0];
                                 var embed = new DetailedBattleEmbed
                                 {
@@ -193,6 +198,17 @@ internal static class UpdateClan
                             catch (InvalidCredentialException ex)
                             {
                                 await Program.Error(ex);
+                                await Program.Client.Rest
+                                    .SendMessageAsync(ulong.Parse(guild.ChannelId), new MessageProperties
+                                    {
+                                        Content = "Error sending detailed clan battle info >_<\n\n" +
+                                                  $"{ex.Message}"
+                                    });
+
+                                guild.Cookies.Remove(apiClan.Clan.Id);
+
+                                // Send regular embed instead since detailed data failed
+                                await SendMessage(ulong.Parse(guild.ChannelId), embedSkeleton.CreateEmbed());
                             }
                         else
                             await SendMessage(ulong.Parse(guild.ChannelId), embedSkeleton.CreateEmbed());

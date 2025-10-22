@@ -3,7 +3,7 @@ using System.Security.Authentication;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Arona.ApiModels;
+namespace Arona.Models.Api.Clans;
 
 internal class AccountInfoSync
 {
@@ -11,7 +11,10 @@ internal class AccountInfoSync
     public required long AccountId { get; set; }
 
     [JsonPropertyName("clan_id")]
-    public int ClanId { get; set; }
+    public int? ClanId { get; set; }
+
+    [JsonPropertyName("role_name")]
+    public Role? Rank { get; set; }
 
     public static async Task<AccountInfoSync> GetAsync(string cookie, string region)
     {

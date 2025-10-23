@@ -49,6 +49,10 @@ Since exponent is different per league, each league would have their own ranges 
     <td>/clan_monitor list</td>
     <td>List all clans currently monitored in the server where the command is used</td>
   </tr>
+  <tr>
+    <td>/clan_monitor set_cookie</td>
+    <td>Add cookies for a clan to receive detailed clan battle outcomes</td>
+  </tr>
 </table>
 
 <h3>Builds</h3>
@@ -132,6 +136,14 @@ Since exponent is different per league, each league would have their own ranges 
   <tr>
     <td>/set_channel</td>
     <td>Set a text channel for Arona to log events in</td>
+  </tr>
+  <tr>
+    <td>/cb_stats season</td>
+    <td>Clan battle season stats for a player</td>
+  </tr>
+   <tr>
+    <td>/cb_stats activity</td>
+    <td>List of a player's most active clan battle season</td>
   </tr>
 </table>
 

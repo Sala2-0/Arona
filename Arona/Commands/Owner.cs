@@ -228,7 +228,27 @@ public class OwnerCommands : CommandModule<CommandContext>
 
 public class OwnerAppCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
+    [SlashCommand("test", "test command")]
+    public async Task TestAsync()
+    {
+        var button = new ButtonProperties("button-id:TEST", ">", ButtonStyle.Success);
+        var prevButton = new ButtonProperties("button-id-2", "<", ButtonStyle.Success);
 
+        var row = new ActionRowProperties
+        {
+            Buttons = [prevButton, button]
+        };
+
+        await Context.Interaction.SendResponseAsync(
+            InteractionCallback.Message(
+                new InteractionMessageProperties
+                {
+                    Content = "Test",
+                    Components = [ row ]
+                }
+            )
+        );
+    }
 }
 
 internal static class Owner

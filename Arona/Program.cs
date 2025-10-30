@@ -2,11 +2,14 @@
 using Timer = System.Timers.Timer;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using NetCord;
 using NetCord.Gateway;
 using NetCord.Hosting.Gateway;
 using NetCord.Hosting.Services;
 using NetCord.Hosting.Services.ApplicationCommands;
 using NetCord.Hosting.Services.Commands;
+using NetCord.Hosting.Services.ComponentInteractions;
+using NetCord.Services.ComponentInteractions;
 using LiteDB;
 using Arona.Models.DB;
 using Arona.Models;
@@ -36,8 +39,9 @@ internal class Program
                 options.Intents = GatewayIntents.GuildMessages | GatewayIntents.MessageContent | GatewayIntents.GuildUsers | GatewayIntents.Guilds;
             })
             .AddApplicationCommands()
-            .AddCommands(options => options.Prefix = Debugger.IsAttached ? "?" : "arona?");
-        
+            .AddCommands(options => options.Prefix = Debugger.IsAttached ? "?" : "arona?")
+            .AddComponentInteractions<ButtonInteraction, ButtonInteractionContext>();
+
         var host = builder.Build();
         host.AddModules(typeof(Program).Assembly);
         host.UseGatewayHandlers();

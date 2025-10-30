@@ -1,10 +1,11 @@
 ﻿using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using Arona.Models.Api.Official;
 using Arona.Commands.Autocomplete;
-using Arona.Models.DB;
 using Arona.Models;
+using Arona.Models.Api.Official;
+using Arona.Models.Components;
+using Arona.Models.DB;
 using Arona.Utility;
 
 namespace Arona.Commands;
@@ -135,26 +136,57 @@ public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContex
                 WinsCount = c.Wins
             });
 
+            var structured = new Dictionary<int, List<AccountClanBattleSeasonData>>();
+
             var embed = new EmbedProperties
             {
                 Author = new EmbedAuthorProperties { Name = "Arona's intelligence report", IconUrl = botIconUrl },
                 Title = $"{name} ({ClanUtils.GetHumanRegion(region)}) - Most active seasons",
             };
 
+            var page = 0;
             var iteration = 0;
             foreach (var season in processed)
             {
-                if (iteration++ == 25)
-                    break;
+                if (!structured.ContainsKey(page))
+                    structured[page] = [];
 
-                embed.AddFields(new EmbedFieldProperties
+                if (iteration++ == 25)
                 {
-                    Name = $"S{season.Id} {season.Name}",
-                    Value = $"`{season.BattlesCount}` BTL -> `{Math.Round((double)season.WinsCount / season.BattlesCount * 100, 2)}%` W/B\n"
-                });
+                    page++;
+                    iteration = 0;
+                    continue;
+                }
+
+                structured[page].Add(new AccountClanBattleSeasonData(season.Id, season.Name, season.BattlesCount, season.WinsCount));
             }
 
-            await deferredMessage.EditAsync(embed);
+            embed.Fields = structured[0]
+                .Select(s => new EmbedFieldProperties
+                {
+                    Name = $"S{s.Id} {s.Name}",
+                    Value = $"`{s.BattlesCount}` BTL -> `{Math.Round((double)s.WinsCount / s.BattlesCount * 100, 2).ToString(System.Globalization.CultureInfo.InvariantCulture)}%` W/B\n"
+                })
+                .ToList();
+
+            var button = structured.Keys.Count > 1
+                ? new ButtonProperties($"account season data:{Context.User.Id}:{embed.Title}:{1}", ">", ButtonStyle.Secondary)
+                : null;
+
+            await Context.Interaction.ModifyResponseAsync(message =>
+            {
+                message.Embeds = [embed];
+                message.Components = button != null ? [new ActionRowProperties { Buttons = [button] }] : [];
+            });
+
+            var message = await Context.Interaction.GetResponseAsync();
+
+            RecentInteractions.AccountClanBattleSeasonDataInteractions[message.Id] = structured;
+
+            var timeout = TimeSpan.FromSeconds(30);
+            var cts = new CancellationTokenSource();
+            ComponentInactivityTimer.Timers[message.Id] = cts;
+            await ComponentInactivityTimer.StartAsync(message, timeout, cts);
         }
         catch (Exception ex)
         {

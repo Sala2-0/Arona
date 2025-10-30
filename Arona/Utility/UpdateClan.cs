@@ -4,6 +4,8 @@ using Arona.Models;
 using Arona.Models.Api.Clans;
 using Arona.Models.DB;
 
+using Timer = System.Timers.Timer;
+
 namespace Arona.Utility;
 
 internal static class UpdateClan
@@ -193,7 +195,7 @@ internal static class UpdateClan
                                     IsVictory = isVictory
                                 }.CreateEmbed();
 
-                                await SendMessage(ulong.Parse(guild.ChannelId), embed);
+                                await SendMessage(ulong.Parse(guild.ChannelId), embed, currentTime);
                             }
                             catch (InvalidCredentialException ex)
                             {
@@ -208,10 +210,10 @@ internal static class UpdateClan
                                 guild.Cookies.Remove(apiClan.Clan.Id);
 
                                 // Send regular embed instead since detailed data failed
-                                await SendMessage(ulong.Parse(guild.ChannelId), embedSkeleton.CreateEmbed());
+                                await SendMessage(ulong.Parse(guild.ChannelId), embedSkeleton.CreateEmbed(), currentTime);
                             }
                         else
-                            await SendMessage(ulong.Parse(guild.ChannelId), embedSkeleton.CreateEmbed());
+                            await SendMessage(ulong.Parse(guild.ChannelId), embedSkeleton.CreateEmbed(), currentTime);
                     }
 
                     dbClan.ExternalData.RecentBattles.Add(new RecentBattle
@@ -247,11 +249,49 @@ internal static class UpdateClan
     {
         try
         {
-            await Program.Client!.Rest.SendMessageAsync(channelId, new MessageProperties{ Embeds = [embed] });
+            await Program.Client!.Rest.SendMessageAsync(channelId, new MessageProperties { Embeds = [embed] });
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error sending message: {ex.Message}");
         }
+    }
+
+    private static async Task SendMessage(ulong channelId, EmbedProperties embed, long battleTimeSeconds)
+    {
+        battleTimeSeconds += 300;
+        var currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+        var timeDifference = battleTimeSeconds - currentTime;
+        if (timeDifference <= 0)
+        {
+            try
+            {
+                await Program.Client!.Rest.SendMessageAsync(channelId, new MessageProperties { Embeds = [embed] });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error sending message: {ex.Message}");
+            }
+
+            return;
+        }
+
+        var timer = new Timer(timeDifference * 1000d);
+        timer.AutoReset = false;
+        timer.Elapsed += async (_, _) =>
+        {
+            timer.Dispose();
+            try
+            {
+                await Program.Client!.Rest.SendMessageAsync(channelId, new MessageProperties { Embeds = [embed] });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error sending message: {ex.Message}");
+            }
+        };
+        timer.Enabled = true;
+        timer.Start();
     }
 }

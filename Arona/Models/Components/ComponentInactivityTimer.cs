@@ -5,7 +5,7 @@ namespace Arona.Models.Components;
 
 internal static class ComponentInactivityTimer
 {
-    public static ConcurrentDictionary<ulong, CancellationTokenSource> Timers = new();
+    public static readonly ConcurrentDictionary<ulong, CancellationTokenSource> Timers = new();
 
     public static async Task StartAsync(RestMessage message, TimeSpan timeout, CancellationTokenSource cts)
     {
@@ -15,7 +15,7 @@ internal static class ComponentInactivityTimer
             await message.ModifyAsync(x => x.Components = []);
             Timers.TryRemove(message.Id, out _);
 
-            RecentInteractions.AccountSeasonDataCommands.Remove(message.Id);
+            RecentInteractions.AccountClanBattleSeasonDataInteractions.Remove(message.Id);
         }
         catch (TaskCanceledException)
         {

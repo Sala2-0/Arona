@@ -40,7 +40,8 @@ internal class Program
             })
             .AddApplicationCommands()
             .AddCommands(options => options.Prefix = Debugger.IsAttached ? "?" : "arona?")
-            .AddComponentInteractions<ButtonInteraction, ButtonInteractionContext>();
+            .AddComponentInteractions<ButtonInteraction, ButtonInteractionContext>()
+            .AddComponentInteractions<ModalInteraction, ModalInteractionContext>();
 
         var host = builder.Build();
         host.AddModules(typeof(Program).Assembly);

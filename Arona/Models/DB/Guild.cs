@@ -48,6 +48,23 @@ internal class Guild
         Collections.Guilds.Insert(guild);
         return guild;
     }
+
+    public static Guild Find(ModalInteraction interaction)
+    {
+        var guild = Collections.Guilds.FindById(interaction.GuildId.ToString());
+
+        if (guild != null)
+            return guild;
+
+        guild = new Guild
+        {
+            Id = interaction.GuildId.ToString()!,
+            ChannelId = interaction.Channel.Id.ToString()
+        };
+
+        Collections.Guilds.Insert(guild);
+        return guild;
+    }
 }
 
 internal class Build

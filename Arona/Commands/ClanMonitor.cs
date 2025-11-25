@@ -1,5 +1,4 @@
-﻿using System.Security.Authentication;
-using NetCord.Rest;
+﻿using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using Arona.Commands.Autocomplete;
 using Arona.Models;
@@ -186,16 +185,10 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         [SlashCommandParameter(Name = "clan", AutocompleteProviderType = typeof(ClanAutocomplete))]
         string clanMetadata,
 
-        [SlashCommandParameter(Name = "cookie")]
-        string cookie,
-
         [SlashCommandParameter(Name = "player", Description = "The player the cookie belongs to", AutocompleteProviderType = typeof(PlayerAutocomplete))]
         string accountMetadata
     )
     {
-        var dM = new DeferredMessage { Interaction = Context.Interaction };
-        await dM.SendAsync();
-
         var guild = Guild.Find(Context.Interaction);
 
         await Program.WaitForWriteAsync(guild.Id);
@@ -208,32 +201,17 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
             clan: clanMetadata.Split(',')
         );
         var accountId = long.Parse(s.account[0]);
+        var username = s.account[1];
         var region = s.clan[1];
         var clanId = int.Parse(s.clan[0]);
 
-        try
+        var modal = new ModalProperties($"cookie form:{accountId}:{region}:{clanId}", "Cookie")
         {
-            var data = await AccountInfoSync.GetAsync(cookie, region);
+            Components = [
+                new TextInputProperties("cookie", TextInputStyle.Short, $"Enter your cookie for {username}")
+            ]
+        };
 
-            if (data.AccountId != accountId)
-                throw new InvalidCredentialException("Cookie does not belong to specified account.");
-            if (data.ClanId != clanId)
-                throw new InvalidCredentialException("Player is not a member of specified clan.");
-            if (data.Rank < Role.Midshipman)
-                throw new InvalidCredentialException("Player is too high ranking.");
-
-            guild.Cookies[clanId] = cookie;
-            Collections.Guilds.Update(guild);
-            await dM.EditAsync($"Cookies set for clan `{clanId}`");
-        }
-        catch (Exception ex)
-        {
-            await Program.Error(ex);
-            await dM.EditAsync($"Error >_<\n\n`{ex.Message}`");
-        }
-        finally
-        {
-            Program.ActiveWrites.Remove(guild.Id);
-        }
+        await Context.Interaction.SendResponseAsync(InteractionCallback.Modal(modal));
     }
 }

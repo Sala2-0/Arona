@@ -41,6 +41,17 @@ internal class ClanView
 
         return baseData.ClanView;
     }
+
+    public static async Task<ClanView> GetMockupAsync()
+    {
+        using HttpClient client = new();
+        var res = await client.GetAsync($"http://localhost:3000/");
+        res.EnsureSuccessStatusCode();
+
+        var baseData = JsonSerializer.Deserialize<Base>(await res.Content.ReadAsStringAsync())!;
+
+        return baseData.ClanView;
+    }
 }
 
 internal class Clan

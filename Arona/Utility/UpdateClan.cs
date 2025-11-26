@@ -76,6 +76,7 @@ internal static class UpdateClan
                 }
 
                 var apiClan = await ClanView.GetAsync(dbClan.Clan.Id, dbClan.ExternalData.Region);
+                //var apiClan = await ClanView.GetMockupAsync();
                 
                 // Hämta rankningar
                 Task<LadderStructure[]> globalRankTask = LadderStructure.GetAsync(apiClan.Clan.Id, dbClan.ExternalData.Region);
@@ -195,7 +196,7 @@ internal static class UpdateClan
                                     IsVictory = isVictory
                                 }.CreateEmbed();
 
-                                await SendMessage(ulong.Parse(guild.ChannelId), embed, currentTime);
+                                await SendMessage(ulong.Parse(guild.ChannelId), embed, lastBattleUnix);
                             }
                             catch (InvalidCredentialException ex)
                             {
@@ -210,10 +211,10 @@ internal static class UpdateClan
                                 guild.Cookies.Remove(apiClan.Clan.Id);
 
                                 // Send regular embed instead since detailed data failed
-                                await SendMessage(ulong.Parse(guild.ChannelId), embedSkeleton.CreateEmbed(), currentTime);
+                                await SendMessage(ulong.Parse(guild.ChannelId), embedSkeleton.CreateEmbed(), lastBattleUnix);
                             }
                         else
-                            await SendMessage(ulong.Parse(guild.ChannelId), embedSkeleton.CreateEmbed(), currentTime);
+                            await SendMessage(ulong.Parse(guild.ChannelId), embedSkeleton.CreateEmbed(), lastBattleUnix);
                     }
 
                     dbClan.ExternalData.RecentBattles.Add(new RecentBattle

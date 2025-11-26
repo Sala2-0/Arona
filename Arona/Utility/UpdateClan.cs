@@ -91,8 +91,8 @@ internal static class UpdateClan
                     LatestSeason = apiClan.WowsLadder.SeasonNumber,
                     PrimeTime = apiClan.WowsLadder.PrimeTime,
                     PlannedPrimeTime = apiClan.WowsLadder.PlannedPrimeTime,
-                    GlobalRank = globalRankTask.Result.First(c => c.Id == apiClan.Clan.Id).Rank,
-                    RegionRank = regionRankTask.Result.First(c => c.Id == apiClan.Clan.Id).Rank
+                    GlobalRank = globalRankTask.Result.FirstOrDefault(c => c.Id == apiClan.Clan.Id)?.Rank,
+                    RegionRank = regionRankTask.Result.FirstOrDefault(c => c.Id == apiClan.Clan.Id)?.Rank
                 };
 
                 // Vid ett nytt säsong
@@ -145,8 +145,8 @@ internal static class UpdateClan
                         Division = apiRating.Division,
                         DivisionRating = apiRating.DivisionRating,
 
-                        GlobalRank = apiClanData.GlobalRank,
-                        RegionRank = apiClanData.RegionRank,
+                        GlobalRank = (int)apiClanData.GlobalRank!,
+                        RegionRank = (int)apiClanData.RegionRank!,
                         SuccessFactor = SuccessFactor.Calculate(
                             rating: apiRating.PublicRating,
                             battlesCount: apiRating.BattlesCount,

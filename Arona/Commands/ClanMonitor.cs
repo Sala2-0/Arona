@@ -50,8 +50,8 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
             var data = new
             {
                 Clan = apiTask.Result,
-                Global = apiGlobalRankTask.Result.First(c => c.Id == clanId),
-                Region = apiRegionRankTask.Result.First(c => c.Id == clanId)
+                Global = apiGlobalRankTask.Result.FirstOrDefault(c => c.Id == clanId),
+                Region = apiRegionRankTask.Result.FirstOrDefault(c => c.Id == clanId)
             };
 
             var dbClan = Collections.Clans.FindOne(c => c.Clan.Id == clanId);
@@ -67,8 +67,8 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
                 data.Clan.WowsLadder.Ratings.RemoveAll(r => r.SeasonNumber != data.Clan.WowsLadder.SeasonNumber);
 
                 data.Clan.ExternalData.Region = region;
-                data.Clan.ExternalData.GlobalRank = data.Global.Rank;
-                data.Clan.ExternalData.RegionRank = data.Region.Rank;
+                data.Clan.ExternalData.GlobalRank = data.Global?.Rank;
+                data.Clan.ExternalData.RegionRank = data.Region?.Rank;
 
                 if (data.Clan.WowsLadder.PrimeTime != null)
                     data.Clan.ExternalData.SessionEndTime = ClanUtils.GetEndSession(data.Clan.WowsLadder.PrimeTime);

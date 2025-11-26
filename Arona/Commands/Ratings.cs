@@ -65,7 +65,7 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
                 {
                     Author = new EmbedAuthorProperties { Name = "Arona's intelligence report", IconUrl = botIconUrl },
                     Title = $"`[{data.Clan.Clan.Tag}] {data.Clan.Clan.Name}` ({ClanUtils.GetHumanRegion(region)})",
-                    Fields = [new EmbedFieldProperties{ Name = "Clan doesn't play clan battles." }]
+                    Fields = [new EmbedFieldProperties{ Name = $"Clan hasn't played any battles in S{latestSeason}" }]
                 });
 
                 return;

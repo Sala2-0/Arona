@@ -173,12 +173,20 @@ internal class External
     [BsonField("region")]
     public string Region { get; set; }
 
+    /// <remarks>
+    /// Can be null during new season where no games have been played yet
+    /// </remarks>
+
     [BsonField("global_rank")]
-    public int GlobalRank { get; set; }
+    public int? GlobalRank { get; set; } = null;
+
+    /// <remarks>
+    /// Can be null during new season where no games have been played yet
+    /// </remarks>
 
     [BsonField("region_rank")]
-    public int RegionRank { get; set; }
-    
+    public int? RegionRank { get; set; } = null;
+
     [BsonField("session_end_time")]
     public long? SessionEndTime { get; set; } = null;
 

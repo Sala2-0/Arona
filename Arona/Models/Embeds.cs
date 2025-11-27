@@ -195,7 +195,7 @@ internal class DetailedBattleEmbed : Base
             field.Value += "**Lineup:**\n";
 
             foreach (var player in team.Players)
-                field.Value += $"`{player.Name}`\n{player.Ship.Level} {player.Ship.Name}\n\n";
+                field.Value += $"`{player.Name}`\n{player.Ship.Level} {player.Ship.Name} {(player.Survived ? ":green_square:" : ":red_square:")}\n\n";
 
             embed.AddFields(field);
         }

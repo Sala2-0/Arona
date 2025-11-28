@@ -54,7 +54,7 @@ The owner may modify, suspend, or discontinue the Bot at any time.
 
 ## Limitation of Liability
 The Bot is offered for free and without guarantees.
-To the maximum extent allowed by law, I am not responsible for:
+To the maximum extent allowed by law, the owner is not responsible for:
 - Account losses due to improper cookie handling
 - Inaccurate data from WG services
 - Any damages arising from misuse of the Bot

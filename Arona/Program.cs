@@ -56,6 +56,13 @@ internal class Program
         clanMonitorTask.Enabled = true;
         clanMonitorTask.Start();
 
+        // Delete guild from DB when bot is removed
+        Client.GuildDelete += (e) =>
+        {
+            Collections.Guilds.Delete(e.GuildId.ToString());
+            return ValueTask.CompletedTask;
+        };
+
         await Emojis.InitializeAsync();
         await host.RunAsync();
     }

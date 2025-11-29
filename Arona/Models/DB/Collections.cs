@@ -9,6 +9,7 @@ internal class Collections
     public static ILiteCollection<Guild> Guilds { get; private set; }
     public static ILiteCollection<User> Users { get; private set; }
     public static ILiteCollection<Ship> Ships { get; private set; }
+    public static ILiteCollection<LadderStructure> HurricaneLeaderboard { get; private set; }
 
     public static void Initialize(LiteDatabase db)
     {
@@ -16,5 +17,6 @@ internal class Collections
         Guilds = db.GetCollection<Guild>("guilds");
         Users = db.GetCollection<User>("users");
         Ships = db.GetCollection<Ship>("ships");
+        HurricaneLeaderboard = db.GetCollection<LadderStructure>("hurricane_leaderboard");
     }
 }

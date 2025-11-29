@@ -20,7 +20,7 @@ internal class DeferredMessage
 
 internal static class PrivateMessage
 {
-    public static async Task NoAccessMessage(ulong guildId, string channelId)
+    public static async Task NoAccessMessageAsync(ulong guildId, ulong channelId)
     {
         var parsedGuild = await Program.Client!.Rest.GetGuildAsync(guildId);
 
@@ -36,7 +36,7 @@ internal static class PrivateMessage
         );
     }
 
-    public static async Task NoPermissionMessage(ulong guildId, string channelName)
+    public static async Task NoPermissionMessageAsync(ulong guildId, string channelName)
     {
         var parsedGuild = await Program.Client!.Rest.GetGuildAsync(guildId);
 
@@ -50,5 +50,42 @@ internal static class PrivateMessage
             + "\n\nPlease give me permission to send messages in the channel or give me another channel so I can continue announcing events :3"
             + "\n\n- Arona"
         );
+    }
+}
+
+internal static class Message
+{
+    public static async Task SendAsync(ulong guildId, ulong channelId, EmbedProperties embed)
+    {
+        var self = await Program.Client!.Rest.GetCurrentUserGuildUserAsync(guildId);
+
+        try
+        {
+            var channel = await Program.Client.Rest.GetChannelAsync(channelId) as TextGuildChannel;
+
+            var permissions = self.GetChannelPermissions(
+                guild: await Program.Client.Rest.GetGuildAsync(guildId),
+                channel: channel!
+            );
+
+            // Arona har inte tillstånd att skicka meddelanden
+            if ((permissions & Permissions.SendMessages) == 0)
+            {
+                await PrivateMessage.NoPermissionMessageAsync(guildId, channel!.Name);
+                return;
+            }
+
+            
+            await Program.Client.Rest.SendMessageAsync(
+                channelId: channelId,
+                message: new MessageProperties{ Embeds = [embed] }
+            );
+        }
+        // Arona har inte tillgång/kan inte se kanalen
+        catch (Exception ex)
+        {
+            await Program.Error(ex);
+            await PrivateMessage.NoAccessMessageAsync(guildId, channelId);
+        }
     }
 }

@@ -46,7 +46,7 @@ public class OwnerCommands : CommandModule<CommandContext>
                 // Arona har inte tillstånd att skicka meddelanden
                 if ((permissions & Permissions.SendMessages) == 0)
                 {
-                    await PrivateMessage.NoPermissionMessage(ulong.Parse(guild.Id), channel!.Name);
+                    await PrivateMessage.NoPermissionMessageAsync(ulong.Parse(guild.Id), channel!.Name);
                     continue;
                 }
 
@@ -79,7 +79,7 @@ public class OwnerCommands : CommandModule<CommandContext>
             // Arona har inte tillgång/kan inte se kanalen
             catch (Exception ex)
             {
-                await PrivateMessage.NoAccessMessage(ulong.Parse(guild.Id), guild.ChannelId);
+                await PrivateMessage.NoAccessMessageAsync(ulong.Parse(guild.Id), ulong.Parse(guild.ChannelId));
             }
         }
     }

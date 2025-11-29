@@ -51,10 +51,19 @@ internal class Program
 
         // Varje 5 minut, hämta API och kolla klan aktiviteter
         Timer clanMonitorTask = new(300000); // 300000
-        clanMonitorTask.Elapsed += async (_, _) => await UpdateClan.UpdateClansAsync();
+        clanMonitorTask.Elapsed += async (_, _) => await UpdateTasks.UpdateClansAsync();
         clanMonitorTask.AutoReset = true;
         clanMonitorTask.Enabled = true;
         clanMonitorTask.Start();
+
+        Timer hurricaneLeaderboardTask = new(1200000);
+        hurricaneLeaderboardTask.Elapsed += async (_, _) => await UpdateTasks.UpdateHurricaneLeaderboardAsync();
+        hurricaneLeaderboardTask.AutoReset = true;
+        hurricaneLeaderboardTask.Enabled = true;
+        hurricaneLeaderboardTask.Start();
+
+        // Update leaderboard on startup
+        await UpdateTasks.UpdateHurricaneLeaderboardAsync();
 
         await Emojis.InitializeAsync();
         await host.RunAsync();

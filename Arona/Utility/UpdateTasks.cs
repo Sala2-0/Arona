@@ -1,15 +1,85 @@
-﻿using System.Security.Authentication;
-using NetCord.Rest;
-using Arona.Models;
+﻿using Arona.Models;
 using Arona.Models.Api.Clans;
 using Arona.Models.DB;
+using NetCord.Rest;
+using System.Security.Authentication;
 
 using Timer = System.Timers.Timer;
 
 namespace Arona.Utility;
 
-internal static class UpdateClan
+/// <summary>
+/// Contains methods run by timers
+/// </summary>
+internal static class UpdateTasks
 {
+    public static async Task UpdateHurricaneLeaderboardAsync(bool startupUpdate = false)
+    {
+        try
+        {
+            var guilds = Collections.Guilds.FindAll().ToList();
+            var newLeaderboard = new List<LadderStructure>();
+            string[] realms = ["eu", "us", "sg"];
+
+            foreach (var realm in realms)
+                newLeaderboard.AddRange(await LadderStructure.GetAsync(league: 0, division: 1, realm));
+
+            if (newLeaderboard.Count == 0) return;
+
+            var leaderboard = Collections.HurricaneLeaderboard.FindAll().ToList();
+            if (leaderboard.Count == 0)
+            {
+                leaderboard = newLeaderboard;
+
+                if (!startupUpdate) return;
+
+                foreach (var clan in leaderboard)
+                    foreach (var guild in guilds)
+                        await Message.SendAsync(
+                            ulong.Parse(guild.Id),
+                            ulong.Parse(guild.ChannelId),
+                            new EmbedProperties
+                            {
+                                Title = $"`[{clan.Tag}] {clan.Name}` has reached Hurricane leaderboard!",
+                            }
+                        );
+            }
+
+            var oldIds = leaderboard.Select(c => c.Id).ToHashSet();
+            var newIds = newLeaderboard.Select(c => c.Id).ToHashSet();
+
+            var removedClans = leaderboard.Where(c => !newIds.Contains(c.Id)).ToList();
+            var addedClans = newLeaderboard.Where(c => !oldIds.Contains(c.Id)).ToList();
+
+            foreach (var guild in guilds)
+            {
+                foreach (var clan in removedClans)
+                    await Message.SendAsync(
+                        ulong.Parse(guild.Id),
+                        ulong.Parse(guild.ChannelId),
+                        new EmbedProperties
+                        {
+                            Title = $"`[{clan.Tag}] {clan.Name}` has dropped from Hurricane leaderboard!",
+                        }
+                    );
+
+                foreach (var clan in addedClans)
+                    await Message.SendAsync(
+                        ulong.Parse(guild.Id),
+                        ulong.Parse(guild.ChannelId),
+                        new EmbedProperties
+                        {
+                            Title = $"`[{clan.Tag}] {clan.Name}` entered Hurricane leaderboard!",
+                        }
+                    );
+            }
+        }
+        catch (Exception ex)
+        {
+            await Program.Error(ex);
+        }
+    }
+
     public static async Task UpdateClansAsync()
     {
         await Program.WaitForWriteAsync();
@@ -77,7 +147,7 @@ internal static class UpdateClan
 
                 var apiClan = await ClanView.GetAsync(dbClan.Clan.Id, dbClan.ExternalData.Region);
                 //var apiClan = await ClanView.GetMockupAsync();
-                
+
                 // Hämta rankningar
                 Task<LadderStructure[]> globalRankTask = LadderStructure.GetAsync(apiClan.Clan.Id, dbClan.ExternalData.Region);
                 Task<LadderStructure[]> regionRankTask = LadderStructure.GetAsync(apiClan.Clan.Id, dbClan.ExternalData.Region, ClanUtils.ConvertRegion(dbClan.ExternalData.Region));
@@ -157,11 +227,11 @@ internal static class UpdateClan
                         IsVictory = isVictory,
                         Stage = apiRating.Stage
                     };
-                    
+
                     // Entering stage
                     if (apiRating.Stage != null && apiRating.Stage.Progress.Length == 0)
                         embedSkeleton.PointsDelta = apiRating.PublicRating - dbRating.PublicRating;
-                    
+
                     // Stage progression
                     else if (apiRating.Stage != null)
                         embedSkeleton.StageProgressOutcome = apiRating.Stage.Progress.Last() == "victory" ? 1 : 0;

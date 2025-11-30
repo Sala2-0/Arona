@@ -49,6 +49,13 @@ internal class Program
         
         Client = host.Services.GetRequiredService<GatewayClient>();
 
+        // Delete guild from DB when bot is removed
+        Client.GuildDelete += (e) =>
+        {
+            Collections.Guilds.Delete(e.GuildId.ToString());
+            return ValueTask.CompletedTask;
+        };
+
         // Varje 5 minut, hämta API och kolla klan aktiviteter
         Timer clanMonitorTask = new(300000); // 300000
         clanMonitorTask.Elapsed += async (_, _) => await UpdateTasks.UpdateClansAsync();

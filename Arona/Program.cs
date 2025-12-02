@@ -55,6 +55,13 @@ internal class Program
             Collections.Guilds.Delete(e.GuildId.ToString());
             return ValueTask.CompletedTask;
         };
+        Console.WriteLine(Config.PrecenseStr);
+        Client.Ready += _ => Client.UpdatePresenceAsync(new PresenceProperties(statusType: UserStatusType.Online)
+        {
+            Activities = [
+                new UserActivityProperties(Config.PrecenseStr, UserActivityType.Playing)
+            ],
+        });
 
         // Varje 5 minut, hämta API och kolla klan aktiviteter
         Timer clanMonitorTask = new(300000); // 300000

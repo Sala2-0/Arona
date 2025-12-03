@@ -183,6 +183,7 @@ internal static class UpdateTasks
                 if (dbClan.WowsLadder.PrimeTime == null && apiClanData.PrimeTime != null)
                 {
                     dbClan.ExternalData.SessionEndTime = ClanUtils.GetEndSession(apiClanData.PrimeTime);
+                    dbClan.WowsLadder.Ratings = apiClan.WowsLadder.Ratings.FindAll(r => r.SeasonNumber == apiClanData.LatestSeason);
 
                     foreach (var guild in guilds)
                         await Program.Client.Rest.SendMessageAsync(

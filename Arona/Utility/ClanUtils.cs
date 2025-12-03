@@ -45,9 +45,16 @@ public static class ClanUtils
             case 0 or 1 or 2 or 3:
                 endSession = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 16, 0, 0, DateTimeKind.Utc);
                 break;
+
+            // EU has special logic cause of CET/CEST
             case 4 or 5 or 6 or 7:
-                endSession = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 21, 30, 0, DateTimeKind.Utc);
+            {
+                var euTime = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
+                var localEnd = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 23, 30, 0, DateTimeKind.Unspecified);
+
+                endSession = TimeZoneInfo.ConvertTimeToUtc(localEnd, euTime);
                 break;
+            }
             case 8 or 9 or 10 or 11:
                 endSession = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 4, 0, 0, DateTimeKind.Utc);
                 if (utcNow.Hour >= 4) endSession = endSession.AddDays(1);

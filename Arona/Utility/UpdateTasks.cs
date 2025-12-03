@@ -24,14 +24,19 @@ internal static class UpdateTasks
             foreach (var realm in realms)
                 newLeaderboard.AddRange(await LadderStructure.GetAsync(league: 0, division: 1, realm));
 
+            if (startupUpdate)
+            {
+                Collections.HurricaneLeaderboard.DeleteAll();
+                Collections.HurricaneLeaderboard.InsertBulk(newLeaderboard);
+                return;
+            }
+
             if (newLeaderboard.Count == 0) return;
 
             var leaderboard = Collections.HurricaneLeaderboard.FindAll().ToList();
             if (leaderboard.Count == 0)
             {
                 leaderboard = newLeaderboard;
-
-                if (!startupUpdate) return;
 
                 foreach (var clan in leaderboard)
                     foreach (var guild in guilds)
@@ -69,10 +74,13 @@ internal static class UpdateTasks
                         ulong.Parse(guild.ChannelId),
                         new EmbedProperties
                         {
-                            Title = $"`[{clan.Tag}] {clan.Name}` entered Hurricane leaderboard!",
+                            Title = $"`[{clan.Tag}] {clan.Name}` has entered Hurricane leaderboard!",
                         }
                     );
             }
+
+            Collections.HurricaneLeaderboard.DeleteAll();
+            Collections.HurricaneLeaderboard.InsertBulk(newLeaderboard);
         }
         catch (Exception ex)
         {

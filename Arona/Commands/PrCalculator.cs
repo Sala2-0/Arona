@@ -29,7 +29,7 @@ public class PrCalculator : ApplicationCommandModule<ApplicationCommandContext>
     {
         Guild.Exists(Context.Interaction);
 
-        string[] split = shipData.Split('|');
+        string[] split = shipData.Split(',');
         
         string id = split[0];
         string name = split[1];

@@ -55,7 +55,7 @@ internal class Program
             Collections.Guilds.Delete(e.GuildId.ToString());
             return ValueTask.CompletedTask;
         };
-        Console.WriteLine(Config.PrecenseStr);
+
         Client.Ready += _ => Client.UpdatePresenceAsync(new PresenceProperties(statusType: UserStatusType.Online)
         {
             Activities = [

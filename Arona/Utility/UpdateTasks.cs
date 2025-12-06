@@ -263,7 +263,7 @@ internal static class UpdateTasks
                                 var cookieValidationData = await AccountInfoSync.GetAsync(cookie, dbClan.ExternalData.Region);
                                 if (cookieValidationData.ClanId != apiClan.Clan.Id)
                                     throw new InvalidCredentialException($"Cookie for clan `{apiClan.Clan.Tag}` is invalid: Player is not a member of the clan.");
-                                if (cookieValidationData.Rank < Role.Midshipman)
+                                if (cookieValidationData.Rank < Role.LineOfficer)
                                     throw new InvalidCredentialException($"Cookie for clan `{apiClan.Clan.Tag}` is invalid: Player is too high ranking.");
 
                                 var detailedData = (await LadderBattle.GetAsync(cookie, dbClan.ExternalData.Region, apiRating.TeamNumber))[0];

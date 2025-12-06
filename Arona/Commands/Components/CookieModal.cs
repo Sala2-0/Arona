@@ -28,7 +28,7 @@ public class Modals : ComponentInteractionModule<ModalInteractionContext>
                 throw new InvalidCredentialException("Cookie does not belong to specified account.");
             if (data.ClanId != clanId)
                 throw new InvalidCredentialException("Player is not a member of specified clan.");
-            if (data.Rank < Role.Midshipman)
+            if (data.Rank < Role.LineOfficer)
                 throw new InvalidCredentialException("Player is too high ranking.");
 
             guild.Cookies[clanId] = cookieInput.Value;

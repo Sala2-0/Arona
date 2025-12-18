@@ -77,7 +77,7 @@ internal class Program
         hurricaneLeaderboardTask.Start();
 
         // Update leaderboard on startup
-        await UpdateTasks.UpdateHurricaneLeaderboardAsync();
+        await UpdateTasks.UpdateHurricaneLeaderboardAsync(startupUpdate: true);
 
         await Emojis.InitializeAsync();
         await host.RunAsync();

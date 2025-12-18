@@ -45,7 +45,8 @@ internal static class UpdateTasks
                             ulong.Parse(guild.ChannelId),
                             new EmbedProperties
                             {
-                                Title = $"`[{clan.Tag}] {clan.Name}` has reached Hurricane leaderboard!",
+                                Title = "New hurricane clan",
+                                Description = $"`[{clan.Tag}] {clan.Name}` has entered Hurricane leaderboard!"
                             }
                         );
             }
@@ -64,7 +65,8 @@ internal static class UpdateTasks
                         ulong.Parse(guild.ChannelId),
                         new EmbedProperties
                         {
-                            Title = $"`[{clan.Tag}] {clan.Name}` has dropped from Hurricane leaderboard!",
+                            Title = "Clan dropped from Hurricane",
+                            Description = $"`[{clan.Tag}] {clan.Name}` has dropped Hurricane leaderboard!"
                         }
                     );
 
@@ -74,7 +76,8 @@ internal static class UpdateTasks
                         ulong.Parse(guild.ChannelId),
                         new EmbedProperties
                         {
-                            Title = $"`[{clan.Tag}] {clan.Name}` has entered Hurricane leaderboard!",
+                            Title = "New hurricane clan",
+                            Description = $"`[{clan.Tag}] {clan.Name}` has entered Hurricane leaderboard!"
                         }
                     );
             }

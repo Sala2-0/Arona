@@ -57,7 +57,10 @@ internal static class Message
 {
     public static async Task SendAsync(ulong guildId, ulong channelId, EmbedProperties embed)
     {
-        var self = await Program.Client!.Rest.GetCurrentUserGuildUserAsync(guildId);
+        var self = await Program.Client!.Rest.GetGuildUserAsync(
+            guildId: guildId,
+            userId: (await Program.Client.Rest.GetCurrentUserAsync()).Id
+        );
 
         try
         {

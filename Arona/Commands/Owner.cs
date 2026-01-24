@@ -90,10 +90,19 @@ public class OwnerCommands : CommandModule<CommandContext>
     {
         if (!Owner.Check(Context.User.Id)) return;
 
-        string message = $"**{Program.Client!.Cache.Guilds.Count}** servrar har Arona tillagd\n\nServrar:";
+        var app = await Program.Client!.Rest.GetApplicationAsync(Config.ApplicationId);
+
+        var totalMembers = Program.Client.Cache.Guilds.Values.Sum(g => g.UserCount);
+
+        var message = $"**Statistik för Arona:**\n" +
+                         $"- Servrar i cache: {Program.Client.Cache.Guilds.Count}\n" +
+                         $"- Officiellt antal servrar: {app.ApproximateGuildCount ?? 0}\n" +
+                         $"- Användarinstallationer: {app.ApproximateUserInstallCount ?? 0}\n" +
+                         $"- Total räckvidd (medlemmar): {totalMembers}\n\n" +
+                         $"**Servrar:**";
 
         foreach (var guild in Program.Client.Cache.Guilds.Values)
-            message += $"\n`{guild.Name}` (ID: {guild.Id})";
+            message += $"\n`{guild.Name}` (ID: {guild.Id}) - {guild.UserCount} medlemmar";
 
         await Context.Message.ReplyAsync(message);
     }

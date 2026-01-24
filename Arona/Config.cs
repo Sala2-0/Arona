@@ -8,6 +8,7 @@ internal static class Config
 {
     private static string _token;
     private static string _devToken;
+    public static ulong ApplicationId { get; private set; }
     public static string? ClientId { get; private set; }
     public static string? GuildId { get; private set; }
     public static string WgApi { get; private set; }
@@ -30,6 +31,7 @@ internal static class Config
 
             _token = instance!.Token;
             _devToken = instance.DevToken;
+            ApplicationId = instance.ApplicationId;
             ClientId = instance.ClientId;
             GuildId = instance.GuildId;
             WgApi = instance.WgApi;
@@ -49,6 +51,7 @@ internal static class Config
     {
         [JsonPropertyName("token")] public required string Token { get; set; }
         [JsonPropertyName("dev_token")] public required string DevToken { get; set; }
+        [JsonPropertyName("application_id")] public required ulong ApplicationId { get; set; }
         [JsonPropertyName("client_id")] public string? ClientId { get; set; }
         [JsonPropertyName("guild_id")] public string? GuildId { get; set; }
         [JsonPropertyName("wg_api")] public required string WgApi { get; set; }

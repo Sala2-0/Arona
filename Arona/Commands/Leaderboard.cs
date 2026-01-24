@@ -42,7 +42,7 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
         try
         {
             var data = await LadderStructureByRealmQuery.GetSingleAsync(
-                new LadderStructureByRealmRequest(realm.ToString().ToLower(), (int)division, (int)league)
+                new LadderStructureByRealmRequest(realm.ToString().ToLower(), (int)league, (int)division)
             );
 
             if (data.Length == 0)
@@ -57,7 +57,7 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
                 {
                     var embed = new EmbedProperties()
                         .WithTitle(
-                            $"Leaderboard - {league} {division} ({ClanUtils.ToRealm(realm.ToString().ToLower())}) [Ratings]")
+                            $"Leaderboard - {league} {division} ({ClanUtils.ToRegion(realm.ToString().ToLower())}) [Ratings]")
                         .WithColor(new Color(Convert.ToInt32(ClanUtils.GetLeagueColor(league).TrimStart('#'), 16)));
 
                     var fields = new List<EmbedFieldProperties>();

@@ -2,7 +2,7 @@
 using Arona.Commands;
 using Arona.Commands.Components;
 
-namespace Arona.Models;
+namespace Arona.Services;
 
 internal static class RecentInteractions
 {

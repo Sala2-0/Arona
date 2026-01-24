@@ -1,8 +1,7 @@
 ﻿using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ComponentInteractions;
-using Arona.Models.Components;
-using Arona.Models;
+using Arona.Services;
 
 namespace Arona.Commands.Components;
 

@@ -36,8 +36,8 @@ internal class PlayerAutocomplete : IAutocompleteProvider<AutocompleteInteractio
 
         try
         {
-            var data = await Player.GetAsync(input, region);
-            var players = data.Select(c => new { AccountId = c.AccountId, Name = c.Nickname, Region = region }).ToList();
+            var data = await PlayerListItemQuery.GetSingleAsync(new PlayerListItemRequest(region, input));
+            var players = data.Data.Select(c => new { AccountId = c.AccountId, Name = c.Nickname, Region = region }).ToList();
 
             return players
                 .Take(8)

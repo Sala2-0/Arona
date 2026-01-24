@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using NetCord.Rest;
 
-namespace Arona.Models.Components;
+namespace Arona.Services;
 
 internal static class ComponentInactivityTimer
 {

@@ -37,8 +37,8 @@ internal class ClanAutocomplete: IAutocompleteProvider<AutocompleteInteractionCo
 
         try
         {
-            var data = await Clan.GetAsync(input, region);
-            var clans = data.Select(c => new { Tag = c.Tag, Name = c.Name, Id = c.ClanId, Region = region }).ToList();
+            var data = await ClanListItemQuery.GetSingleAsync(new ClanListItemRequest(region, input));
+            var clans = data.Data.Select(c => new { Tag = c.Tag, Name = c.Name, Id = c.ClanId, Region = region }).ToList();
 
             var choices = clans
                 .Take(8)

@@ -3,7 +3,7 @@ using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using Arona.Commands.Autocomplete;
-using Arona.Models;
+using Arona.Services.Message;
 using Arona.Models.DB;
 using Arona.Utility;
 
@@ -31,15 +31,14 @@ public class PrCalculator : ApplicationCommandModule<ApplicationCommandContext>
 
         string[] split = shipData.Split(',');
         
-        string id = split[0];
-        string name = split[1];
-        string tier = split[2];
-        double avgDamage = double.Parse(split[3]);
-        double avgKills = double.Parse(split[4]);
-        double winRate = double.Parse(split[5]);
+        string id = split[0],
+            name = split[1],
+            tier = split[2];
+        double avgDamage = double.Parse(split[3]),
+            avgKills = double.Parse(split[4]),
+            winRate = double.Parse(split[5]);
         
-        using var client = new HttpClient();
-        var res = await client.GetAsync($"https://api.worldofwarships.eu/wows/encyclopedia/ships/?application_id={Config.WgApi}&ship_id={id}");
+        var res = await ApiClient.Instance.GetAsync($"https://api.worldofwarships.eu/wows/encyclopedia/ships/?application_id={Config.WgApi}&ship_id={id}");
         JsonElement data = JsonDocument.Parse(await res.Content.ReadAsStringAsync())
             .RootElement
             .GetProperty("data")
@@ -103,8 +102,8 @@ public class PrCalculator : ApplicationCommandModule<ApplicationCommandContext>
                 if (gameData.Length != 4) throw new InvalidDataException("Each game data must contain exactly 4 values separated by commas and each game must be separated by underscores");
 
                 string name = Text.Normalize(gameData[0]).ToLower();
-                int damage = int.Parse(gameData[1]);
-                int kills = int.Parse(gameData[2]);
+                int damage = int.Parse(gameData[1]),
+                    kills = int.Parse(gameData[2]);
                 GameOutcome outcome = gameData[3].ToLower() switch
                 {
                     "win" => GameOutcome.Victory,
@@ -134,9 +133,9 @@ public class PrCalculator : ApplicationCommandModule<ApplicationCommandContext>
                 if (!doc.TryGetProperty(targetShip.Id.ToString(), out var stats) || stats.ValueKind == JsonValueKind.Array)
                     throw new InvalidDataException($"No data for ship {name} [{targetShip.Id}] exists.");
 
-                double avgDmg = stats.GetProperty("average_damage_dealt").GetDouble();
-                double avgKills = stats.GetProperty("average_frags").GetDouble();
-                double winRate = stats.GetProperty("win_rate").GetDouble();
+                double avgDmg = stats.GetProperty("average_damage_dealt").GetDouble(),
+                    avgKills = stats.GetProperty("average_frags").GetDouble(),
+                    winRate = stats.GetProperty("win_rate").GetDouble();
 
                 Normalization normalization = new()
                 {

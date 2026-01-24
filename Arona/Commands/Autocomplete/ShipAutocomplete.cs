@@ -13,14 +13,12 @@ internal class ShipAutocomplete : IAutocompleteProvider<AutocompleteInteractionC
         ApplicationCommandInteractionDataOption option,
         AutocompleteInteractionContext context)
     {
-        using HttpClient client = new();
-
         string input = option.Value ?? string.Empty;
         input = Text.Normalize(input);
 
         var cachedShips = Collections.Ships.FindAll();
         
-        var res = await client.GetAsync("https://api.wows-numbers.com/personal/rating/expected/json/");
+        var res = await ApiClient.Instance.GetAsync("https://api.wows-numbers.com/personal/rating/expected/json/");
         JsonElement doc = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement.GetProperty("data");
         
         List<ShipStructure> ships = [];
@@ -28,15 +26,15 @@ internal class ShipAutocomplete : IAutocompleteProvider<AutocompleteInteractionC
         foreach (var ship in cachedShips)
         {
             string normalizedName = Text.Normalize(ship.Name);
-            
+
             if (!normalizedName.Contains(input, StringComparison.InvariantCultureIgnoreCase)) continue;
             if (!doc.TryGetProperty(ship.Id.ToString(), out var stats)) continue;
             if (stats.ValueKind == JsonValueKind.Array) continue;
             if (ship.ShortName.Contains("(old)")) continue;
             
-            double avgDmg = stats.GetProperty("average_damage_dealt").GetDouble();
-            double avgKills = stats.GetProperty("average_frags").GetDouble();
-            double winRate = stats.GetProperty("win_rate").GetDouble();
+            double avgDmg = stats.GetProperty("average_damage_dealt").GetDouble(),
+                avgKills = stats.GetProperty("average_frags").GetDouble(),
+                winRate = stats.GetProperty("win_rate").GetDouble();
             
             ships.Add(new ShipStructure(ship.Name, ship.Id.ToString(), ship.Tier, avgDmg, avgKills, winRate));
         }

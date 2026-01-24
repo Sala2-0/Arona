@@ -1,7 +1,59 @@
-﻿using System.Text.Json;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
+using Arona.Utility;
 
 namespace Arona.Models.Api.Clans;
+
+internal record LadderStructureByClanRequest(int ClanId, string Region, string Realm = "global");
+internal record LadderStructureByRealmRequest(string Realm, int League, int Division);
+
+// Season = null => latest season data fetched
+internal record LadderStructureBySeasonRequest(int? Season, int League, int Division);
+
+internal class LadderStructureByClanQuery(HttpClient client) : QueryBase<LadderStructureByClanRequest, LadderStructure[]>(client)
+{
+    public override async Task<LadderStructure[]> GetAsync(LadderStructureByClanRequest request) =>
+        await SendAndDeserializeAsync($"https://clans.worldofwarships.{request.Region}/api/ladder/structure/?clan_id={request.ClanId}&realm={request.Realm}");
+
+    public static async Task<LadderStructure[]> GetSingleAsync(LadderStructureByClanRequest request)
+    {
+        var apiQuery = new LadderStructureByClanQuery(ApiClient.Instance);
+        return await apiQuery.GetAsync(request);
+    }
+}
+
+internal class LadderStructureByRealmQuery(HttpClient client) : QueryBase<LadderStructureByRealmRequest, LadderStructure[]>(client)
+{
+    public override async Task<LadderStructure[]> GetAsync(LadderStructureByRealmRequest request)
+    {
+        var url = $"https://clans.worldofwarships.eu/api/ladder/structure/?league={request.League}&division={request.Division}&realm={request.Realm}";
+
+        return await SendAndDeserializeAsync(url);
+    }
+
+    public static async Task<LadderStructure[]> GetSingleAsync(LadderStructureByRealmRequest request)
+    {
+        var apiQuery = new LadderStructureByRealmQuery(ApiClient.Instance);
+        return await apiQuery.GetAsync(request);
+    }
+}
+
+internal class LadderStructureBySeasonQuery(HttpClient client) : QueryBase<LadderStructureBySeasonRequest, LadderStructure[]>(client)
+{
+    public override async Task<LadderStructure[]> GetAsync(LadderStructureBySeasonRequest request)
+    {
+        var url = request.Season.HasValue
+            ? $"https://clans.worldofwarships.eu/api/ladder/structure/?season={request.Season.Value}&division={request.Division}&league={request.League}"
+            : $"https://clans.worldofwarships.eu/api/ladder/structure/?division={request.Division}&league={request.League}";
+
+        return await SendAndDeserializeAsync(url);
+    }
+
+    public static async Task<LadderStructure[]> GetSingleAsync(LadderStructureBySeasonRequest request)
+    {
+        var apiQuery = new LadderStructureBySeasonQuery(ApiClient.Instance);
+        return await apiQuery.GetAsync(request);
+    }
+}
 
 internal class LadderStructure
 {
@@ -30,35 +82,4 @@ internal class LadderStructure
     public required int BattlesCount { get; init; }
 
     public double? SuccessFactor { get; set; }
-
-    public static async Task<LadderStructure[]> GetAsync(int clanId, string region, string realm = "global")
-    {
-        using HttpClient client = new();
-        var res = await client.GetAsync($"https://clans.worldofwarships.{region}/api/ladder/structure/?clan_id={clanId}&realm={realm}");
-        res.EnsureSuccessStatusCode();
-
-        return JsonSerializer.Deserialize<LadderStructure[]>(await res.Content.ReadAsStringAsync())!;
-    }
-
-    public static async Task<LadderStructure[]> GetAsync(int league, int division, string realm)
-    {
-        using HttpClient client = new();
-        var res = await client.GetAsync($"https://clans.worldofwarships.eu/api/ladder/structure/?league={league}&division={division}&realm={realm}");
-        res.EnsureSuccessStatusCode();
-
-        return JsonSerializer.Deserialize<LadderStructure[]>(await res.Content.ReadAsStringAsync())!;
-    }
-
-    public static async Task<LadderStructure[]> GetAsync(int? season, int league, int division)
-    {
-        var url = season.HasValue
-            ? $"https://clans.worldofwarships.eu/api/ladder/structure/?season={season.Value}&division={division}&league={league}"
-            : $"https://clans.worldofwarships.eu/api/ladder/structure/?division={division}&league={league}";
-
-        using HttpClient client = new();
-        var res = await client.GetAsync(url);
-        res.EnsureSuccessStatusCode();
-
-        return JsonSerializer.Deserialize<LadderStructure[]>(await res.Content.ReadAsStringAsync())!;
-    }
 }

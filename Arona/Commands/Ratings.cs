@@ -1,12 +1,13 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
+using NetCord.Rest;
+using NetCord.Services.ApplicationCommands;
 using Arona.Commands.Autocomplete;
 using Arona.Models;
 using Arona.Models.DB;
 using Arona.Models.Api.Clans;
 using Arona.Utility;
-using NetCord.Rest;
-using NetCord.Services.ApplicationCommands;
+using Arona.Services.Message;
 
 using TeamNumber = Arona.Models.Team;
 
@@ -32,10 +33,12 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
         string region = split[1];
         int clanId = int.Parse(split[0]);
 
-        using HttpClient client = new();
-        Task<ClanView> generalTask = ClanView.GetAsync(clanId, region);
-        Task<LadderStructure[]> globalRankTask = LadderStructure.GetAsync(clanId: clanId, region: region);
-        Task<LadderStructure[]> regionRankTask = LadderStructure.GetAsync(clanId: clanId, region: region, realm: ClanUtils.ConvertRegion(region));
+        Task<ClanViewRoot> generalTask = ClanViewQuery.GetSingleAsync(new ClanViewRequest(region, clanId));
+
+        var ladderStructureQuery = new LadderStructureByClanQuery(ApiClient.Instance);
+        Task<LadderStructure[]> 
+            globalRankTask = ladderStructureQuery.GetAsync(new LadderStructureByClanRequest(clanId, region)),
+            regionRankTask = ladderStructureQuery.GetAsync(new LadderStructureByClanRequest(clanId, region, ClanUtils.ToRealm(region)));
 
         try
         {
@@ -47,33 +50,33 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
                 Region: await regionRankTask
             );
 
-            int latestSeason = data.Clan.WowsLadder.SeasonNumber;
-            var leadingTeamNumber = data.Clan.WowsLadder.LeadingTeamNumber;
+            int latestSeason = data.Clan.ClanView.WowsLadder.SeasonNumber;
+            var leadingTeamNumber = data.Clan.ClanView.WowsLadder.LeadingTeamNumber;
 
-            var clan = new Clan
+            var clan = new ClanDto
             {
-                Name = $"[{data.Clan.Clan.Tag}] {data.Clan.Clan.Name}",
-                League = data.Clan.WowsLadder.League,
-                Division = data.Clan.WowsLadder.Division,
-                DivisionRating = data.Clan.WowsLadder.DivisionRating,
-                Color = data.Clan.Clan.Color,
+                Name = $"[{data.Clan.ClanView.Clan.Tag}] {data.Clan.ClanView.Clan.Name}",
+                League = data.Clan.ClanView.WowsLadder.League,
+                Division = data.Clan.ClanView.WowsLadder.Division,
+                DivisionRating = data.Clan.ClanView.WowsLadder.DivisionRating,
+                Color = data.Clan.ClanView.Clan.Color,
             };
 
-            if (!data.Clan.WowsLadder.Ratings.Exists(team => team.SeasonNumber == latestSeason))
+            if (!data.Clan.ClanView.WowsLadder.Ratings.Exists(team => team.SeasonNumber == latestSeason))
             {
                 await deferredMessage.EditAsync(new EmbedProperties 
                 {
                     Author = new EmbedAuthorProperties { Name = "Arona's intelligence report", IconUrl = botIconUrl },
-                    Title = $"`[{data.Clan.Clan.Tag}] {data.Clan.Clan.Name}` ({ClanUtils.GetHumanRegion(region)})",
+                    Title = $"`[{data.Clan.ClanView.Clan.Tag}] {data.Clan.ClanView.Clan.Name}` ({ClanUtils.GetHumanRegion(region)})",
                     Fields = [new EmbedFieldProperties{ Name = $"Clan hasn't played any battles in S{latestSeason}" }]
                 });
 
                 return;
             }
 
-            foreach (var rating in data.Clan.WowsLadder.Ratings.FindAll(team => team.SeasonNumber == latestSeason))
+            foreach (var rating in data.Clan.ClanView.WowsLadder.Ratings.FindAll(team => team.SeasonNumber == latestSeason))
             {
-                clan.Teams.Add(new Team
+                clan.Teams.Add(new TeamDto
                 {
                     TeamNumber = rating.TeamNumber,
                     Color = ClanUtils.GetLeagueColor(rating.League),
@@ -85,16 +88,16 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
                     League = rating.League,
                     Division = rating.Division,
                     DivisionRating = rating.DivisionRating,
-                    Stage = rating.Stage != null ? new Stage(rating.Stage.Type, rating.Stage.Progress) : null
+                    Stage = rating.Stage != null ? new StageDto(rating.Stage.Type, rating.Stage.Progress) : null
                 });
             }
 
             clan.Teams.Sort((a, b) => (int)a.TeamNumber - (int)b.TeamNumber);
 
-            clan.Stage = data.Clan.WowsLadder.Ratings.Find(t => t.TeamNumber == leadingTeamNumber && t.SeasonNumber == latestSeason)?.Stage != null
-                ? new Stage(
-                    data.Clan.WowsLadder.Ratings.Find(t => t.TeamNumber == leadingTeamNumber && t.SeasonNumber == latestSeason)!.Stage!.Type,
-                    data.Clan.WowsLadder.Ratings.Find(t => t.TeamNumber == leadingTeamNumber && t.SeasonNumber == latestSeason)!.Stage!.Progress
+            clan.Stage = data.Clan.ClanView.WowsLadder.Ratings.Find(t => t.TeamNumber == leadingTeamNumber && t.SeasonNumber == latestSeason)?.Stage != null
+                ? new StageDto(
+                    data.Clan.ClanView.WowsLadder.Ratings.Find(t => t.TeamNumber == leadingTeamNumber && t.SeasonNumber == latestSeason)!.Stage!.Type,
+                    data.Clan.ClanView.WowsLadder.Ratings.Find(t => t.TeamNumber == leadingTeamNumber && t.SeasonNumber == latestSeason)!.Stage!.Progress
                 )
                 : null;
 
@@ -110,7 +113,7 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
             using var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
             content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
 
-            var response = await client.PostAsync("http://localhost:3000/ratings", content);
+            var response = await ApiClient.Instance.PostAsync("http://localhost:3000/ratings", content);
 
             var imageBytes = await response.Content.ReadAsByteArrayAsync();
             using var stream = new MemoryStream(imageBytes);
@@ -127,7 +130,7 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
         }
     }
 
-    private class Clan
+    private record ClanDto
     {
         public string Name { get; init; }
         public string Color { get; init; }
@@ -136,11 +139,11 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
         public int DivisionRating { get; init; }
         public int GlobalRank { get; set; }
         public int RegionRank { get; set; }
-        public List<Team> Teams { get; } = [];
-        public Stage? Stage { get; set; }
+        public List<TeamDto> Teams { get; } = [];
+        public StageDto? Stage { get; set; }
     }
 
-    private class Team
+    private record TeamDto
     {
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public required TeamNumber TeamNumber { get; init; }
@@ -151,10 +154,10 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
         public required League League { get; init; }
         public required Division Division { get; init; }
         public required int DivisionRating { get; init; }
-        public required Stage? Stage { get; init; }
+        public required StageDto? Stage { get; init; }
     }
 
-    private class Stage(StageType type, string[] progress)
+    private record StageDto(StageType type, string[] progress)
     {
         public StageType Type { get; } = type;
         public string[] Progress { get; } = progress;

@@ -105,7 +105,7 @@ public static class ClanUtils
     /// <param name="region">
     /// Top-level domain name.
     /// </param>
-    public static string ConvertRegion(string region) => region switch
+    public static string ToRealm(string region) => region switch
     {
         "eu" or "EU" => "eu",
         "com" or "COM" => "us",
@@ -119,7 +119,7 @@ public static class ClanUtils
     /// <param name="realm">
     /// Region code returned/used by clans.worldofwarships subdomain.
     /// </param>
-    public static string ConvertRealm(string realm) => realm switch
+    public static string ToRegion(string realm) => realm switch
     {
         "global" => "Global",
         "eu" => "EU",

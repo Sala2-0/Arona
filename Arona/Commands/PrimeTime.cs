@@ -2,7 +2,7 @@
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using Arona.Commands.Autocomplete;
-using Arona.Models;
+using Arona.Services.Message;
 using Arona.Models.DB;
 using Arona.Models.Api.Clans;
 
@@ -27,14 +27,14 @@ public class PrimeTime : ApplicationCommandModule<ApplicationCommandContext>
 
         try
         {
-            var clan = await ClanView.GetAsync(clanId, region);
+            var clan = await ClanViewQuery.GetSingleAsync(new ClanViewRequest(region, clanId));
 
-            int? primeTime = clan.WowsLadder.PrimeTime;
-            int? plannedPrimeTime = clan.WowsLadder.PlannedPrimeTime;
+            int? primeTime = clan.ClanView.WowsLadder.PrimeTime,
+                plannedPrimeTime = clan.ClanView.WowsLadder.PlannedPrimeTime;
 
             await deferredMessage.EditAsync(new EmbedProperties
             {
-                Title = $"`[{clan.Clan.Tag}] {clan.Clan.Name}`",
+                Title = $"`[{clan.ClanView.Clan.Tag}] {clan.ClanView.Clan.Name}`",
                 Color = new Color(Convert.ToInt32("a4fff7", 16)),
                 Fields = [
                     new EmbedFieldProperties{ Name = "Selected region", Value = plannedPrimeTime != null ? GetPrimeTimeRegions(plannedPrimeTime) : "Not selected" },

@@ -1,0 +1,26 @@
+﻿using System.Text.Json;
+
+namespace Arona.Models.Api;
+
+internal abstract class QueryBase<TRequest, TResponse>(HttpClient client) : IApiQuery<TRequest, TResponse>
+{
+    protected readonly HttpClient Client = client;
+
+    public abstract Task<TResponse> GetAsync(TRequest request);
+
+    protected async Task<TResponse> SendAndDeserializeAsync(string url, HttpRequestMessage? message = null)
+    {
+        HttpResponseMessage res;
+
+        if (message != null)
+            res = await Client.SendAsync(message);
+        else
+            res = await Client.GetAsync(url);
+
+        res.EnsureSuccessStatusCode();
+
+        var json = await res.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<TResponse>(json)
+               ?? throw new JsonException("Failed to deserialize API response");
+    }
+}

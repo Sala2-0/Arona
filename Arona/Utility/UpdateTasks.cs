@@ -1,8 +1,9 @@
-﻿using Arona.Models;
+﻿using NetCord.Rest;
+using System.Security.Authentication;
+using Arona.Models;
 using Arona.Models.Api.Clans;
 using Arona.Models.DB;
-using NetCord.Rest;
-using System.Security.Authentication;
+using Arona.Services.Message;
 
 using Timer = System.Timers.Timer;
 
@@ -21,8 +22,9 @@ internal static class UpdateTasks
             var newLeaderboard = new List<LadderStructure>();
             string[] realms = ["eu", "us", "sg"];
 
+            var apiQuery = new LadderStructureByRealmQuery(ApiClient.Instance);
             foreach (var realm in realms)
-                newLeaderboard.AddRange(await LadderStructure.GetAsync(league: 0, division: 1, realm));
+                newLeaderboard.AddRange(await apiQuery.GetAsync(new LadderStructureByRealmRequest(realm, League: 0, Division: 1)));
 
             if (startupUpdate)
             {
@@ -40,7 +42,7 @@ internal static class UpdateTasks
 
                 foreach (var clan in leaderboard)
                     foreach (var guild in guilds)
-                        await Message.SendAsync(
+                        await ChannelMessageService.SendAsync(
                             ulong.Parse(guild.Id),
                             ulong.Parse(guild.ChannelId),
                             new EmbedProperties
@@ -60,18 +62,18 @@ internal static class UpdateTasks
             foreach (var guild in guilds)
             {
                 foreach (var clan in removedClans)
-                    await Message.SendAsync(
+                    await ChannelMessageService.SendAsync(
                         ulong.Parse(guild.Id),
                         ulong.Parse(guild.ChannelId),
                         new EmbedProperties
                         {
                             Title = "Clan dropped from Hurricane",
-                            Description = $"`[{clan.Tag}] {clan.Name}` has dropped Hurricane leaderboard!"
+                            Description = $"`[{clan.Tag}] {clan.Name}` has dropped from Hurricane leaderboard!"
                         }
                     );
 
                 foreach (var clan in addedClans)
-                    await Message.SendAsync(
+                    await ChannelMessageService.SendAsync(
                         ulong.Parse(guild.Id),
                         ulong.Parse(guild.ChannelId),
                         new EmbedProperties
@@ -126,8 +128,7 @@ internal static class UpdateTasks
                 {
                     string currentDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
 
-                    int wins = 0;
-                    int totalPoints = 0;
+                    int wins = 0, totalPoints = 0;
 
                     foreach (var battle in dbClan.ExternalData.RecentBattles)
                     {
@@ -147,7 +148,7 @@ internal static class UpdateTasks
                     }.CreateEmbed();
 
                     foreach (var guild in guilds)
-                        await SendMessage(ulong.Parse(guild.ChannelId), sessionEmbed);
+                        await SendMessageAsync(ulong.Parse(guild.ChannelId), sessionEmbed);
 
                     dbClan.ExternalData.RecentBattles.Clear();
                     dbClan.ExternalData.SessionEndTime = null;
@@ -156,31 +157,37 @@ internal static class UpdateTasks
                     continue;
                 }
 
-                var apiClan = await ClanView.GetAsync(dbClan.Clan.Id, dbClan.ExternalData.Region);
-                //var apiClan = await ClanView.GetMockupAsync();
+                var clanViewQuery = new ClanViewQuery(ApiClient.Instance);
+                var apiClan = await clanViewQuery.GetAsync(new ClanViewRequest(dbClan.ExternalData.Region, dbClan.Clan.Id));
+                // var apiClan = await clanViewQuery.GetMockupAsync();
 
                 // Hämta rankningar
-                Task<LadderStructure[]> globalRankTask = LadderStructure.GetAsync(apiClan.Clan.Id, dbClan.ExternalData.Region);
-                Task<LadderStructure[]> regionRankTask = LadderStructure.GetAsync(apiClan.Clan.Id, dbClan.ExternalData.Region, ClanUtils.ConvertRegion(dbClan.ExternalData.Region));
+                var ladderStructureQuery = new LadderStructureByClanQuery(ApiClient.Instance);
+                Task<LadderStructure[]> globalRankTask = ladderStructureQuery.GetAsync(
+                    new LadderStructureByClanRequest(apiClan.ClanView.Clan.Id, dbClan.ExternalData.Region)
+                );
+                Task<LadderStructure[]> regionRankTask = ladderStructureQuery.GetAsync(
+                    new LadderStructureByClanRequest(apiClan.ClanView.Clan.Id, dbClan.ExternalData.Region, ClanUtils.ToRealm(dbClan.ExternalData.Region))
+                );
 
                 await Task.WhenAll(globalRankTask, regionRankTask);
 
                 var apiClanData = new
                 {
-                    Id = apiClan.Clan.Id,
-                    Tag = apiClan.Clan.Tag,
-                    Name = apiClan.Clan.Name,
-                    LatestSeason = apiClan.WowsLadder.SeasonNumber,
-                    PrimeTime = apiClan.WowsLadder.PrimeTime,
-                    PlannedPrimeTime = apiClan.WowsLadder.PlannedPrimeTime,
-                    GlobalRank = globalRankTask.Result.FirstOrDefault(c => c.Id == apiClan.Clan.Id)?.Rank,
-                    RegionRank = regionRankTask.Result.FirstOrDefault(c => c.Id == apiClan.Clan.Id)?.Rank
+                    Id = apiClan.ClanView.Clan.Id,
+                    Tag = apiClan.ClanView.Clan.Tag,
+                    Name = apiClan.ClanView.Clan.Name,
+                    LatestSeason = apiClan.ClanView.WowsLadder.SeasonNumber,
+                    PrimeTime = apiClan.ClanView.WowsLadder.PrimeTime,
+                    PlannedPrimeTime = apiClan.ClanView.WowsLadder.PlannedPrimeTime,
+                    GlobalRank = globalRankTask.Result.FirstOrDefault(c => c.Id == apiClan.ClanView.Clan.Id)?.Rank,
+                    RegionRank = regionRankTask.Result.FirstOrDefault(c => c.Id == apiClan.ClanView.Clan.Id)?.Rank
                 };
 
                 // Vid ett nytt säsong
                 if (dbClan.WowsLadder.SeasonNumber != apiClanData.LatestSeason)
                 {
-                    dbClan.WowsLadder = apiClan.WowsLadder;
+                    dbClan.WowsLadder = apiClan.ClanView.WowsLadder;
                     dbClan.ExternalData.RecentBattles.Clear();
                     dbClan.ExternalData.SessionEndTime = null;
                     dbClan.WowsLadder.Ratings.RemoveAll(r => r.SeasonNumber != dbClan.WowsLadder.SeasonNumber);
@@ -194,7 +201,7 @@ internal static class UpdateTasks
                 if (dbClan.WowsLadder.PrimeTime == null && apiClanData.PrimeTime != null)
                 {
                     dbClan.ExternalData.SessionEndTime = ClanUtils.GetEndSession(apiClanData.PrimeTime);
-                    dbClan.WowsLadder.Ratings = apiClan.WowsLadder.Ratings.FindAll(r => r.SeasonNumber == apiClanData.LatestSeason);
+                    dbClan.WowsLadder.Ratings = apiClan.ClanView.WowsLadder.Ratings.FindAll(r => r.SeasonNumber == apiClanData.LatestSeason);
 
                     foreach (var guild in guilds)
                         await Program.Client.Rest.SendMessageAsync(
@@ -203,14 +210,14 @@ internal static class UpdateTasks
                         );
                 }
 
-                long lastBattleUnix = DateTimeOffset.Parse(apiClan.WowsLadder.LastBattleAt).ToUnixTimeSeconds();
+                long lastBattleUnix = DateTimeOffset.Parse(apiClan.ClanView.WowsLadder.LastBattleAt).ToUnixTimeSeconds();
 
                 // Slag resultat
                 for (int i = 0; i < dbClan.WowsLadder.Ratings.Count; i++)
                 {
                     var dbRating = dbClan.WowsLadder.Ratings[i];
 
-                    var apiRating = apiClan.WowsLadder.Ratings
+                    var apiRating = apiClan.ClanView.WowsLadder.Ratings
                         .FirstOrDefault(r => r.TeamNumber == dbRating.TeamNumber && r.SeasonNumber == apiClanData.LatestSeason) ?? null;
 
                     if (apiRating == null || apiRating.BattlesCount == dbRating.BattlesCount) continue;
@@ -258,18 +265,22 @@ internal static class UpdateTasks
                     else
                         continue;
 
+                    var ladderBattlesQuery = new LadderBattlesQuery(ApiClient.Instance);
                     foreach (var guild in guilds)
                     {
-                        if (guild.Cookies.TryGetValue(apiClan.Clan.Id, out string? cookie))
+                        if (guild.Cookies.TryGetValue(apiClan.ClanView.Clan.Id, out string? cookie))
                             try
                             {
                                 var cookieValidationData = await AccountInfoSync.GetAsync(cookie, dbClan.ExternalData.Region);
-                                if (cookieValidationData.ClanId != apiClan.Clan.Id)
-                                    throw new InvalidCredentialException($"Cookie for clan `{apiClan.Clan.Tag}` is invalid: Player is not a member of the clan.");
+                                if (cookieValidationData.ClanId != apiClan.ClanView.Clan.Id)
+                                    throw new InvalidCredentialException($"Cookie for clan `{apiClan.ClanView.Clan.Tag}` is invalid: Player is not a member of the clan.");
                                 if (cookieValidationData.Rank < Role.LineOfficer)
-                                    throw new InvalidCredentialException($"Cookie for clan `{apiClan.Clan.Tag}` is invalid: Player is too high ranking.");
+                                    throw new InvalidCredentialException($"Cookie for clan `{apiClan.ClanView.Clan.Tag}` is invalid: Player is too high ranking.");
 
-                                var detailedData = (await LadderBattle.GetAsync(cookie, dbClan.ExternalData.Region, apiRating.TeamNumber))[0];
+                                var detailedData = (await ladderBattlesQuery.GetAsync(
+                                    new LadderBattlesRequest(dbClan.ExternalData.Region, apiRating.TeamNumber, cookie))
+                                )[0];
+
                                 var embed = new DetailedBattleEmbed
                                 {
                                     IconUrl = botIconUrl,
@@ -278,7 +289,7 @@ internal static class UpdateTasks
                                     IsVictory = isVictory
                                 }.CreateEmbed();
 
-                                await SendMessage(ulong.Parse(guild.ChannelId), embed, lastBattleUnix);
+                                await SendMessageAsync(ulong.Parse(guild.ChannelId), embed, lastBattleUnix);
                             }
                             catch (InvalidCredentialException ex)
                             {
@@ -290,13 +301,13 @@ internal static class UpdateTasks
                                                   $"{ex.Message}"
                                     });
 
-                                guild.Cookies.Remove(apiClan.Clan.Id);
+                                guild.Cookies.Remove(apiClan.ClanView.Clan.Id);
 
                                 // Send regular embed instead since detailed data failed
-                                await SendMessage(ulong.Parse(guild.ChannelId), embedSkeleton.CreateEmbed(), lastBattleUnix);
+                                await SendMessageAsync(ulong.Parse(guild.ChannelId), embedSkeleton.CreateEmbed(), lastBattleUnix);
                             }
                         else
-                            await SendMessage(ulong.Parse(guild.ChannelId), embedSkeleton.CreateEmbed(), lastBattleUnix);
+                            await SendMessageAsync(ulong.Parse(guild.ChannelId), embedSkeleton.CreateEmbed(), lastBattleUnix);
                     }
 
                     dbClan.ExternalData.RecentBattles.Add(new RecentBattle
@@ -328,7 +339,7 @@ internal static class UpdateTasks
         Program.UpdateProgress = false;
     }
 
-    private static async Task SendMessage(ulong channelId, EmbedProperties embed)
+    private static async Task SendMessageAsync(ulong channelId, EmbedProperties embed)
     {
         try
         {
@@ -340,7 +351,7 @@ internal static class UpdateTasks
         }
     }
 
-    private static async Task SendMessage(ulong channelId, EmbedProperties embed, long battleTimeSeconds)
+    private static async Task SendMessageAsync(ulong channelId, EmbedProperties embed, long battleTimeSeconds)
     {
         battleTimeSeconds += 300;
         var currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();

@@ -2,11 +2,12 @@
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using Arona.Commands.Autocomplete;
-using Arona.Models;
 using Arona.Models.Api.Official;
 using Arona.Models.Components;
 using Arona.Models.DB;
 using Arona.Utility;
+using Arona.Services.Message;
+using Arona.Services;
 
 namespace Arona.Commands;
 
@@ -45,7 +46,7 @@ public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContex
 
         try
         {
-            var data = await ClanBattleSeasonStats.GetAsync(accountId.ToString(), region);
+            var data = await PlayerClanBattleSeasonStatsQuery.GetSingleAsync(new PlayerClanBattleSeasonStatsRequest(region, accountId));
             var seasonData = await ClanBattleSeasons.GetAsync();
 
             if (seasonNumber == -1)
@@ -62,7 +63,7 @@ public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContex
             }
 
             var season = seasonData[seasonNumber.ToString()];
-            var playerSeasonData = data[accountId.ToString()].Seasons.FirstOrDefault(s => s.SeasonId == seasonNumber) ?? null;
+            var playerSeasonData = data.Data[accountId.ToString()].Seasons.FirstOrDefault(s => s.SeasonId == seasonNumber) ?? null;
 
             if (playerSeasonData == null)
             {
@@ -120,10 +121,10 @@ public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContex
 
         try
         {
-            var data = await ClanBattleSeasonStats.GetAsync(accountId, region);
+            var data = await PlayerClanBattleSeasonStatsQuery.GetSingleAsync(new PlayerClanBattleSeasonStatsRequest(region, long.Parse(accountId)));
             var seasonData = await ClanBattleSeasons.GetAsync();
 
-            var filtered = data[accountId].Seasons
+            var filtered = data.Data[accountId].Seasons
                 .Where(c => c.Battles > 0)
                 .ToList();
             filtered.Sort((a, b) => b.Battles - a.Battles);

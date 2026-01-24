@@ -8,6 +8,25 @@ using TeamNumber = Arona.Models.Team;
 
 namespace Arona.Models.Api.Clans;
 
+internal record LadderBattlesRequest(string Region, TeamNumber Team, string Cookie);
+
+internal class LadderBattlesQuery(HttpClient client) : QueryBase<LadderBattlesRequest, LadderBattle[]>(client)
+{
+    private const string ApiEndpointTemplate = "https://clans.worldofwarships.{0}/api/ladder/battles/?team={1}";
+
+    public override async Task<LadderBattle[]> GetAsync(LadderBattlesRequest req)
+    {
+        var url = string.Format(ApiEndpointTemplate, req.Region, req.Team);
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Add("Cookie", $"wsauth_token={req.Cookie};");
+
+        Client.DefaultRequestHeaders.Add("Cookie", $"wsauth_token={req.Cookie};");
+
+        return await SendAndDeserializeAsync(url, request);
+    }
+}
+
 internal class LadderBattle
 {
     [JsonPropertyName("season_number")]
@@ -15,19 +34,6 @@ internal class LadderBattle
 
     [JsonPropertyName("teams")]
     public required Team[] Teams { get; set; }
-
-    public static async Task<LadderBattle[]> GetAsync(string cookie, string region, TeamNumber team)
-    {
-        using HttpClient client = new();
-        client.DefaultRequestHeaders.Add("Cookie", $"wsauth_token={cookie};");
-
-        var res = await client.GetAsync($"https://clans.worldofwarships.{region}/api/ladder/battles/?team={(int)team}");
-        if (res.StatusCode == HttpStatusCode.Forbidden)
-            throw new InvalidCredentialException("Invalid or expired cookie.");
-        res.EnsureSuccessStatusCode();
-
-        return JsonSerializer.Deserialize<LadderBattle[]>(await res.Content.ReadAsStringAsync())!;
-    }
 
     internal class Team
     {

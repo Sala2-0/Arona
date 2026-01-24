@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.ComponentModel;
+using System.Globalization;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
@@ -6,6 +7,7 @@ using Arona.Models;
 using Arona.Models.DB;
 using Arona.Models.Api.Clans;
 using Arona.Utility;
+using Arona.Services.Message;
 
 namespace Arona.Commands;
 
@@ -39,7 +41,9 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
 
         try
         {
-            var data = await LadderStructure.GetAsync((int)league, (int)division, realm.ToString().ToLower());
+            var data = await LadderStructureByRealmQuery.GetSingleAsync(
+                new LadderStructureByRealmRequest(realm.ToString().ToLower(), (int)division, (int)league)
+            );
 
             if (data.Length == 0)
             {
@@ -47,63 +51,71 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
                 return;
             }
 
-            if (leaderboardType == LeaderboardType.Ratings)
+            switch (leaderboardType)
             {
-                var embed = new EmbedProperties()
-                    .WithTitle(
-                        $"Leaderboard - {league} {division} ({ClanUtils.ConvertRealm(realm.ToString().ToLower())}) [Ratings]")
-                    .WithColor(new Color(Convert.ToInt32(ClanUtils.GetLeagueColor(league).TrimStart('#'), 16)));
-
-                var fields = new List<EmbedFieldProperties>();
-
-                foreach (var clan in data)
+                case LeaderboardType.Ratings:
                 {
-                    string successFactor = SuccessFactor.Calculate(clan.PublicRating, clan.BattlesCount, ClanUtils.GetLeagueExponent(league))
-                        .ToString("0.##", CultureInfo.InvariantCulture);
+                    var embed = new EmbedProperties()
+                        .WithTitle(
+                            $"Leaderboard - {league} {division} ({ClanUtils.ToRealm(realm.ToString().ToLower())}) [Ratings]")
+                        .WithColor(new Color(Convert.ToInt32(ClanUtils.GetLeagueColor(league).TrimStart('#'), 16)));
 
-                    fields.Add(new EmbedFieldProperties()
-                        .WithName(
-                            $"**#{clan.Rank}** ({ClanUtils.ConvertRealm(clan.Realm)}) `[{clan.Tag}]` ({clan.DivisionRating}) `BTL: {clan.BattlesCount}` `S/F: {successFactor}`"));
+                    var fields = new List<EmbedFieldProperties>();
+
+                    foreach (var clan in data)
+                    {
+                        string successFactor = SuccessFactor.Calculate(clan.PublicRating, clan.BattlesCount, ClanUtils.GetLeagueExponent(league))
+                            .ToString("0.##", CultureInfo.InvariantCulture);
+
+                        fields.Add(new EmbedFieldProperties()
+                            .WithName(
+                                $"**#{clan.Rank}** ({ClanUtils.ToRegion(clan.Realm)}) `[{clan.Tag}]` ({clan.DivisionRating}) `BTL: {clan.BattlesCount}` `S/F: {successFactor}`"));
+                    }
+
+                    embed.WithFields(fields);
+
+                    await Context.Interaction.ModifyResponseAsync(options => options.Embeds = [embed]);
+                    break;
                 }
-
-                embed.WithFields(fields);
-
-                await Context.Interaction.ModifyResponseAsync(options => options.Embeds = [embed]);
-            }
-
-            else if (leaderboardType == LeaderboardType.SuccessFactor)
-            {
-                foreach (var clan in data)
+                case LeaderboardType.SuccessFactor:
                 {
-                    clan.SuccessFactor = Math.Round(
-                        SuccessFactor.Calculate(clan.PublicRating, clan.BattlesCount, ClanUtils.GetLeagueExponent(league)),
-                        2
-                    );
+                    foreach (var clan in data)
+                    {
+                        clan.SuccessFactor = Math.Round(
+                            SuccessFactor.Calculate(clan.PublicRating, clan.BattlesCount, ClanUtils.GetLeagueExponent(league)),
+                            2
+                        );
+                    }
+
+                    var embed = new EmbedProperties()
+                        .WithTitle(
+                            $"Leaderboard - {league} {division} ({ClanUtils.ToRealm(realm.ToString().ToLower())}) [S/F]")
+                        .WithColor(new Color(Convert.ToInt32(ClanUtils.GetLeagueColor(league), 16)));
+
+                    var fields = new List<EmbedFieldProperties>();
+
+                    var sortedStructure = data.OrderByDescending(s => s.SuccessFactor).ToList();
+
+                    for (int i = 0; i < sortedStructure.Count; i++)
+                    {
+                        var clan = sortedStructure[i];
+                        var successFactor = clan.SuccessFactor?.ToString(CultureInfo.InvariantCulture);
+
+                        fields.Add(
+                            new EmbedFieldProperties()
+                                .WithName($"**#{i + 1}** ({ClanUtils.ToRegion(clan.Realm)}) `[{clan.Tag}]` ({clan.DivisionRating}) `S/F: {successFactor}` `BTL: {clan.BattlesCount}`")
+                        );
+                    }
+
+                    embed.WithFields(fields);
+
+                    await deferredMessage.EditAsync(embed);
+                    break;
                 }
-
-                var embed = new EmbedProperties()
-                    .WithTitle(
-                        $"Leaderboard - {league} {division} ({ClanUtils.ConvertRealm(realm.ToString().ToLower())}) [S/F]")
-                    .WithColor(new Color(Convert.ToInt32(ClanUtils.GetLeagueColor(league), 16)));
-
-                var fields = new List<EmbedFieldProperties>();
-
-                var sortedStructure = data.OrderByDescending(s => s.SuccessFactor).ToList();
-
-                for (int i = 0; i < sortedStructure.Count; i++)
+                default:
                 {
-                    var clan = sortedStructure[i];
-                    var successFactor = clan.SuccessFactor?.ToString(CultureInfo.InvariantCulture);
-
-                    fields.Add(
-                        new EmbedFieldProperties()
-                            .WithName($"**#{i + 1}** ({ClanUtils.ConvertRealm(clan.Realm)}) `[{clan.Tag}]` ({clan.DivisionRating}) `S/F: {successFactor}` `BTL: {clan.BattlesCount}`")
-                    );
+                    throw new InvalidEnumArgumentException("Invalid leaderboard type");
                 }
-
-                embed.WithFields(fields);
-
-                await deferredMessage.EditAsync(embed);
             }
         }
         catch (Exception ex)

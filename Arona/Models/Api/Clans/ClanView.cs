@@ -1,15 +1,32 @@
-﻿using System.Text.Json.Serialization;
-using LiteDB;
-
+﻿using LiteDB;
+using System.Text.Json.Serialization;
 using JsonSerializer = System.Text.Json.JsonSerializer;
+using Arona.Utility;
 
 namespace Arona.Models.Api.Clans;
 
-internal class Base
+internal record ClanViewRequest(string Region, int ClanId);
+
+internal class ClanViewQuery(HttpClient client) : QueryBase<ClanViewRequest, ClanViewRoot>(client)
 {
-    [JsonPropertyName("clanview")]
-    [BsonField("clanview")]
-    public required ClanView ClanView { get; set; }
+    public override async Task<ClanViewRoot> GetAsync(ClanViewRequest req) =>
+        await SendAndDeserializeAsync($"https://clans.worldofwarships.{req.Region}/api/clanbase/{req.ClanId}/claninfo/");
+
+    public async Task<ClanView> GetMockupAsync()
+    {
+        var res = await Client.GetAsync($"http://localhost:3000/");
+        res.EnsureSuccessStatusCode();
+
+        var baseData = JsonSerializer.Deserialize<ClanViewRoot>(await res.Content.ReadAsStringAsync())!;
+
+        return baseData.ClanView;
+    }
+
+    public static async Task<ClanViewRoot> GetSingleAsync(ClanViewRequest request)
+    {
+        var apiQuery = new ClanViewQuery(ApiClient.Instance);
+        return await apiQuery.GetAsync(request);
+    }
 }
 
 internal class ClanView
@@ -30,28 +47,13 @@ internal class ClanView
 
     [BsonField("external_data")]
     public External ExternalData { get; set; } = new();
-    
-    public static async Task<ClanView> GetAsync(int clanId, string region)
-    {
-        using HttpClient client = new();
-        var res = await client.GetAsync($"https://clans.worldofwarships.{region}/api/clanbase/{clanId}/claninfo/");
-        res.EnsureSuccessStatusCode();
+}
 
-        var baseData = JsonSerializer.Deserialize<Base>(await res.Content.ReadAsStringAsync())!;
-
-        return baseData.ClanView;
-    }
-
-    public static async Task<ClanView> GetMockupAsync()
-    {
-        using HttpClient client = new();
-        var res = await client.GetAsync($"http://localhost:3000/");
-        res.EnsureSuccessStatusCode();
-
-        var baseData = JsonSerializer.Deserialize<Base>(await res.Content.ReadAsStringAsync())!;
-
-        return baseData.ClanView;
-    }
+internal class ClanViewRoot
+{
+    [JsonPropertyName("clanview")]
+    [BsonField("clanview")]
+    public required ClanView ClanView { get; set; }
 }
 
 internal class Clan

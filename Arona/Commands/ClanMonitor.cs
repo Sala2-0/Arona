@@ -1,7 +1,7 @@
 ﻿using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using Arona.Commands.Autocomplete;
-using Arona.Models;
+using Arona.Services.Message;
 using Arona.Models.DB;
 using Arona.Models.Api.Clans;
 using Arona.Utility;
@@ -39,9 +39,10 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
             return;
         }
 
-        Task<ClanView> apiTask = ClanView.GetAsync(clanId, region);
-        Task<LadderStructure[]> apiGlobalRankTask = LadderStructure.GetAsync(clanId, region);
-        Task<LadderStructure[]> apiRegionRankTask = LadderStructure.GetAsync(clanId, region, ClanUtils.ConvertRegion(region));
+        var ladderStructureQuery = new LadderStructureByClanQuery(ApiClient.Instance);
+        Task<ClanViewRoot> apiTask = ClanViewQuery.GetSingleAsync(new ClanViewRequest(region, clanId));
+        Task<LadderStructure[]> apiGlobalRankTask = ladderStructureQuery.GetAsync(new LadderStructureByClanRequest(clanId, region));
+        Task<LadderStructure[]> apiRegionRankTask = ladderStructureQuery.GetAsync(new LadderStructureByClanRequest(clanId, region, ClanUtils.ToRealm(region)));
 
         try
         {
@@ -64,24 +65,24 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
             }
             else
             {
-                data.Clan.WowsLadder.Ratings.RemoveAll(r => r.SeasonNumber != data.Clan.WowsLadder.SeasonNumber);
+                data.Clan.ClanView.WowsLadder.Ratings.RemoveAll(r => r.SeasonNumber != data.Clan.ClanView.WowsLadder.SeasonNumber);
 
-                data.Clan.ExternalData.Region = region;
-                data.Clan.ExternalData.GlobalRank = data.Global?.Rank;
-                data.Clan.ExternalData.RegionRank = data.Region?.Rank;
+                data.Clan.ClanView.ExternalData.Region = region;
+                data.Clan.ClanView.ExternalData.GlobalRank = data.Global?.Rank;
+                data.Clan.ClanView.ExternalData.RegionRank = data.Region?.Rank;
 
-                if (data.Clan.WowsLadder.PrimeTime != null)
-                    data.Clan.ExternalData.SessionEndTime = ClanUtils.GetEndSession(data.Clan.WowsLadder.PrimeTime);
+                if (data.Clan.ClanView.WowsLadder.PrimeTime != null)
+                    data.Clan.ClanView.ExternalData.SessionEndTime = ClanUtils.GetEndSession(data.Clan.ClanView.WowsLadder.PrimeTime);
 
-                data.Clan.ExternalData.Guilds.Add(guild.Id);
-                Collections.Clans.Insert(data.Clan.Clan.Id, data.Clan);
+                data.Clan.ClanView.ExternalData.Guilds.Add(guild.Id);
+                Collections.Clans.Insert(data.Clan.ClanView.Clan.Id, data.Clan.ClanView);
             }
 
             guild.Clans.Add(clanId);
 
             Collections.Guilds.Update(guild);
 
-            await deferredMessage.EditAsync($"✅ Added clan: `[{data.Clan.Clan.Tag}] {data.Clan.Clan.Name}`");
+            await deferredMessage.EditAsync($"✅ Added clan: `[{data.Clan.ClanView.Clan.Tag}] {data.Clan.ClanView.Clan.Name}`");
         }
         catch (Exception ex)
         {

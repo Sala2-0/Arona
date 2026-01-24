@@ -1,12 +1,26 @@
-﻿using System.Text.Json;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
+using Arona.Utility;
 
 namespace Arona.Models.Api.Official;
+
+internal record ClanListItemRequest(string Region, string SearchQuery);
+
+internal class ClanListItemQuery(HttpClient client) : QueryBase<ClanListItemRequest, ResponseArray<ClanListItem>>(client)
+{
+    public override async Task<ResponseArray<ClanListItem>> GetAsync(ClanListItemRequest req)
+        => await SendAndDeserializeAsync($"https://api.worldofwarships.{req.Region}/wows/clans/list/?application_id={Config.WgApi}&search={req.SearchQuery}");
+
+    public static async Task<ResponseArray<ClanListItem>> GetSingleAsync(ClanListItemRequest request)
+    {
+        var apiQuery = new ClanListItemQuery(ApiClient.Instance);
+        return await apiQuery.GetAsync(request);
+    }
+}
 
 /// <summary>
 /// Response deserialization model for API endpoint /wows/clans/list/ which returns a list of clans based on a search query.
 /// </summary>
-internal class Clan
+internal class ClanListItem
 {
     /// <summary>
     /// Total number of members in the clan.
@@ -28,15 +42,4 @@ internal class Clan
 
     [JsonPropertyName("name")]
     public required string Name { get; set; }
-
-    public static async Task<Clan[]> GetAsync(string query, string region)
-    {
-        using HttpClient client = new();
-        var res = await client.GetAsync($"https://api.worldofwarships.{region}/wows/clans/list/?application_id={Config.WgApi}&search={query}");
-        res.EnsureSuccessStatusCode();
-
-        var data = JsonSerializer.Deserialize<ResponseArray<Clan>>(await res.Content.ReadAsStringAsync())!;
-
-        return data.Data;
-    }
 }

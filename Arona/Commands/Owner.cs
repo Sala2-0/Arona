@@ -9,6 +9,7 @@ using Arona.Utility;
 using Arona.Models;
 using Arona.Models.DB;
 using Arona.Models.Api.Clans;
+using Arona.Services.Message;
 
 namespace Arona.Commands;
 
@@ -46,7 +47,7 @@ public class OwnerCommands : CommandModule<CommandContext>
                 // Arona har inte tillstånd att skicka meddelanden
                 if ((permissions & Permissions.SendMessages) == 0)
                 {
-                    await PrivateMessage.NoPermissionMessageAsync(ulong.Parse(guild.Id), channel!.Name);
+                    await PrivateMessageService.SendNoPermissionMessageAsync(ulong.Parse(guild.Id), channel!.Name);
                     continue;
                 }
 
@@ -79,7 +80,7 @@ public class OwnerCommands : CommandModule<CommandContext>
             // Arona har inte tillgång/kan inte se kanalen
             catch (Exception ex)
             {
-                await PrivateMessage.NoAccessMessageAsync(ulong.Parse(guild.Id), ulong.Parse(guild.ChannelId));
+                await PrivateMessageService.SendNoAccessMessageAsync(ulong.Parse(guild.Id), ulong.Parse(guild.ChannelId));
             }
         }
     }
@@ -109,7 +110,9 @@ public class OwnerCommands : CommandModule<CommandContext>
         {
             using var client = new HttpClient();
 
-            var data = await LadderStructure.GetAsync(season, league, division);
+            var data = await LadderStructureBySeasonQuery.GetSingleAsync(
+                new LadderStructureBySeasonRequest(season, league, division)
+            );
 
             foreach (var clan in data!)
             {
@@ -132,7 +135,7 @@ public class OwnerCommands : CommandModule<CommandContext>
     }
 
     [Command("dbcopy")]
-    public async Task DBCopyAsync()
+    public async Task DatabaseCopyAsync()
     {
         if (!Owner.Check(Context.User.Id)) return;
 

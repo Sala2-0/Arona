@@ -12,16 +12,12 @@ internal record LadderBattlesRequest(string Region, TeamNumber Team, string Cook
 
 internal class LadderBattlesQuery(HttpClient client) : QueryBase<LadderBattlesRequest, LadderBattle[]>(client)
 {
-    private const string ApiEndpointTemplate = "https://clans.worldofwarships.{0}/api/ladder/battles/?team={1}";
-
     public override async Task<LadderBattle[]> GetAsync(LadderBattlesRequest req)
     {
-        var url = string.Format(ApiEndpointTemplate, req.Region, req.Team);
+        var url = $"https://clans.worldofwarships.{req.Region}/api/ladder/battles/?team={(int)req.Team}";
 
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Add("Cookie", $"wsauth_token={req.Cookie};");
-
-        Client.DefaultRequestHeaders.Add("Cookie", $"wsauth_token={req.Cookie};");
 
         return await SendAndDeserializeAsync(url, request);
     }

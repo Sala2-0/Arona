@@ -26,8 +26,6 @@ internal class LadderStructureByRealmQuery(HttpClient client) : QueryBase<Ladder
     public override async Task<LadderStructure[]> GetAsync(LadderStructureByRealmRequest request)
     {
         var url = $"https://clans.worldofwarships.eu/api/ladder/structure/?league={request.League}&division={request.Division}&realm={request.Realm}";
-        Console.WriteLine(url);
-
         return await SendAndDeserializeAsync(url);
     }
 

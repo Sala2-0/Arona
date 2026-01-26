@@ -86,8 +86,8 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         }
         catch (Exception ex)
         {
-            await Program.Error(ex);
-            await deferredMessage.EditAsync("❌ Error fetching clan data from API.");
+            await Program.LogError(ex);
+            await deferredMessage.EditAsync("❌ LogError fetching clan data from API.");
         }
         finally
         {

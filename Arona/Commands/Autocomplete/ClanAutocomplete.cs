@@ -50,7 +50,7 @@ internal class ClanAutocomplete: IAutocompleteProvider<AutocompleteInteractionCo
         }
         catch (Exception ex)
         {
-            await Program.Error(ex);
+            await Program.LogError(ex);
             return [];
         }
     }

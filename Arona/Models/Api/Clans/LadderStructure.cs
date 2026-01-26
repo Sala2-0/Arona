@@ -3,13 +3,13 @@ using Arona.Utility;
 
 namespace Arona.Models.Api.Clans;
 
-internal record LadderStructureByClanRequest(int ClanId, string Region, string Realm = "global");
-internal record LadderStructureByRealmRequest(string Realm, int League, int Division);
+public record LadderStructureByClanRequest(int ClanId, string Region, string Realm = "global");
+public record LadderStructureByRealmRequest(string Realm, int League, int Division);
 
 // Season = null => latest season data fetched
-internal record LadderStructureBySeasonRequest(int? Season, int League, int Division);
+public record LadderStructureBySeasonRequest(int? Season, int League, int Division);
 
-internal class LadderStructureByClanQuery(HttpClient client) : QueryBase<LadderStructureByClanRequest, LadderStructure[]>(client)
+public class LadderStructureByClanQuery(HttpClient client) : QueryBase<LadderStructureByClanRequest, LadderStructure[]>(client)
 {
     public override async Task<LadderStructure[]> GetAsync(LadderStructureByClanRequest request) =>
         await SendAndDeserializeAsync($"https://clans.worldofwarships.{request.Region}/api/ladder/structure/?clan_id={request.ClanId}&realm={request.Realm}");
@@ -21,7 +21,7 @@ internal class LadderStructureByClanQuery(HttpClient client) : QueryBase<LadderS
     }
 }
 
-internal class LadderStructureByRealmQuery(HttpClient client) : QueryBase<LadderStructureByRealmRequest, LadderStructure[]>(client)
+public class LadderStructureByRealmQuery(HttpClient client) : QueryBase<LadderStructureByRealmRequest, LadderStructure[]>(client)
 {
     public override async Task<LadderStructure[]> GetAsync(LadderStructureByRealmRequest request)
     {
@@ -36,7 +36,7 @@ internal class LadderStructureByRealmQuery(HttpClient client) : QueryBase<Ladder
     }
 }
 
-internal class LadderStructureBySeasonQuery(HttpClient client) : QueryBase<LadderStructureBySeasonRequest, LadderStructure[]>(client)
+public class LadderStructureBySeasonQuery(HttpClient client) : QueryBase<LadderStructureBySeasonRequest, LadderStructure[]>(client)
 {
     public override async Task<LadderStructure[]> GetAsync(LadderStructureBySeasonRequest request)
     {
@@ -54,7 +54,7 @@ internal class LadderStructureBySeasonQuery(HttpClient client) : QueryBase<Ladde
     }
 }
 
-internal class LadderStructure
+public class LadderStructure
 {
     [JsonPropertyName("id")]
     public required int Id { get; init; }

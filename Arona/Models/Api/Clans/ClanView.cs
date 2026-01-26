@@ -5,9 +5,9 @@ using Arona.Utility;
 
 namespace Arona.Models.Api.Clans;
 
-internal record ClanViewRequest(string Region, int ClanId);
+public record ClanViewRequest(string Region, int ClanId);
 
-internal class ClanViewQuery(HttpClient client) : QueryBase<ClanViewRequest, ClanViewRoot>(client)
+public class ClanViewQuery(HttpClient client) : QueryBase<ClanViewRequest, ClanViewRoot>(client)
 {
     public override async Task<ClanViewRoot> GetAsync(ClanViewRequest req) =>
         await SendAndDeserializeAsync($"https://clans.worldofwarships.{req.Region}/api/clanbase/{req.ClanId}/claninfo/");
@@ -29,7 +29,7 @@ internal class ClanViewQuery(HttpClient client) : QueryBase<ClanViewRequest, Cla
     }
 }
 
-internal class ClanView
+public class ClanView
 {
     /// <summary>
     /// Unique identifier for the clan.
@@ -49,14 +49,14 @@ internal class ClanView
     public External ExternalData { get; set; } = new();
 }
 
-internal class ClanViewRoot
+public class ClanViewRoot
 {
     [JsonPropertyName("clanview")]
     [BsonField("clanview")]
     public required ClanView ClanView { get; set; }
 }
 
-internal class Clan
+public class Clan
 {
     [JsonPropertyName("id")]
     [BsonField("id")]
@@ -75,7 +75,7 @@ internal class Clan
     public required string Color { get; set; }
 }
 
-internal class WowsLadder
+public class WowsLadder
 {
     [JsonPropertyName("prime_time")]
     [BsonField("prime_time")]
@@ -114,7 +114,7 @@ internal class WowsLadder
     public required Team LeadingTeamNumber { get; set; }
 }
 
-internal class Rating
+public class Rating
 {
     [JsonPropertyName("team_number")]
     [BsonField("team_number")]
@@ -153,7 +153,7 @@ internal class Rating
     public required int WinsCount { get; set; }
 }
 
-internal class Stage
+public class Stage
 {
     [JsonConverter(typeof(JsonStringEnumConverter))]
     [JsonPropertyName("type")]
@@ -181,7 +181,7 @@ internal class Stage
     public required int VictoriesRequired { get; set; }
 }
 
-internal class External
+public class External
 {
     [BsonField("region")]
     public string Region { get; set; }
@@ -210,7 +210,7 @@ internal class External
     public List<string> Guilds { get; set; } = [];
 }
 
-internal class RecentBattle
+public class RecentBattle
 {
     [BsonField("battle_time")]
     public required long BattleTime { get; init; }

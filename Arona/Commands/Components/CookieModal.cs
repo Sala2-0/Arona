@@ -37,8 +37,8 @@ public class Modals : ComponentInteractionModule<ModalInteractionContext>
         }
         catch (Exception ex)
         {
-            await Program.Error(ex);
-            await Context.Interaction.SendResponseAsync(InteractionCallback.Message($"Error >_<\n\n`{ex.Message}`"));
+            await Program.LogError(ex);
+            await Context.Interaction.SendResponseAsync(InteractionCallback.Message($"LogError >_<\n\n`{ex.Message}`"));
         }
         finally
         {

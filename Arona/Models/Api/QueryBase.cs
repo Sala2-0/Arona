@@ -2,7 +2,7 @@
 
 namespace Arona.Models.Api;
 
-internal abstract class QueryBase<TRequest, TResponse>(HttpClient client) : IApiQuery<TRequest, TResponse>
+public abstract class QueryBase<TRequest, TResponse>(HttpClient client) : IApiQuery<TRequest, TResponse>
 {
     protected readonly HttpClient Client = client;
 

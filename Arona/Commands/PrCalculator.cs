@@ -166,18 +166,18 @@ public class PrCalculator : ApplicationCommandModule<ApplicationCommandContext>
         }
         catch(ApplicationException appEx)
         {
-            await Program.Error(appEx);
+            await Program.LogError(appEx);
             await deferredMessage.EditAsync($"Application error.\n\n`{appEx.Message}`");
         }
         catch (InvalidDataException invalidEx)
         {
-            await Program.Error(invalidEx);
+            await Program.LogError(invalidEx);
             await deferredMessage.EditAsync($"Invalid input format.\n\n`{invalidEx.Message}`");
         }
         catch (Exception ex)
         {
-            await Program.Error(ex);
-            await deferredMessage.EditAsync("API Error! >_<");
+            await Program.LogError(ex);
+            await deferredMessage.EditAsync("API LogError! >_<");
         }
     }
     

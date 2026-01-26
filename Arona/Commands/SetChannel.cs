@@ -68,7 +68,7 @@ public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
         }
         catch (Exception ex)
         {
-            await Program.Error(ex);
+            await Program.LogError(ex);
             await deferredMessage.EditAsync("❌ Invalid channel ID format. Please provide a valid channel ID." +
                                             "\nCould also be that Arona doesn't have permissions to see specified channel");
         }

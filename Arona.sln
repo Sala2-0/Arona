@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36408.4 d17.14
+VisualStudioVersion = 17.14.36408.4
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Arona", "Arona\Arona.csproj", "{D9C7A7ED-A1FA-4520-AA50-5E60504B2A15}"
 EndProject
 Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "Service", "Service\Service.esproj", "{179E31D1-5FD2-0389-ED0F-801FF1FE20CA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Arona.Tests", "Arona.Tests\Arona.Tests.csproj", "{4AA69658-1FE3-4CFB-A165-25C8D9F6EF8F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,6 +25,10 @@ Global
 		{179E31D1-5FD2-0389-ED0F-801FF1FE20CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{179E31D1-5FD2-0389-ED0F-801FF1FE20CA}.Release|Any CPU.Build.0 = Release|Any CPU
 		{179E31D1-5FD2-0389-ED0F-801FF1FE20CA}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{4AA69658-1FE3-4CFB-A165-25C8D9F6EF8F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4AA69658-1FE3-4CFB-A165-25C8D9F6EF8F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4AA69658-1FE3-4CFB-A165-25C8D9F6EF8F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4AA69658-1FE3-4CFB-A165-25C8D9F6EF8F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

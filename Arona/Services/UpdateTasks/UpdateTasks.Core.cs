@@ -4,15 +4,23 @@ using Arona.Models;
 using Arona.Models.Api.Clans;
 using Arona.Models.DB;
 using Arona.Services.Message;
+using Arona.Utility;
 
-using Timer = System.Timers.Timer;
-
-namespace Arona.Utility;
+namespace Arona.Services.UpdateTasks;
 
 /// <summary>
 /// Contains methods run by timers
 /// </summary>
-internal static class UpdateTasks
+/// <remarks>
+/// <para>
+/// <term>UpdateTasks.Messaging</term> Discord send message methods used by <see cref="UpdateClansAsync"/>
+/// </para>
+/// 
+/// <para>
+/// <term>UpdateTasks.HurricaneNotification</term> Discord send message methods used by <see cref="UpdateHurricaneLeaderboardAsync"/>
+/// </para>
+/// </remarks>
+internal static partial class UpdateTasks
 {
     public static async Task UpdateHurricaneLeaderboardAsync(bool startupUpdate = false)
     {
@@ -38,19 +46,10 @@ internal static class UpdateTasks
             var leaderboard = Collections.HurricaneLeaderboard.FindAll().ToList();
             if (leaderboard.Count == 0)
             {
-                leaderboard = newLeaderboard;
+                await NotifyNewHurricaneClansAsync(guilds, newLeaderboard);
 
-                foreach (var clan in leaderboard)
-                    foreach (var guild in guilds)
-                        await ChannelMessageService.SendAsync(
-                            ulong.Parse(guild.Id),
-                            ulong.Parse(guild.ChannelId),
-                            new EmbedProperties
-                            {
-                                Title = "New hurricane clan",
-                                Description = $"`[{clan.Tag}] {clan.Name}` has entered Hurricane leaderboard!"
-                            }
-                        );
+                Collections.HurricaneLeaderboard.InsertBulk(newLeaderboard);
+                return;
             }
 
             var oldIds = leaderboard.Select(c => c.Id).ToHashSet();
@@ -59,37 +58,14 @@ internal static class UpdateTasks
             var removedClans = leaderboard.Where(c => !newIds.Contains(c.Id)).ToList();
             var addedClans = newLeaderboard.Where(c => !oldIds.Contains(c.Id)).ToList();
 
-            foreach (var guild in guilds)
-            {
-                foreach (var clan in removedClans)
-                    await ChannelMessageService.SendAsync(
-                        ulong.Parse(guild.Id),
-                        ulong.Parse(guild.ChannelId),
-                        new EmbedProperties
-                        {
-                            Title = "Clan dropped from Hurricane",
-                            Description = $"`[{clan.Tag}] {clan.Name}` has dropped from Hurricane leaderboard!"
-                        }
-                    );
-
-                foreach (var clan in addedClans)
-                    await ChannelMessageService.SendAsync(
-                        ulong.Parse(guild.Id),
-                        ulong.Parse(guild.ChannelId),
-                        new EmbedProperties
-                        {
-                            Title = "New hurricane clan",
-                            Description = $"`[{clan.Tag}] {clan.Name}` has entered Hurricane leaderboard!"
-                        }
-                    );
-            }
+            await NotifyHurricaneChangesAsync(guilds, addedClans, removedClans);
 
             Collections.HurricaneLeaderboard.DeleteAll();
             Collections.HurricaneLeaderboard.InsertBulk(newLeaderboard);
         }
         catch (Exception ex)
         {
-            await Program.Error(ex);
+            await Program.LogError(ex);
         }
     }
 
@@ -293,7 +269,7 @@ internal static class UpdateTasks
                             }
                             catch (InvalidCredentialException ex)
                             {
-                                await Program.Error(ex);
+                                await Program.LogError(ex);
                                 await Program.Client.Rest
                                     .SendMessageAsync(ulong.Parse(guild.ChannelId), new MessageProperties
                                     {
@@ -332,60 +308,10 @@ internal static class UpdateTasks
             }
             catch (Exception ex)
             {
-                await Program.Error(ex);
+                await Program.LogError(ex);
             }
         }
 
         Program.UpdateProgress = false;
-    }
-
-    private static async Task SendMessageAsync(ulong channelId, EmbedProperties embed)
-    {
-        try
-        {
-            await Program.Client!.Rest.SendMessageAsync(channelId, new MessageProperties { Embeds = [embed] });
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error sending message: {ex.Message}");
-        }
-    }
-
-    private static async Task SendMessageAsync(ulong channelId, EmbedProperties embed, long battleTimeSeconds)
-    {
-        battleTimeSeconds += 300;
-        var currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-
-        var timeDifference = battleTimeSeconds - currentTime;
-        if (timeDifference <= 0)
-        {
-            try
-            {
-                await Program.Client!.Rest.SendMessageAsync(channelId, new MessageProperties { Embeds = [embed] });
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error sending message: {ex.Message}");
-            }
-
-            return;
-        }
-
-        var timer = new Timer(timeDifference * 1000d);
-        timer.AutoReset = false;
-        timer.Elapsed += async (_, _) =>
-        {
-            timer.Dispose();
-            try
-            {
-                await Program.Client!.Rest.SendMessageAsync(channelId, new MessageProperties { Embeds = [embed] });
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error sending message: {ex.Message}");
-            }
-        };
-        timer.Enabled = true;
-        timer.Start();
     }
 }

@@ -13,7 +13,7 @@ using NetCord.Services.ComponentInteractions;
 using LiteDB;
 using Arona.Models.DB;
 using Arona.Models;
-using Arona.Utility;
+using Arona.Services.UpdateTasks;
 
 namespace Arona;
 
@@ -83,7 +83,7 @@ internal class Program
         await host.RunAsync();
     }
 
-    public static async Task Error(Exception ex)
+    public static async Task LogError(Exception ex)
     {
         Console.WriteLine("Error: " + ex.Message);
         Console.WriteLine(ex.StackTrace);

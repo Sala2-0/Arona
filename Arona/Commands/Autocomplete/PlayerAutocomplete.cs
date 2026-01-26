@@ -46,7 +46,7 @@ internal class PlayerAutocomplete : IAutocompleteProvider<AutocompleteInteractio
         }
         catch (Exception ex)
         {
-            await Program.Error(ex);
+            await Program.LogError(ex);
             return [];
         }
     }

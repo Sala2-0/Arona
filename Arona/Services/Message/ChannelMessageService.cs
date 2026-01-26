@@ -37,7 +37,7 @@ internal static class ChannelMessageService
         // Arona har inte tillgång/kan inte se kanalen
         catch (Exception ex)
         {
-            await Program.Error(ex);
+            await Program.LogError(ex);
             await PrivateMessageService.SendNoAccessMessageAsync(guildId, channelId);
         }
     }

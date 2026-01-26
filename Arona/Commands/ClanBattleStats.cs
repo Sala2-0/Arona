@@ -87,7 +87,7 @@ public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContex
         }
         catch (Exception ex)
         {
-            await Program.Error(ex);
+            await Program.LogError(ex);
             await deferredMessage.EditAsync("API error >_<");
         }
     }
@@ -191,7 +191,7 @@ public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContex
         }
         catch (Exception ex)
         {
-            await Program.Error(ex);
+            await Program.LogError(ex);
             await deferredMessage.EditAsync("API error >_<");
         }
     }

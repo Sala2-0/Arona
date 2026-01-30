@@ -69,7 +69,7 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
 
                         fields.Add(new EmbedFieldProperties()
                             .WithName(
-                                $"**#{clan.Rank}** ({ClanUtils.ToRegion(nameof(clan.Realm))}) `[{clan.Tag}]` ({clan.DivisionRating}) `BTL: {clan.BattlesCount}` `S/F: {successFactor}`"));
+                                $"**#{clan.Rank}** ({ClanUtils.ToRegion(clan.Realm)}) `[{clan.Tag}]` ({clan.DivisionRating}) `BTL: {clan.BattlesCount}` `S/F: {successFactor}`"));
                     }
 
                     embed.WithFields(fields);
@@ -121,7 +121,7 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
         catch (Exception ex)
         {
             await Program.LogError(ex);
-            await deferredMessage.EditAsync("❌ LogError fetching leaderboard data from API.");
+            await deferredMessage.EditAsync("❌ Error fetching leaderboard data from API.");
         }
     }
 

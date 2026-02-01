@@ -4,6 +4,8 @@ using NetCord.Services.ApplicationCommands;
 using Arona.Commands.Autocomplete;
 using Arona.Models.DB;
 using Arona.Services.Message;
+using Arona.Shared;
+using Arona.Utility;
 
 namespace Arona.Commands;
 
@@ -50,14 +52,9 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
             Program.ActiveWrites.Remove(guild.Id);
             return;
         }
-        
-        using var client = new HttpClient();
-        
-        string body = $"{{\"link\":\"{link}\"}}";
-        using var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
-        content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
 
-        var response = await client.PostAsync("http://localhost:3000/verify", content);
+        var payload = new BuildInfo(link);
+        var response = await ApiClient.PostToServiceAsync("verifybuildlink", payload);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -151,13 +148,8 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
 
         if (data == BuildData.Image)
         {
-            using var client = new HttpClient();
-
-            string body = $"{{\"link\":\"{build.Link}\"}}";
-            using var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
-            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
-
-            var response = await client.PostAsync("http://localhost:3000/build", content);
+            var payload = new BuildInfo(build.Link);
+            var response = await ApiClient.PostToServiceAsync("getbuild", payload);
 
             string parsedName = build.Name.ToLower().Replace(" ", "_");
         

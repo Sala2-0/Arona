@@ -28,7 +28,7 @@ public class ClanViewTest
                     Division = Division.I,
                     DivisionRating = 200,
                     LastBattleAt = "2026 - 01 - 25T20:09:32 + 00:00",
-                    LeadingTeamNumber = Team.Alpha,
+                    LeadingTeamNumberNumber = Team.Alpha,
                     League = League.Hurricane,
                     PlannedPrimeTime = 4,
                     PrimeTime = 4,

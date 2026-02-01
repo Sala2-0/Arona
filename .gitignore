@@ -7,11 +7,11 @@ riderModule.iml
 config.json
 /Arona/Database/dist
 /Arona/Database/node_modules
-Arona/Properties/PublishProfiles/FolderProfile.pubxml.user
-Arona/Properties/PublishProfiles/FolderProfile.pubxml
+Arona/Properties/PublishProfiles/BuildUbuntu.pubxml.user
 /.idea
 *.user
 /Service/node_modules
 *.js
 *.tsbuildinfo
 *.vscode
+/Arona.Service/wwwroot

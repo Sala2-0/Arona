@@ -2,6 +2,7 @@
 using NetCord;
 using NetCord.Rest;
 using Arona.Models.Api.Clans;
+using Arona.Shared;
 using Arona.Utility;
 
 using static Arona.Utility.ClanUtils;
@@ -49,7 +50,7 @@ internal class BattleEmbed : Base
 {
     public required string ClanFullName { get; init; }
     public required long BattleTime { get; init; }
-    public required Team TeamNumber { get; init; }
+    public required TeamNumber TeamNumber { get; init; }
     public required int GlobalRank { get; init; }
     public required int RegionRank { get; init; }
     public required double SuccessFactor { get; init; }

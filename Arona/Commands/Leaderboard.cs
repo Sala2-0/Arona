@@ -22,7 +22,7 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
         Division division = Division.I,
 
         [SlashCommandParameter(Name = "region", Description = "Region")]
-        LeaderboardCommandRealmEnum leaderboardCommandRealmEnum = LeaderboardCommandRealmEnum.Global,
+        LeaderboardCommandRealmEnum leaderboardCommandRealm = LeaderboardCommandRealmEnum.Global,
 
         [SlashCommandParameter(Name = "type", Description = "The clan parameter rankings will base on")]
         LeaderboardCommandLeaderboardType leaderboardType = LeaderboardCommandLeaderboardType.Ratings
@@ -42,7 +42,7 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
         try
         {
             var data = await LadderStructureByRealmQuery.GetSingleAsync(
-                new LadderStructureByRealmRequest(leaderboardCommandRealmEnum.ToString().ToLower(), (int)league, (int)division)
+                new LadderStructureByRealmRequest(leaderboardCommandRealm.ToString().ToLower(), (int)league, (int)division)
             );
 
             if (data.Length == 0)
@@ -57,7 +57,7 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
                 {
                     var embed = new EmbedProperties()
                         .WithTitle(
-                            $"Leaderboard - {league} {division} ({ClanUtils.ToRegion(leaderboardCommandRealmEnum.ToString().ToLower())}) [Ratings]")
+                            $"Leaderboard - {league} {division} ({ClanUtils.ToRegion(leaderboardCommandRealm.ToString().ToLower())}) [Ratings]")
                         .WithColor(new Color(Convert.ToInt32(ClanUtils.GetLeagueColor(league).TrimStart('#'), 16)));
 
                     var fields = new List<EmbedFieldProperties>();
@@ -88,8 +88,7 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
                     }
 
                     var embed = new EmbedProperties()
-                        .WithTitle(
-                            $"Leaderboard - {league} {division} ({ClanUtils.ToRealm(leaderboardCommandRealmEnum.ToString().ToLower())}) [S/F]")
+                        .WithTitle($"Leaderboard - {league} {division} ({ClanUtils.ToRegion(leaderboardCommandRealm.ToString().ToLower())}) [S/F]")
                         .WithColor(new Color(Convert.ToInt32(ClanUtils.GetLeagueColor(league), 16)));
 
                     var fields = new List<EmbedFieldProperties>();
@@ -103,7 +102,7 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
 
                         fields.Add(
                             new EmbedFieldProperties()
-                                .WithName($"**#{i + 1}** ({ClanUtils.ToRegion(nameof(clan.Realm))}) `[{clan.Tag}]` ({clan.DivisionRating}) `S/F: {successFactor}` `BTL: {clan.BattlesCount}`")
+                                .WithName($"**#{i + 1}** ({ClanUtils.ToRegion(clan.Realm)}) `[{clan.Tag}]` ({clan.DivisionRating}) `S/F: {successFactor}` `BTL: {clan.BattlesCount}`")
                         );
                     }
 

@@ -28,7 +28,7 @@ public enum Division
     III = 3,
 }
 
-public enum Team
+public enum TeamNumber
 {
     Alpha = 1,
     Bravo = 2,

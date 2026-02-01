@@ -1,17 +1,16 @@
 ﻿using System.Text.Json.Serialization;
 using Arona.Utility;
-
-using TeamNumber = Arona.Models.Team;
+using Arona.Shared;
 
 namespace Arona.Models.Api.Clans;
 
-internal record LadderBattlesRequest(string Region, TeamNumber Team, string Cookie);
+internal record LadderBattlesRequest(string Region, TeamNumber TeamNumber, string Cookie);
 
 internal class LadderBattlesQuery(HttpClient client) : QueryBase<LadderBattlesRequest, LadderBattle[]>(client)
 {
     public override async Task<LadderBattle[]> GetAsync(LadderBattlesRequest req)
     {
-        var url = $"https://clans.worldofwarships.{req.Region}/api/ladder/battles/?team={(int)req.Team}";
+        var url = $"https://clans.worldofwarships.{req.Region}/api/ladder/battles/?team={(int)req.TeamNumber}";
 
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Add("Cookie", $"wsauth_token={req.Cookie};");
@@ -52,7 +51,7 @@ internal class LadderBattle
         public required int RatingDelta { get; set; }
 
         [JsonPropertyName("team_number")]
-        public required TeamNumber TeamNumber { get; set; }
+        public required Team TeamNumber { get; set; }
 
         [JsonPropertyName("players")]
         public required Player[] Players { get; set; }

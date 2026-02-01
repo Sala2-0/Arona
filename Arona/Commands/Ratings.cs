@@ -3,13 +3,11 @@ using System.Text.Json.Serialization;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using Arona.Commands.Autocomplete;
-using Arona.Models;
-using Arona.Models.DB;
 using Arona.Models.Api.Clans;
-using Arona.Utility;
+using Arona.Models.DB;
 using Arona.Services.Message;
-
-using TeamNumber = Arona.Models.Team;
+using Arona.Utility;
+using Arona.Models;
 
 namespace Arona.Commands;
 
@@ -51,7 +49,7 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
             );
 
             int latestSeason = data.Clan.ClanView.WowsLadder.SeasonNumber;
-            var leadingTeamNumber = data.Clan.ClanView.WowsLadder.LeadingTeamNumber;
+            var leadingTeamNumber = data.Clan.ClanView.WowsLadder.LeadingTeamNumberNumber;
 
             var clan = new ClanDto
             {
@@ -79,7 +77,7 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
                 clan.Teams.Add(new TeamDto
                 {
                     TeamNumber = rating.TeamNumber,
-                    Color = ClanUtils.GetLeagueColor(rating.League),
+                    Color = $"#{ClanUtils.GetLeagueColor(rating.League)}",
                     Battles = rating.BattlesCount,
                     SuccessFactor = SuccessFactor.Calculate(rating.PublicRating, rating.BattlesCount, ClanUtils.GetLeagueExponent(rating.League)),
                     WinRate = rating.BattlesCount > 0
@@ -107,13 +105,7 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
             clan.RegionRank = data.Region.Where(c => c.Id == clanId)
                 .Select(c => c.Rank).FirstOrDefault();
 
-            var json = JsonSerializer.Serialize(clan);
-
-            string body = $"{{\"data\":{json}}}";
-            using var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
-            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
-
-            var response = await ApiClient.Instance.PostAsync("http://localhost:3000/ratings", content);
+            var response = await ApiClient.PostToServiceAsync("ratings", JsonSerializer.Serialize(clan));
 
             var imageBytes = await response.Content.ReadAsByteArrayAsync();
             using var stream = new MemoryStream(imageBytes);
@@ -126,11 +118,11 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
         catch (Exception ex)
         {
             await Program.LogError(ex);
-            await deferredMessage.EditAsync("❌ LogError fetching clan data from API.");
+            await deferredMessage.EditAsync("❌ Error fetching clan data from API.");
         }
     }
 
-    private record ClanDto
+    public record ClanDto
     {
         public string Name { get; init; }
         public string Color { get; init; }
@@ -143,7 +135,7 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
         public StageDto? Stage { get; set; }
     }
 
-    private record TeamDto
+    public record TeamDto
     {
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public required TeamNumber TeamNumber { get; init; }
@@ -157,9 +149,5 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
         public required StageDto? Stage { get; init; }
     }
 
-    private record StageDto(StageType type, string[] progress)
-    {
-        public StageType Type { get; } = type;
-        public string[] Progress { get; } = progress;
-    }
+    public record StageDto(StageType Type, string[] Progress);
 }

@@ -111,14 +111,14 @@ public class WowsLadder
 
     [JsonPropertyName("leading_team_number")]
     [BsonField("leading_team_number")]
-    public required Team LeadingTeamNumber { get; set; }
+    public required TeamNumber LeadingTeamNumberNumber { get; set; }
 }
 
 public class Rating
 {
     [JsonPropertyName("team_number")]
     [BsonField("team_number")]
-    public required Team TeamNumber { get; set; }
+    public required TeamNumber TeamNumber { get; set; }
 
     [JsonPropertyName("league")]
     [BsonField("league")]
@@ -222,5 +222,5 @@ public class RecentBattle
     public required int PointsEarned { get; init; }
 
     [BsonField("team_number")]
-    public required Team TeamNumber { get; set; }
+    public required TeamNumber TeamNumber { get; set; }
 }

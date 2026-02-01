@@ -14,6 +14,7 @@ using LiteDB;
 using Arona.Models.DB;
 using Arona.Models;
 using Arona.Services.UpdateTasks;
+using Arona.Utility;
 
 namespace Arona;
 
@@ -30,6 +31,11 @@ internal class Program
 
         DB = new LiteDatabase(Path.Combine(AppContext.BaseDirectory, Config.Database));
         Collections.Initialize(DB);
+
+        if (args.Length >= 2 && args[0] == "--port" && short.TryParse(args[1], out var port))
+        {
+            ApiClient.SetServicePort(port);
+        }
 
         var builder = Host.CreateApplicationBuilder(args);
         builder.Services

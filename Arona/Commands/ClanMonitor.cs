@@ -22,6 +22,12 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
 
         var guild = Guild.Find(Context.Interaction);
 
+        if (guild.Clans.Count >= 5)
+        {
+            await deferredMessage.EditAsync("❌ Maximum of 5 clans can be monitored per server.");
+            return;
+        }
+
         await Program.WaitForWriteAsync(guild.Id);
         await Program.WaitForUpdateAsync();
 

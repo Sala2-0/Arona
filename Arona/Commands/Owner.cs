@@ -113,7 +113,7 @@ public class OwnerCommands : CommandModule<CommandContext>
         if (!Owner.Check(Context.User.Id)) return;
 
         var leagueExponent = ClanUtils.GetLeagueExponent((League)league);
-        List<double> sf = new();
+        List<double> sf = [];
 
         try
         {

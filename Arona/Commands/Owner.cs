@@ -236,6 +236,36 @@ public class OwnerCommands : CommandModule<CommandContext>
             Program.UpdateProgress = false;
         }
     }
+
+    [Command("resetClanBattleSessions")]
+    public async Task ResetClanBattleSessionsAsync()
+    {
+        if (!Owner.Check(Context.User.Id)) return;
+
+        await Program.WaitForWriteAsync();
+        await Program.WaitForUpdateAsync();
+        Program.UpdateProgress = true;
+
+        try
+        {
+            var clans = Collections.Clans.FindAll().ToList();
+
+            foreach (var clan in clans)
+            {
+                clan.ExternalData.RecentBattles = [];
+            }
+
+            await Context.Message.ReplyAsync("Alla klanstridssessioner har återställts.");
+        }
+        catch (Exception ex)
+        {
+            await Context.Message.ReplyAsync($"Något gick fel: {ex.Message}");
+        }
+        finally
+        {
+            Program.UpdateProgress = false;
+        }
+    }
 }
 
 public class OwnerAppCommands : ApplicationCommandModule<ApplicationCommandContext>

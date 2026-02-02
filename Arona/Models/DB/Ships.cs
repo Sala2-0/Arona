@@ -3,7 +3,7 @@ using Arona.Utility;
 
 namespace Arona.Models.DB;
 
-internal class Ship
+public class Ship
 {
     [BsonId]
     public required long Id { get; set; }

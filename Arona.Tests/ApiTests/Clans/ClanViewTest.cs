@@ -28,7 +28,7 @@ public class ClanViewTest
                     Division = Division.I,
                     DivisionRating = 200,
                     LastBattleAt = "2026 - 01 - 25T20:09:32 + 00:00",
-                    LeadingTeamNumberNumber = Team.Alpha,
+                    LeadingTeamNumber = TeamNumber.Alpha,
                     League = League.Hurricane,
                     PlannedPrimeTime = 4,
                     PrimeTime = 4,
@@ -45,7 +45,7 @@ public class ClanViewTest
                             PublicRating = 2400,
                             SeasonNumber = 32,
                             Stage = null,
-                            TeamNumber = Team.Alpha
+                            TeamNumber = TeamNumber.Alpha
                         },
                         new Rating
                         {
@@ -65,7 +65,7 @@ public class ClanViewTest
                                 Type = StageType.Promotion,
                                 VictoriesRequired = 5
                             },
-                            TeamNumber = Team.Alpha
+                            TeamNumber = TeamNumber.Alpha
                         }
                     ]
                 }

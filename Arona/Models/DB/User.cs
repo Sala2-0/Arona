@@ -2,7 +2,7 @@
 
 namespace Arona.Models.DB;
 
-internal class User
+public class User
 {
     [BsonId]
     public required string Id { get; set; }

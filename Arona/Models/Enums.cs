@@ -12,6 +12,15 @@ public enum StageType
     Demotion,
 }
 
+public enum StageProgressOutcome
+{
+    Null = 0,
+    Victory = 1,
+    Defeat = 2,
+    PromotedOrStayed = 3,
+    DemotedOrFailed = 4,
+}
+
 public enum League
 {
     Hurricane = 0,

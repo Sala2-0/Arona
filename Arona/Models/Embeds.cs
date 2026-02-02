@@ -2,20 +2,19 @@
 using NetCord;
 using NetCord.Rest;
 using Arona.Models.Api.Clans;
-using Arona.Shared;
 using Arona.Utility;
 
 using static Arona.Utility.ClanUtils;
 
 namespace Arona.Models;
 
-internal abstract class Base
+public abstract class Base
 {
     public required string IconUrl { get; init; }
     public abstract EmbedProperties CreateEmbed();
 }
 
-internal class SessionEmbed : Base
+public class SessionEmbed : Base
 {
     public required string ClanFullName { get; init; } // [TAGG] Namn
     public required string Date { get; init; }
@@ -60,34 +59,34 @@ internal class BattleEmbed : Base
     /// Change of points after the battle.
     /// </summary>
     /// <remarks>Should be null if clan rating is in stage</remarks>
-    public int? PointsDelta { get; set; }
+    public required int? PointsDelta { get; set; }
 
     /// <summary>
-    /// Gets the outcome of the stage progress, represented as an integer.
+    /// Gets the outcome of the stage progress, represented as an enum.
     /// </summary>
     /// <remarks>
-    /// Should be null if clan rating is not in stage.
+    /// Should be <see cref="StageProgressOutcome.Null"/> if clan rating is not in stage.
     /// 
     /// <list type="table">
     ///   <item>
-    ///     <term>1</term>
+    ///     <see cref="StageProgressOutcome.Victory"/> -
     ///     <description>Stage victory</description>
     ///   </item>
     ///   <item>
-    ///     <term>0</term>
+    ///     <see cref="StageProgressOutcome.Defeat"/> -
     ///     <description>Stage defeat</description>
     ///   </item>
     ///   <item>
-    ///     <term>-1</term>
+    ///     <see cref="StageProgressOutcome.PromotedOrStayed"/> -
     ///     <description>Promoted / Stayed in stage</description>
     ///   </item>
     ///   <item>
-    ///     <term>-2</term>
+    ///     <see cref="StageProgressOutcome.DemotedOrFailed"/> -
     ///     <description>Demoted / Failed to promote</description>
     ///   </item>
     /// </list>
     /// </remarks>
-    public int? StageProgressOutcome { get; set; }
+    public required StageProgressOutcome StageProgressOutcome { get; set; } = StageProgressOutcome.Null;
 
     public required League League { get; init; }
     public required Division Division { get; init; }
@@ -108,14 +107,14 @@ internal class BattleEmbed : Base
             ]
         };
 
-        if (StageProgressOutcome != null)
+        if (StageProgressOutcome is not StageProgressOutcome.Null)
         {
-            string outcomeEmoji = StageProgressOutcome switch
+            var outcomeEmoji = StageProgressOutcome switch
             {
-                1 => Emojis.StageProgressVictory,
-                0 => Emojis.StageProgressDefeat,
-                -1 => Emojis.StagePromoted,
-                -2 => Emojis.StageDemoted,
+                StageProgressOutcome.Victory => Emojis.StageProgressVictory,
+                StageProgressOutcome.Defeat => Emojis.StageProgressDefeat,
+                StageProgressOutcome.PromotedOrStayed => Emojis.StagePromoted,
+                StageProgressOutcome.DemotedOrFailed => Emojis.StageDemoted,
                 _ => string.Empty
             };
 

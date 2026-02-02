@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Arona.Utility;
 
-internal static class Text
+public static class Text
 {
     public static string Normalize(string inputText)
     {

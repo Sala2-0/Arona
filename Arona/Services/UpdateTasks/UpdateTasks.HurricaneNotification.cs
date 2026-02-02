@@ -5,7 +5,7 @@ using Arona.Services.Message;
 
 namespace Arona.Services.UpdateTasks;
 
-internal partial class UpdateTasks
+public partial class UpdateTasks
 {
     private static async Task NotifyHurricaneChangesAsync(
         List<Guild> guilds,

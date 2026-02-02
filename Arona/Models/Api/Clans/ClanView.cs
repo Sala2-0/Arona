@@ -49,6 +49,30 @@ public class ClanView
     public External ExternalData { get; set; } = new();
 }
 
+public record ClanViewMinimal
+{
+    public int Id { get; init; }
+    public string Tag { get; init; }
+    public string Name { get; init; }
+    public int LatestSeason { get; init; }
+    public int? PrimeTime { get; init; }
+    public int? PlannedPrimeTime { get; init; }
+    public int? GlobalRank { get; init; }
+    public int? RegionRank { get; init; }
+
+    public ClanViewMinimal(ClanView clanInfo, LadderStructure[] globalLeaderboard, LadderStructure[] regionLeaderboard)
+    {
+        Id = clanInfo.Clan.Id;
+        Tag = clanInfo.Clan.Tag;
+        Name = clanInfo.Clan.Name;
+        LatestSeason = clanInfo.WowsLadder.SeasonNumber;
+        PrimeTime = clanInfo.WowsLadder.PrimeTime;
+        PlannedPrimeTime = clanInfo.WowsLadder.PlannedPrimeTime;
+        GlobalRank = globalLeaderboard.FirstOrDefault(c => c.Id == clanInfo.Clan.Id)?.Rank;
+        RegionRank = regionLeaderboard.FirstOrDefault(c => c.Id == clanInfo.Clan.Id)?.Rank;
+    }
+}
+
 public class ClanViewRoot
 {
     [JsonPropertyName("clanview")]
@@ -111,7 +135,7 @@ public class WowsLadder
 
     [JsonPropertyName("leading_team_number")]
     [BsonField("leading_team_number")]
-    public required TeamNumber LeadingTeamNumberNumber { get; set; }
+    public required TeamNumber LeadingTeamNumber { get; set; }
 }
 
 public class Rating

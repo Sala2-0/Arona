@@ -3,7 +3,7 @@ using LiteDB;
 
 namespace Arona.Models.DB;
 
-internal class Guild
+public class Guild
 {
     [BsonId]
     public required string Id { get; set; }
@@ -67,7 +67,7 @@ internal class Guild
     }
 }
 
-internal class Build
+public class Build
 {
     [BsonField("name")]
     public required string Name { get; set; }

@@ -1,4 +1,5 @@
-﻿using Microsoft.Playwright;
+﻿using System.Diagnostics;
+using Microsoft.Playwright;
 
 namespace Arona.Service
 {
@@ -8,10 +9,18 @@ namespace Arona.Service
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            if (args.Length >= 2 && args[0] == "--port" && short.TryParse(args[1], out var port))
+            if (!Debugger.IsAttached)
             {
-                Global.Port = port;
-                builder.WebHost.UseUrls($"http://localhost:{Global.Port}");
+                if (args.Length >= 2 && args[0] == "--port" && short.TryParse(args[1], out var port))
+                {
+                    Global.Port = port;
+                    builder.WebHost.UseUrls($"http://localhost:{Global.Port}");
+                }
+                else
+                {
+                    Console.WriteLine("Error: No port specified to run on");
+                    return;
+                }
             }
 
             // Add services to the container.

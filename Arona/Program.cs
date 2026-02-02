@@ -15,6 +15,7 @@ using Arona.Models.DB;
 using Arona.Models;
 using Arona.Services.UpdateTasks;
 using Arona.Utility;
+using Arona.ClanEventHandlers;
 
 namespace Arona;
 
@@ -36,6 +37,10 @@ internal class Program
         {
             ApiClient.SetServicePort(port);
         }
+
+        Console.WriteLine("Service API port set to " + ApiClient.ServicePort);
+
+        if (!await ApiClient.IsServiceOnline()) return;
 
         var builder = Host.CreateApplicationBuilder(args);
         builder.Services
@@ -68,6 +73,11 @@ internal class Program
                 new UserActivityProperties(Config.PrecenseStr, UserActivityType.Playing)
             ],
         });
+
+        // Register event handlers
+        DiscordSessionStartedHandler.Register();
+        DiscordSessionEndedHandler.Register();
+        DiscordBattleDetectedHandler.Register();
 
         // Varje 5 minut, hämta API och kolla klan aktiviteter
         Timer clanMonitorTask = new(300000); // 300000

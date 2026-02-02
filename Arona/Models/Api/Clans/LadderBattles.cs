@@ -1,6 +1,5 @@
 ﻿using System.Text.Json.Serialization;
 using Arona.Utility;
-using Arona.Shared;
 
 namespace Arona.Models.Api.Clans;
 
@@ -51,7 +50,7 @@ internal class LadderBattle
         public required int RatingDelta { get; set; }
 
         [JsonPropertyName("team_number")]
-        public required Team TeamNumber { get; set; }
+        public required TeamNumber TeamNumber { get; set; }
 
         [JsonPropertyName("players")]
         public required Player[] Players { get; set; }

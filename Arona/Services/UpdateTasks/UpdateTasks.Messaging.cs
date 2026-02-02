@@ -4,9 +4,9 @@ using Timer = System.Timers.Timer;
 
 namespace Arona.Services.UpdateTasks;
 
-internal static partial class UpdateTasks
+public static partial class UpdateTasks
 {
-    private static async Task SendMessageAsync(ulong channelId, EmbedProperties embed)
+    public static async Task SendMessageAsync(ulong channelId, EmbedProperties embed)
     {
         try
         {
@@ -18,7 +18,7 @@ internal static partial class UpdateTasks
         }
     }
 
-    private static async Task SendMessageAsync(ulong channelId, EmbedProperties embed, long battleTimeSeconds)
+    public static async Task SendMessageAsync(ulong channelId, EmbedProperties embed, long battleTimeSeconds)
     {
         battleTimeSeconds += 300;
         var currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
@@ -56,8 +56,4 @@ internal static partial class UpdateTasks
         timer.Start();
     }
 
-    public static void Test()
-    {
-        Console.WriteLine("Hello");
-    }
 }

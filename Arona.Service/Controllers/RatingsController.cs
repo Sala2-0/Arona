@@ -34,6 +34,7 @@ public class RatingsController(IBrowser browser) : ControllerBase
         }
         catch (PlaywrightException ex)
         {
+            Console.WriteLine(ex.Message);
             return StatusCode(500, "Playwright error: " + ex.Message);
         }
     }

@@ -49,7 +49,7 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
             );
 
             int latestSeason = data.Clan.ClanView.WowsLadder.SeasonNumber;
-            var leadingTeamNumber = data.Clan.ClanView.WowsLadder.LeadingTeamNumberNumber;
+            var leadingTeamNumber = data.Clan.ClanView.WowsLadder.LeadingTeamNumber;
 
             var clan = new ClanDto
             {
@@ -106,6 +106,7 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
                 .Select(c => c.Rank).FirstOrDefault();
 
             var response = await ApiClient.PostToServiceAsync("ratings", JsonSerializer.Serialize(clan));
+            response.EnsureSuccessStatusCode();
 
             var imageBytes = await response.Content.ReadAsByteArrayAsync();
             using var stream = new MemoryStream(imageBytes);

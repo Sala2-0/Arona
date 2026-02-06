@@ -220,5 +220,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         };
 
         await Context.Interaction.SendResponseAsync(InteractionCallback.Modal(modal));
+
+        Program.ActiveWrites.Remove(guild.Id);
     }
 }

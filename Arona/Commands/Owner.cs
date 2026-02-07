@@ -274,6 +274,7 @@ public class OwnerCommands : CommandModule<CommandContext>
     {
         if (!Owner.Check(Context.User.Id)) return;
 
+        await Context.Message.ReplyAsync("Uppdaterar data för klaner...");
         await UpdateTasks.UpdateClansAsync(notifyGuilds: false);
     }
 }

@@ -64,3 +64,10 @@ public enum Role
     [JsonStringEnumMemberName("private")]
     Midshipman,
 }
+
+public enum Region
+{
+    Eu,
+    Na,
+    Asia
+}

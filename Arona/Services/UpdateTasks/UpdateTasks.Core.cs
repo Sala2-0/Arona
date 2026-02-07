@@ -172,7 +172,7 @@ public static partial class UpdateTasks
                         GlobalRank = (int)apiClanMinimal.GlobalRank!,
                         RegionRank = (int)apiClanMinimal.RegionRank!,
                         SuccessFactor = SuccessFactor.Calculate(
-                            rating: apiRating.PublicRating,
+                            publicRating: apiRating.PublicRating,
                             battlesCount: apiRating.BattlesCount,
                             leagueExponent: ClanUtils.GetLeagueExponent(apiRating.League)
                         ),

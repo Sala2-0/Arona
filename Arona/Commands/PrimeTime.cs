@@ -21,7 +21,7 @@ public class PrimeTime : ApplicationCommandModule<ApplicationCommandContext>
 
         Guild.Exists(Context.Interaction);
 
-        var split = clanIdAndRegion.Split('|');
+        var split = clanIdAndRegion.Split(',');
         string region = split[1];
         int clanId = int.Parse(split[0]);
 

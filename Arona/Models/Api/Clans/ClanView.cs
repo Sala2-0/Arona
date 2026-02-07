@@ -136,6 +136,14 @@ public class WowsLadder
     [JsonPropertyName("leading_team_number")]
     [BsonField("leading_team_number")]
     public required TeamNumber LeadingTeamNumber { get; set; }
+
+    [JsonPropertyName("public_rating")]
+    [BsonField("public_rating")]
+    public required int PublicRating { get; set; }
+
+    [JsonPropertyName("battles_count")]
+    [BsonField("battles_count")]
+    public required int BattlesCount { get; set; }
 }
 
 public class Rating

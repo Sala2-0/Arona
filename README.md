@@ -76,6 +76,28 @@ Since exponent is different per league, each league would have their own ranges 
   </tr>
 </table>
 
+<h3>Custom Leaderboard</h3>
+<p>Allows you to compare specific clans in the form of a user defined leaderboard.</p>
+<p>This is user specific so the clans you have saved will only be available to you.</p>
+<table border="0.5" cellspacing="0" cellpadding="5">
+  <tr>
+    <th>Command Name</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td>/custom_leaderboard set</td>
+    <td>Set the region your leaderboard will fetch clans from. Currently only clans within the same region can be compared. Also used to reset saved clans</td>
+  </tr>
+  <tr>
+    <td>/custom_leaderboard bulk_add</td>
+    <td>Add multiple clans (in the form of clan tags) separated by spacebar to be saved</td>
+  </tr>
+  <tr>
+    <td>/custom_leaderboard display</td>
+    <td>Display the leaderboard</td>
+  </tr>
+</table>
+
 <h3>Other commands</h3>
 <table border="0.5" cellspacing="0" cellpadding="5">
   <tr>

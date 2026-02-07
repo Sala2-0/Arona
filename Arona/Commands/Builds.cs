@@ -3,6 +3,7 @@ using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using Arona.Commands.Autocomplete;
 using Arona.Models.DB;
+using Arona.Services;
 using Arona.Services.Message;
 using Arona.Shared;
 using Arona.Utility;
@@ -32,24 +33,20 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
 
         var guild = Guild.Find(Context.Interaction);
 
-        await Program.WaitForWriteAsync(guild.Id);
-        await Program.WaitForUpdateAsync();
+        await DatabaseService.WaitForWriteAsync(guild.Id);
+        await DatabaseService.WaitForUpdateAsync();
 
-        Program.ActiveWrites.Add(guild.Id);
+        using var key = new DatabaseService.DatabaseWriteKey(guild.Id);
 
         if (guild.Builds.Count >= 25)
         {
             await deferredMessage.EditAsync("❌ Maximum number of builds reached (25).");
-
-            Program.ActiveWrites.Remove(guild.Id);
             return;
         }
 
         if (guild.Builds.Exists(build => build.Name == name))
         {
             await deferredMessage.EditAsync($"❌ Build with name `{name}` already exists.");
-
-            Program.ActiveWrites.Remove(guild.Id);
             return;
         }
 
@@ -59,8 +56,6 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
         if (!response.IsSuccessStatusCode)
         {
             await deferredMessage.EditAsync("❌ Invalid build link!");
-
-            Program.ActiveWrites.Remove(guild.Id);
             return;
         }
 
@@ -76,7 +71,6 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
         Collections.Guilds.Update(guild);
 
         await deferredMessage.EditAsync($"✅ Added build: `{name}`");
-        Program.ActiveWrites.Remove(guild.Id);
     }
 
     [SubSlashCommand("remove", "Remove a build from server database")]
@@ -90,16 +84,15 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
 
         var guild = Guild.Find(Context.Interaction);
 
-        await Program.WaitForWriteAsync(guild.Id);
-        await Program.WaitForUpdateAsync();
+        await DatabaseService.WaitForWriteAsync(guild.Id);
+        await DatabaseService.WaitForUpdateAsync();
 
-        Program.ActiveWrites.Add(guild.Id);
+        using var key = new DatabaseService.DatabaseWriteKey(guild.Id);
 
         if (guild.Builds.Count == 0)
         {
             await deferredMessage.EditAsync("❌ No builds found in the database.");
 
-            Program.ActiveWrites.Remove(guild.Id);
             return;
         }
 
@@ -108,7 +101,6 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
         {
             await deferredMessage.EditAsync($"❌ Build `{name}` not found.");
 
-            Program.ActiveWrites.Remove(guild.Id);
             return;
         }
 
@@ -116,7 +108,6 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
         Collections.Guilds.Update(guild);
 
         await deferredMessage.EditAsync($"✅ Removed build: `{name}`");
-        Program.ActiveWrites.Remove(guild.Id);
     }
 
     [SubSlashCommand("get", "Get a build from server database")]

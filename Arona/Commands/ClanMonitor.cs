@@ -4,6 +4,7 @@ using Arona.Commands.Autocomplete;
 using Arona.Services.Message;
 using Arona.Models.DB;
 using Arona.Models.Api.Clans;
+using Arona.Services;
 using Arona.Utility;
 
 namespace Arona.Commands;
@@ -28,10 +29,10 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
             return;
         }
 
-        await Program.WaitForWriteAsync(guild.Id);
-        await Program.WaitForUpdateAsync();
+        await DatabaseService.WaitForWriteAsync(guild.Id);
+        await DatabaseService.WaitForUpdateAsync();
 
-        Program.ActiveWrites.Add(guild.Id);
+        using var key = new DatabaseService.DatabaseWriteKey(guild.Id);
 
         string[] split = clanIdAndRegion.Split(',');
         string region = split[1];
@@ -40,8 +41,6 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         if (guild.Clans.Contains(clanId))
         {
             await deferredMessage.EditAsync("❌ Clan already exists in database.");
-            
-            Program.ActiveWrites.Remove(guild.Id);
             return;
         }
 
@@ -93,11 +92,7 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         catch (Exception ex)
         {
             await Program.LogError(ex);
-            await deferredMessage.EditAsync("❌ LogError fetching clan data from API.");
-        }
-        finally
-        {
-            Program.ActiveWrites.Remove(guild.Id);
+            await deferredMessage.EditAsync("❌ Error fetching clan data from API.");
         }
     }
     
@@ -112,16 +107,14 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
 
         var guild = Guild.Find(Context.Interaction);
 
-        await Program.WaitForWriteAsync(guild.Id);
-        await Program.WaitForUpdateAsync();
+        await DatabaseService.WaitForWriteAsync(guild.Id);
+        await DatabaseService.WaitForUpdateAsync();
 
-        Program.ActiveWrites.Add(guild.Id);
+        using var key = new DatabaseService.DatabaseWriteKey(guild.Id);
 
         if (input == "undefined")
         {
             await deferredMessage.EditAsync("❌ No clan selected to remove.");
-
-            Program.ActiveWrites.Remove(guild.Id);
             return;
         }
 
@@ -131,8 +124,6 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         if (clan == null)
         {
             await deferredMessage.EditAsync("❌ Clan does not exist in database.");
-
-            Program.ActiveWrites.Remove(guild.Id);
             return;
         }
 
@@ -147,8 +138,6 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         Collections.Guilds.Update(guild);
 
         await deferredMessage.EditAsync($"✅ Removed clan: `[{clan.Clan.Tag}] {clan.Clan.Name}`");
-
-        Program.ActiveWrites.Remove(guild.Id);
     }
 
     [SubSlashCommand("list", "List all clans in server database")]
@@ -196,13 +185,6 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         string accountMetadata
     )
     {
-        var guild = Guild.Find(Context.Interaction);
-
-        await Program.WaitForWriteAsync(guild.Id);
-        await Program.WaitForUpdateAsync();
-
-        Program.ActiveWrites.Add(guild.Id);
-
         var s = (
             account: accountMetadata.Split(','),
             clan: clanMetadata.Split(',')
@@ -220,7 +202,5 @@ public class ClanMonitor : ApplicationCommandModule<ApplicationCommandContext>
         };
 
         await Context.Interaction.SendResponseAsync(InteractionCallback.Modal(modal));
-
-        Program.ActiveWrites.Remove(guild.Id);
     }
 }

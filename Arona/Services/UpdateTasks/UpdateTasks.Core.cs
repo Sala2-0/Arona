@@ -3,9 +3,7 @@ using Arona.Models;
 using Arona.Models.Api.Clans;
 using Arona.Models.DB;
 using Arona.Utility;
-using NetCord.Rest;
-using System.Security.Authentication;
-using System.Security.Claims;
+
 using static Arona.Services.UpdateTasks.Submethods.UpdateClansSubmethods;
 
 namespace Arona.Services.UpdateTasks;
@@ -71,12 +69,12 @@ public static partial class UpdateTasks
         }
     }
 
-    public static async Task UpdateClansAsync()
+    public static async Task UpdateClansAsync(bool notifyGuilds = true)
     {
-        await Program.WaitForWriteAsync();
-        await Program.WaitForUpdateAsync();
+        await DatabaseService.WaitForAllWritesAsync();
+        await DatabaseService.WaitForUpdateAsync();
 
-        Program.UpdateProgress = true;
+        DatabaseService.IsDatabaseUpdating = true;
 
         Collections.Clans.DeleteMany(c => c.ExternalData.Guilds.Count == 0);
 
@@ -96,15 +94,18 @@ public static partial class UpdateTasks
                         out var totalPoints
                     );
 
-                    await ClanEventBus.OnSessionEnded(new ClanSessionEnded(
-                        ClanId: dbClan.Clan.Id,
-                        ClanTag: dbClan.Clan.Tag,
-                        ClanName: dbClan.Clan.Name,
-                        BattlesCount: dbClan.ExternalData.RecentBattles.Count,
-                        WinsCount: wins,
-                        TotalPoints: totalPoints,
-                        Date: DateOnly.FromDateTime(DateTime.UtcNow)
-                    ));
+                    if (notifyGuilds)
+                    {
+                        await ClanEventBus.OnSessionEnded(new ClanSessionEnded(
+                            ClanId: dbClan.Clan.Id,
+                            ClanTag: dbClan.Clan.Tag,
+                            ClanName: dbClan.Clan.Name,
+                            BattlesCount: dbClan.ExternalData.RecentBattles.Count,
+                            WinsCount: wins,
+                            TotalPoints: totalPoints,
+                            Date: DateOnly.FromDateTime(DateTime.UtcNow)
+                        ));
+                    }
 
                     ResetSessionData(dbClan);
                     continue;
@@ -136,11 +137,14 @@ public static partial class UpdateTasks
                     dbClan.ExternalData.SessionEndTime = ClanUtils.GetEndSession(apiClanMinimal.PrimeTime);
                     dbClan.WowsLadder.Ratings = apiClan.ClanView.WowsLadder.Ratings.FindAll(r => r.SeasonNumber == apiClanMinimal.LatestSeason);
 
-                    await ClanEventBus.OnSessionStarted(new ClanSessionStarted(
-                        ClanId: apiClan.ClanView.Clan.Id,
-                        ClanName: apiClanMinimal.Name,
-                        ClanTag: apiClanMinimal.Tag
-                    ));
+                    if (notifyGuilds)
+                    {
+                        await ClanEventBus.OnSessionStarted(new ClanSessionStarted(
+                            ClanId: apiClan.ClanView.Clan.Id,
+                            ClanName: apiClanMinimal.Name,
+                            ClanTag: apiClanMinimal.Tag
+                        ));
+                    }
                 }
 
                 var lastBattleUnix = DateTimeOffset.Parse(apiClan.ClanView.WowsLadder.LastBattleAt).ToUnixTimeSeconds();
@@ -208,7 +212,10 @@ public static partial class UpdateTasks
                         continue;
                     }
 
-                    await ClanEventBus.OnBattleDetected(eventData);
+                    if (notifyGuilds)
+                    {
+                        await ClanEventBus.OnBattleDetected(eventData);
+                    }
 
                     dbClan.ExternalData.RecentBattles.Add(new RecentBattle
                     {
@@ -231,6 +238,6 @@ public static partial class UpdateTasks
             }
         }
 
-        Program.UpdateProgress = false;
+        DatabaseService.IsDatabaseUpdating = false;
     }
 }

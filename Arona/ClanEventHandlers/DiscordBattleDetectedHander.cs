@@ -62,7 +62,7 @@ public class DiscordBattleDetectedHandler
                         IsVictory = evt.IsVictory
                     }.CreateEmbed();
 
-                    await UpdateTasks.SendMessageAsync(ulong.Parse(guild.ChannelId), detailedEmbed, evt.BattleTime);
+                    await UpdateTasks.SendMessageAsync(ulong.Parse(guild.Id),ulong.Parse(guild.ChannelId), detailedEmbed, evt.BattleTime);
                 }
                 catch (InvalidCredentialException ex)
                 {
@@ -77,12 +77,12 @@ public class DiscordBattleDetectedHandler
                     guild.Cookies.Remove(evt.ClanId);
 
                     // Send regular embed instead since detailed data failed
-                    await UpdateTasks.SendMessageAsync(ulong.Parse(guild.ChannelId), embed.CreateEmbed(), evt.BattleTime);
+                    await UpdateTasks.SendMessageAsync(ulong.Parse(guild.Id), ulong.Parse(guild.ChannelId), embed.CreateEmbed(), evt.BattleTime);
                 }
             }
             else
             {
-                await UpdateTasks.SendMessageAsync(ulong.Parse(guild.ChannelId), embed.CreateEmbed(), evt.BattleTime);
+                await UpdateTasks.SendMessageAsync(ulong.Parse(guild.Id), ulong.Parse(guild.ChannelId), embed.CreateEmbed(), evt.BattleTime);
             }
         }
     }

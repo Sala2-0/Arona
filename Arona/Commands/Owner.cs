@@ -10,6 +10,8 @@ using Arona.Models;
 using Arona.Models.DB;
 using Arona.Models.Api.Clans;
 using Arona.Services.Message;
+using Arona.Services;
+using Arona.Services.UpdateTasks;
 
 namespace Arona.Commands;
 
@@ -148,10 +150,10 @@ public class OwnerCommands : CommandModule<CommandContext>
     {
         if (!Owner.Check(Context.User.Id)) return;
 
-        await Program.WaitForWriteAsync();
-        await Program.WaitForUpdateAsync();
+        await DatabaseService.WaitForAllWritesAsync();
+        await DatabaseService.WaitForUpdateAsync();
 
-        Program.UpdateProgress = true;
+        DatabaseService.IsDatabaseUpdating = true;
 
         try
         {
@@ -177,7 +179,7 @@ public class OwnerCommands : CommandModule<CommandContext>
             Program.DB = new LiteDatabase(Path.Combine(AppContext.BaseDirectory, Config.Database));
             Collections.Initialize(Program.DB);
 
-            Program.UpdateProgress = false;
+            DatabaseService.IsDatabaseUpdating = false;
         }
     }
 
@@ -186,10 +188,10 @@ public class OwnerCommands : CommandModule<CommandContext>
     {
         if (!Owner.Check(Context.User.Id)) return;
 
-        await Program.WaitForWriteAsync();
-        await Program.WaitForUpdateAsync();
+        await DatabaseService.WaitForAllWritesAsync();
+        await DatabaseService.WaitForUpdateAsync();
 
-        Program.UpdateProgress = true;
+        DatabaseService.IsDatabaseUpdating = true;
 
         try
         {
@@ -233,7 +235,7 @@ public class OwnerCommands : CommandModule<CommandContext>
         }
         finally
         {
-            Program.UpdateProgress = false;
+            DatabaseService.IsDatabaseUpdating = false;
         }
     }
 
@@ -242,9 +244,9 @@ public class OwnerCommands : CommandModule<CommandContext>
     {
         if (!Owner.Check(Context.User.Id)) return;
 
-        await Program.WaitForWriteAsync();
-        await Program.WaitForUpdateAsync();
-        Program.UpdateProgress = true;
+        await DatabaseService.WaitForAllWritesAsync();
+        await DatabaseService.WaitForUpdateAsync();
+        DatabaseService.IsDatabaseUpdating = true;
 
         try
         {
@@ -263,8 +265,16 @@ public class OwnerCommands : CommandModule<CommandContext>
         }
         finally
         {
-            Program.UpdateProgress = false;
+            DatabaseService.IsDatabaseUpdating = false;
         }
+    }
+
+    [Command("updateClans")]
+    public async Task UpdateClansAsync()
+    {
+        if (!Owner.Check(Context.User.Id)) return;
+
+        await UpdateTasks.UpdateClansAsync(notifyGuilds: false);
     }
 }
 

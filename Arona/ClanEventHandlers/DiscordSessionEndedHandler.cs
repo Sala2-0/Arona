@@ -1,6 +1,7 @@
 ﻿using Arona.ClanEvents;
 using Arona.Models;
 using Arona.Services;
+using Arona.Services.Message;
 using Arona.Utility;
 using Arona.Services.UpdateTasks;
 
@@ -30,7 +31,11 @@ internal static class DiscordSessionEndedHandler
 
         foreach (var guild in guilds)
         {
-            await UpdateTasks.SendMessageAsync(ulong.Parse(guild.ChannelId), embed);
+            await ChannelMessageService.SendAsync(
+                guildId: ulong.Parse(guild.Id),
+                channelId: ulong.Parse(guild.ChannelId),
+                embed
+            );
         }
     }
 }

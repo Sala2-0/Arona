@@ -23,8 +23,6 @@ internal class Program
 {
     public static LiteDatabase DB { get; set; }
     public static GatewayClient? Client { get; private set; }
-    public static bool UpdateProgress { get; set; } = false;
-    public static readonly List<string> ActiveWrites = [];
     
     private static async Task Main(string[] args)
     {
@@ -40,6 +38,7 @@ internal class Program
 
         Console.WriteLine("Service API port set to " + ApiClient.ServicePort);
 
+        await Task.Delay(3000);
         if (!await ApiClient.IsServiceOnline()) return;
 
         var builder = Host.CreateApplicationBuilder(args);
@@ -108,50 +107,5 @@ internal class Program
             channelId: Config.BackdoorChannel,
             message: $"Bot error: `{ex.Message} \n{ex.StackTrace}`"
         );
-    }
-
-    /// <summary>
-    /// Väntar på att UpdateClansAsync eller ?dbcopy slutförs om det pågår en
-    /// </summary>
-    /// <remarks>
-    /// Används bara för kommandon eller kod som skriver till databasen
-    /// </remarks>
-    public static async Task WaitForUpdateAsync()
-    {
-        while (UpdateProgress)
-        {
-            Console.WriteLine("Waiting for update to finish...");
-            
-            await Task.Delay(1000);
-        }
-    }
-
-    /// <summary>
-    /// Vänta tills pågående databasskrivning för en guild är klar
-    /// </summary>
-    /// <param name="guildId">
-    /// Guild ID att vänta på
-    /// </param>
-    public static async Task WaitForWriteAsync(string guildId)
-    {
-        while (ActiveWrites.Contains(guildId))
-        {
-            Console.WriteLine("Waiting for database write to finish...");
-
-            await Task.Delay(1000);
-        }
-    }
-
-    /// <summary>
-    /// Vänta tills alla pågående databasskrivningar är klara
-    /// </summary>
-    public static async Task WaitForWriteAsync()
-    {
-        while (ActiveWrites.Count > 0)
-        {
-            Console.WriteLine("Waiting for database write to finish...");
-
-            await Task.Delay(1000);
-        }
     }
 }

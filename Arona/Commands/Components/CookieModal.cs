@@ -4,7 +4,7 @@ using NetCord.Rest;
 using NetCord.Services.ComponentInteractions;
 using Arona.Models.Api.Clans;
 using Arona.Models.DB;
-
+using Arona.Services;
 using Role = Arona.Models.Role;
 
 namespace Arona.Commands.Components;
@@ -19,6 +19,11 @@ public class Modals : ComponentInteractionModule<ModalInteractionContext>
         var cookieInput = Context.Components
             .OfType<TextInput>()
             .FirstOrDefault(input => input.CustomId == "cookie");
+
+        await DatabaseService.WaitForWriteAsync(guild.Id);
+        await DatabaseService.WaitForUpdateAsync();
+
+        using var key = new DatabaseService.DatabaseWriteKey(guild.Id);
 
         try
         {
@@ -38,11 +43,7 @@ public class Modals : ComponentInteractionModule<ModalInteractionContext>
         catch (Exception ex)
         {
             await Program.LogError(ex);
-            await Context.Interaction.SendResponseAsync(InteractionCallback.Message($"LogError >_<\n\n`{ex.Message}`"));
-        }
-        finally
-        {
-            Program.ActiveWrites.Remove(guild.Id);
+            await Context.Interaction.SendResponseAsync(InteractionCallback.Message($"Error >_<\n\n`{ex.Message}`"));
         }
     }
 }

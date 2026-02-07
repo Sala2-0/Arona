@@ -1,4 +1,5 @@
-﻿using NetCord.Rest;
+﻿using Arona.Services.Message;
+using NetCord.Rest;
 
 using Timer = System.Timers.Timer;
 
@@ -6,19 +7,7 @@ namespace Arona.Services.UpdateTasks;
 
 public static partial class UpdateTasks
 {
-    public static async Task SendMessageAsync(ulong channelId, EmbedProperties embed)
-    {
-        try
-        {
-            await Program.Client!.Rest.SendMessageAsync(channelId, new MessageProperties { Embeds = [embed] });
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error sending message: {ex.Message}");
-        }
-    }
-
-    public static async Task SendMessageAsync(ulong channelId, EmbedProperties embed, long battleTimeSeconds)
+    public static async Task SendMessageAsync(ulong guildId, ulong channelId, EmbedProperties embed, long battleTimeSeconds)
     {
         battleTimeSeconds += 300;
         var currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
@@ -26,14 +15,7 @@ public static partial class UpdateTasks
         var timeDifference = battleTimeSeconds - currentTime;
         if (timeDifference <= 0)
         {
-            try
-            {
-                await Program.Client!.Rest.SendMessageAsync(channelId, new MessageProperties { Embeds = [embed] });
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error sending message: {ex.Message}");
-            }
+            await ChannelMessageService.SendAsync(guildId, channelId, embed);
 
             return;
         }
@@ -43,14 +25,7 @@ public static partial class UpdateTasks
         timer.Elapsed += async (_, _) =>
         {
             timer.Dispose();
-            try
-            {
-                await Program.Client!.Rest.SendMessageAsync(channelId, new MessageProperties { Embeds = [embed] });
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error sending message: {ex.Message}");
-            }
+            await ChannelMessageService.SendAsync(guildId, channelId, embed);
         };
         timer.Enabled = true;
         timer.Start();

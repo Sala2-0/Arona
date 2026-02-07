@@ -2,6 +2,7 @@
 using NetCord.Services.ApplicationCommands;
 using Arona.Services.Message;
 using Arona.Models.DB;
+using Arona.Services;
 
 namespace Arona.Commands;
 
@@ -19,10 +20,10 @@ public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
 
         string guildId = Context.Interaction.GuildId.ToString()!;
 
-        await Program.WaitForWriteAsync(guildId);
-        await Program.WaitForUpdateAsync();
+        await DatabaseService.WaitForWriteAsync(guildId);
+        await DatabaseService.WaitForUpdateAsync();
 
-        Program.ActiveWrites.Add(guildId);
+        using var key = new DatabaseService.DatabaseWriteKey(guildId);
 
         ulong channelId = ulong.Parse(input);
 
@@ -71,10 +72,6 @@ public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
             await Program.LogError(ex);
             await deferredMessage.EditAsync("❌ Invalid channel ID format. Please provide a valid channel ID." +
                                             "\nCould also be that Arona doesn't have permissions to see specified channel");
-        }
-        finally
-        {
-            Program.ActiveWrites.Remove(guildId);
         }
     }
 }

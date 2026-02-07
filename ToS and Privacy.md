@@ -67,13 +67,15 @@ Contant with the owner can be achieved through Discord (sala2.0)
 Owner of the Bot may update these Terms. Continued use of the Bot after updates means you accept the new version.
 
 # Privacy Policy
-Last updated: 2025-11-28
+Last updated: 2026-02-07
 
 ## Information the Bot Collects
 ### A. Automatically Stored Data
 When the Bot is used on a Discord server for the first time, it stores:
 - Server ID
 - Channel ID (for bot output locations)
+
+User IDs are stored when said user interacts with specific commands.
 
 This is required for the Bot to remember where to send notifications and use its features.
 
@@ -104,8 +106,9 @@ Cookies remain valid until:
 - They naturally expire,
 - The user logs out (invalidating the cookie), or
 - The user requests removal
+User IDs remain until the user requests removal
 
-You may request cookie deletion manually at any time.
+You may request deletion of cookies and user IDs manually at any time.
 
 ## Changes to This Policy
 Owner of the Bot may update this Privacy Policy. Continued use of the Bot after updates signifies acceptance.

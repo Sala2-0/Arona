@@ -92,7 +92,7 @@ public class CustomLeaderboardCommand : ApplicationCommandModule<ApplicationComm
 
             foreach (var tag in clanTagList)
             {
-                var response = await query.GetAsync(new ClanListItemRequest(user.CustomLeaderboard.Region.ToString(), tag));
+                var response = await query.GetAsync(new ClanListItemRequest(ApiClient.GetTopLevelDomain(user.CustomLeaderboard.Region), tag));
 
                 var targetClan = response.Data.FirstOrDefault(c => c.Tag == tag) ?? null;
 

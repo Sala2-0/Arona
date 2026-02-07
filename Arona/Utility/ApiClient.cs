@@ -1,4 +1,5 @@
 ﻿using System.Net.Http.Json;
+using Arona.Models;
 
 namespace Arona.Utility;
 
@@ -34,4 +35,11 @@ public static class ApiClient
             return false;
         }
     }
+
+    public static string GetTopLevelDomain(Region region) => region switch
+    {
+        Region.Eu => "eu",
+        Region.Na => "com",
+        Region.Asia => "asia"
+    };
 }

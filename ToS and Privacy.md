@@ -106,6 +106,7 @@ Cookies remain valid until:
 - They naturally expire,
 - The user logs out (invalidating the cookie), or
 - The user requests removal
+
 User IDs remain until the user requests removal
 
 You may request deletion of cookies and user IDs manually at any time.

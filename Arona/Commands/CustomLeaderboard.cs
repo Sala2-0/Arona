@@ -81,9 +81,6 @@ public class CustomLeaderboardCommand : ApplicationCommandModule<ApplicationComm
             return;
         }
 
-        var clansAdded = new List<string>();
-        var clansFailedToAdd = new List<string>();
-
         var embed = new EmbedProperties();
         var field = new List<EmbedFieldProperties>
         {
@@ -112,13 +109,11 @@ public class CustomLeaderboardCommand : ApplicationCommandModule<ApplicationComm
                 if (targetClan == null || user.CustomLeaderboard.Clans.Exists(id => id == targetClan.ClanId))
                 {
                     field[1].Value += $"`{tag}` ";
-                    clansFailedToAdd.Add(tag);
                 }
                 else
                 {
                     field[0].Value += $"`{tag}` ";
                     user.CustomLeaderboard.Clans.Add(targetClan.ClanId);
-                    clansAdded.Add(tag);
                 }
 
                 embed.Fields = field;
@@ -151,18 +146,27 @@ public class CustomLeaderboardCommand : ApplicationCommandModule<ApplicationComm
         }
 
         var clanInfo = new List<ClanView>();
+        var failedClans = new List<int>();
 
         var clanViewQuery = new ClanViewQuery(ApiClient.Instance);
         foreach (var clanId in user.CustomLeaderboard.Clans)
         {
-            var root = await clanViewQuery.GetAsync(new ClanViewRequest(
-                ClanId: clanId,
-                Region: user.CustomLeaderboard.Region.ToString()));
+            try
+            {
+                var root = await clanViewQuery.GetAsync(new ClanViewRequest(
+                    ClanId: clanId,
+                    Region: user.CustomLeaderboard.Region.ToString()));
 
-            clanInfo.Add(root.ClanView);
+                clanInfo.Add(root.ClanView);
 
-            await deferredMessage.EditAsync($"Fetching data for clan `{root.ClanView.Clan.Tag}`...");
-            await Task.Delay(50);
+                await deferredMessage.EditAsync($"Fetching data for clan `{root.ClanView.Clan.Tag}`...");
+                await Task.Delay(50);
+            }
+            catch (Exception ex)
+            {
+                await Program.LogError(ex);
+                failedClans.Add(clanId);
+            }
         }
 
         await deferredMessage.EditAsync("Sorting data...");
@@ -183,6 +187,15 @@ public class CustomLeaderboardCommand : ApplicationCommandModule<ApplicationComm
             );
 
             embed.Description += $"#{i + 1} `[{clan.Clan.Tag}]` ({clan.WowsLadder.League} {clan.WowsLadder.Division} - {clan.WowsLadder.DivisionRating}) `BTL: {clan.WowsLadder.BattlesCount}` `SF: {successFactor}`\n";
+        }
+
+        if (failedClans.Count > 0)
+        {
+            embed.AddFields(new EmbedFieldProperties
+            {
+                Name = "Failed to fetch data from following clans",
+                Value = string.Join(" ", failedClans.Select(c => $"`{c}`"))
+            });
         }
 
         await deferredMessage.EditAsync(embed);

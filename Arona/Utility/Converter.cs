@@ -8,7 +8,7 @@ namespace Arona.Utility;
 // där parametrar inom stage kan vara null eller andra data som inte är förväntad
 // som INTE ska finnas
 // Används för data från API:n https://clans.worldofwarships.<region>/api/clanbase/<clan id>/claninfo/
-internal class Converter : JsonConverter<Stage>
+public class Converter : JsonConverter<Stage>
 {
     public static JsonSerializerOptions Options { get; } = new(){ Converters = { new Converter() } };
     

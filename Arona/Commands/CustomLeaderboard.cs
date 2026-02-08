@@ -84,6 +84,19 @@ public class CustomLeaderboardCommand : ApplicationCommandModule<ApplicationComm
         var clansAdded = new List<string>();
         var clansFailedToAdd = new List<string>();
 
+        var embed = new EmbedProperties();
+        var field = new List<EmbedFieldProperties>
+        {
+            new()
+            {
+                Name = "Clans successfully added"
+            },
+            new()
+            {
+                Name = "Clans failed to add"
+            }
+        };
+
         try
         {
             var clanTagList = clanTags.Split(' ').ToList();
@@ -98,39 +111,23 @@ public class CustomLeaderboardCommand : ApplicationCommandModule<ApplicationComm
 
                 if (targetClan == null || user.CustomLeaderboard.Clans.Exists(id => id == targetClan.ClanId))
                 {
+                    field[1].Value += $"`{tag}` ";
                     clansFailedToAdd.Add(tag);
                 }
                 else
                 {
+                    field[0].Value += $"`{tag}` ";
                     user.CustomLeaderboard.Clans.Add(targetClan.ClanId);
                     clansAdded.Add(tag);
                 }
+
+                embed.Fields = field;
+                await deferredMessage.EditAsync(embed);
 
                 await Task.Delay(500);
             }
 
             Collections.Users.Update(user);
-
-            var formattedMessage = string.Empty;
-            if (clansAdded.Count > 0)
-            {
-                formattedMessage = "✅ Clans successfully added: ";
-                foreach (var clan in clansAdded)
-                {
-                    formattedMessage += $"`{clan}` ";
-                }
-            }
-
-            if (clansFailedToAdd.Count > 0)
-            {
-                formattedMessage += "\n❌ Clans failed to add:";
-                foreach (var clan in clansFailedToAdd)
-                {
-                    formattedMessage += $"`{clan}` ";
-                }
-            }
-
-            await deferredMessage.EditAsync(formattedMessage);
         }
         catch (Exception ex)
         {
@@ -164,8 +161,11 @@ public class CustomLeaderboardCommand : ApplicationCommandModule<ApplicationComm
 
             clanInfo.Add(root.ClanView);
 
-            await Task.Delay(500);
+            await deferredMessage.EditAsync($"Fetching data for clan `{root.ClanView.Clan.Tag}`...");
+            await Task.Delay(50);
         }
+
+        await deferredMessage.EditAsync("Sorting data...");
 
         clanInfo = clanInfo.OrderByDescending(c => c.WowsLadder.PublicRating).ToList();
 
@@ -173,8 +173,6 @@ public class CustomLeaderboardCommand : ApplicationCommandModule<ApplicationComm
         {
             Title = $"Custom Leaderboard ({user.CustomLeaderboard.Region.ToString().ToUpper()})"
         };
-
-        var fields = new List<EmbedFieldProperties>();
 
         for (var i = 0; i < clanInfo.Count; i++)
         {
@@ -184,13 +182,8 @@ public class CustomLeaderboardCommand : ApplicationCommandModule<ApplicationComm
                 2
             );
 
-            fields.Add(new EmbedFieldProperties
-            {
-                Name = $"#{i + 1} `[{clan.Clan.Tag}]` ({clan.WowsLadder.League} {clan.WowsLadder.Division} - {clan.WowsLadder.DivisionRating}) `BTL: {clan.WowsLadder.BattlesCount}` `SF: {successFactor}`"
-            });
+            embed.Description += $"#{i + 1} `[{clan.Clan.Tag}]` ({clan.WowsLadder.League} {clan.WowsLadder.Division} - {clan.WowsLadder.DivisionRating}) `BTL: {clan.WowsLadder.BattlesCount}` `SF: {successFactor}`\n";
         }
-
-        embed.WithFields(fields);
 
         await deferredMessage.EditAsync(embed);
     }

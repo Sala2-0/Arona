@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Arona.Utility;
 
 namespace Arona.Models.Api;
 
@@ -20,7 +21,8 @@ public abstract class QueryBase<TRequest, TResponse>(HttpClient client) : IApiQu
         res.EnsureSuccessStatusCode();
 
         var json = await res.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<TResponse>(json)
+
+        return JsonSerializer.Deserialize<TResponse>(json, Converter.Options)
                ?? throw new JsonException("Failed to deserialize API response");
     }
 }

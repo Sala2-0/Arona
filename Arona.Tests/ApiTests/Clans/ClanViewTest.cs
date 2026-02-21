@@ -67,7 +67,9 @@ public class ClanViewTest
                             },
                             TeamNumber = TeamNumber.Alpha
                         }
-                    ]
+                    ],
+                    PublicRating = 2400,
+                    BattlesCount = 60
                 }
             }
         };

@@ -14,7 +14,7 @@ public class VerifyBuildLinkController(IBrowser browser) : ControllerBase
         if (info == null)
             return BadRequest("Invalid data.");
 
-        if (!info.Url.Contains("share.wowssb.com"))
+        if (!info.Url.Contains("share.wowssb.com") && !info.Url.Contains("app.wowssb.com"))
             return BadRequest("Invalid build link");
 
         await using var context = await browser.NewContextAsync();

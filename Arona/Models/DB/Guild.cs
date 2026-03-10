@@ -3,13 +3,13 @@ using LiteDB;
 
 namespace Arona.Models.DB;
 
-public class Guild
+public class Guild : IEntity
 {
     [BsonId]
-    public required string Id { get; set; }
+    public string Id { get; set; }
 
     [BsonField("channel_id")]
-    public required string ChannelId { get; set; }
+    public string ChannelId { get; set; }
 
     [BsonField("clans")]
     public List<int> Clans { get; set; } = [];
@@ -19,52 +19,6 @@ public class Guild
 
     [BsonField("cookies")]
     public Dictionary<int, string> Cookies { get; set; } = new();
-
-    public static void Exists(ApplicationCommandInteraction interaction)
-    {
-        if (Collections.Guilds.Exists(g => g.Id == interaction.GuildId.ToString()))
-            return;
-
-        Collections.Guilds.Insert(new Guild
-            {
-                Id = interaction.GuildId.ToString()!,
-                ChannelId = interaction.Channel.Id.ToString()
-            });
-    }
-
-    public static Guild Find(ApplicationCommandInteraction interaction)
-    {
-        var guild = Collections.Guilds.FindById(interaction.GuildId.ToString());
-
-        if (guild != null)
-            return guild;
-
-        guild = new Guild
-        {
-            Id = interaction.GuildId.ToString()!,
-            ChannelId = interaction.Channel.Id.ToString()
-        };
-
-        Collections.Guilds.Insert(guild);
-        return guild;
-    }
-
-    public static Guild Find(ModalInteraction interaction)
-    {
-        var guild = Collections.Guilds.FindById(interaction.GuildId.ToString());
-
-        if (guild != null)
-            return guild;
-
-        guild = new Guild
-        {
-            Id = interaction.GuildId.ToString()!,
-            ChannelId = interaction.Channel.Id.ToString()
-        };
-
-        Collections.Guilds.Insert(guild);
-        return guild;
-    }
 }
 
 public class Build

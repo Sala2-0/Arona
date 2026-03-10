@@ -9,7 +9,9 @@
 
     <ItemGroup>
       <PackageReference Include="LiteDB" Version="5.0.21" />
-      <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0-preview.5.25277.114" />
+      <PackageReference Include="Microsoft.Extensions.Diagnostics" Version="9.0.0" />
+      <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
+      <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0" />
       <PackageReference Include="NetCord" Version="1.0.0-alpha.391" />
       <PackageReference Include="NetCord.Hosting" Version="1.0.0-alpha.391" />
       <PackageReference Include="NetCord.Hosting.Services" Version="1.0.0-alpha.391" />

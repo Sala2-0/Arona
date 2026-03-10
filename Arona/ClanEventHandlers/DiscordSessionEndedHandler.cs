@@ -1,25 +1,40 @@
 ﻿using Arona.ClanEvents;
 using Arona.Models;
+using Arona.Models.DB;
 using Arona.Services;
 using Arona.Services.Message;
 using Arona.Utility;
-using Arona.Services.UpdateTasks;
+using Microsoft.Extensions.Hosting;
+using NetCord.Gateway;
+using NetCord.Rest;
 
 namespace Arona.ClanEventHandlers;
 
-internal static class DiscordSessionEndedHandler
+internal class DiscordSessionEndedHandler : IEventHandler<ClanSessionEnded>, IHostedService
 {
-    public static void Register()
+    private readonly IClanEventBus _eventBus;
+    private readonly IChannelMessageService _channelMessageService;
+    private readonly IDatabaseRepository _repository;
+    private readonly GatewayClient _gatewayClient;
+
+    public DiscordSessionEndedHandler(
+        IClanEventBus eventBus,
+        IChannelMessageService channelMessageService,
+        IDatabaseRepository repository,
+        GatewayClient client)
     {
-        ClanEventBus.SessionEnded += OnSessionEndedAsync;
+        _eventBus = eventBus;
+        _channelMessageService = channelMessageService;
+        _repository = repository;
+        _gatewayClient = client;
     }
 
-    private static async Task OnSessionEndedAsync(ClanSessionEnded evt)
+    public async Task OnEventAsync(ClanSessionEnded evt)
     {
-        var guilds = DatabaseUtilities.GetGuildsForClan(evt.ClanId);
-        var botIconUrl = await BotUtilities.GetBotIconUrl();
+        var guilds = DatabaseUtilities.GetGuildsForClan(_repository, evt.ClanId);
+        var botIconUrl = await BotUtilities.GetBotIconUrl(_gatewayClient);
 
-        var embed =  new SessionEmbed
+        var embed = new SessionEmbed
         {
             IconUrl = botIconUrl,
             ClanFullName = $"[{evt.ClanTag}] {evt.ClanName}",
@@ -31,11 +46,26 @@ internal static class DiscordSessionEndedHandler
 
         foreach (var guild in guilds)
         {
-            await ChannelMessageService.SendAsync(
+            await _channelMessageService.SendAsync(
                 guildId: ulong.Parse(guild.Id),
                 channelId: ulong.Parse(guild.ChannelId),
-                embed
+                new MessageProperties
+                {
+                    Embeds = [embed]
+                }
             );
         }
+    }
+    
+    public Task StartAsync(CancellationToken cancellationToken) 
+    {
+        _eventBus.SessionEnded += OnEventAsync;
+        return Task.CompletedTask;
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken) 
+    {
+        _eventBus.SessionEnded -= OnEventAsync;
+        return Task.CompletedTask;
     }
 }

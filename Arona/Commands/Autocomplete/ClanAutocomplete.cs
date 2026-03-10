@@ -3,10 +3,11 @@ using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using Arona.Utility;
 using Arona.Models.Api.Official;
+using Arona.Services;
 
 namespace Arona.Commands.Autocomplete;
 
-internal class ClanAutocomplete: IAutocompleteProvider<AutocompleteInteractionContext>
+internal class ClanAutocomplete(IApiClient apiClient, IErrorService errorService): IAutocompleteProvider<AutocompleteInteractionContext>
 {
     public async ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(
         ApplicationCommandInteractionDataOption option,
@@ -37,7 +38,8 @@ internal class ClanAutocomplete: IAutocompleteProvider<AutocompleteInteractionCo
 
         try
         {
-            var data = await ClanListItemQuery.GetSingleAsync(new ClanListItemRequest(region, input));
+            var query = new ClanListItemQuery(apiClient.HttpClient);
+            var data = await query.GetAsync(new ClanListItemRequest(region, input));
             var clans = data.Data.Select(c => new { Tag = c.Tag, Name = c.Name, Id = c.ClanId, Region = region }).ToList();
 
             var choices = clans
@@ -50,7 +52,7 @@ internal class ClanAutocomplete: IAutocompleteProvider<AutocompleteInteractionCo
         }
         catch (Exception ex)
         {
-            await Program.LogError(ex);
+            await errorService.LogErrorAsync(ex);
             return [];
         }
     }

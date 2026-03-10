@@ -6,7 +6,7 @@ using Arona.Utility;
 
 namespace Arona.Commands.Autocomplete;
 
-internal class ClanListAutocomplete : IAutocompleteProvider<AutocompleteInteractionContext>
+internal class ClanListAutocomplete(IDatabaseRepository repository) : IAutocompleteProvider<AutocompleteInteractionContext>
 {
     public ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(
         ApplicationCommandInteractionDataOption option,
@@ -14,7 +14,7 @@ internal class ClanListAutocomplete : IAutocompleteProvider<AutocompleteInteract
     )
     {
         string guildId = context.Interaction.GuildId.ToString()!;
-        var guild = Collections.Guilds.FindOne(g => g.Id == guildId);
+        var guild = repository.Guilds.FindOne(g => g.Id == guildId);
 
         if (guild == null)
             return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>([
@@ -26,7 +26,7 @@ internal class ClanListAutocomplete : IAutocompleteProvider<AutocompleteInteract
                 new ApplicationCommandOptionChoiceProperties("No clans in database", "undefined")
             ]);
 
-        var clans = Collections.Clans.Find(c => guild.Clans.Contains(c.Clan.Id)).ToList();
+        var clans = repository.Clans.Find(c => guild.Clans.Contains(c.Clan.Id)).ToList();
 
         return new ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?>(clans
             .Take(20)

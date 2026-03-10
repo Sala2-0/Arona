@@ -4,15 +4,16 @@ using NetCord.Services.ApplicationCommands;
 using Arona.Commands.Autocomplete;
 using Arona.Models.Api.Official;
 using Arona.Models.Components;
-using Arona.Models.DB;
 using Arona.Utility;
 using Arona.Services.Message;
 using Arona.Services;
+using NetCord.Gateway;
+using Guild = Arona.Models.DB.Guild;
 
 namespace Arona.Commands;
 
 [SlashCommand("cb_stats", "Clan battle stats of a player")]
-public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContext>
+public class ClanBattleStats(GatewayClient client, IApiClient apiClient, IDatabaseRepositoryService<Guild> repositoryService, IErrorService errorService) : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SubSlashCommand("season", "One season")]
     public async Task SeasonAsync(
@@ -26,9 +27,9 @@ public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContex
         var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
         await deferredMessage.SendAsync();
 
-        Guild.Exists(Context.Interaction);
+        repositoryService.GetOrCreate(Context.Interaction.Guild!.Id.ToString());
 
-        var self = await Program.Client!.Rest.GetCurrentUserAsync();
+        var self = await client.Rest.GetCurrentUserAsync();
         var botIconUrl = self.GetAvatarUrl()!.ToString();
 
         var split = accountData.Split(',');
@@ -46,7 +47,9 @@ public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContex
 
         try
         {
-            var data = await PlayerClanBattleSeasonStatsQuery.GetSingleAsync(new PlayerClanBattleSeasonStatsRequest(region, accountId));
+            var query = new PlayerClanBattleSeasonStatsQuery(apiClient.HttpClient);
+
+            var data = await query.GetAsync(new PlayerClanBattleSeasonStatsRequest(region, accountId));
             var seasonData = await ClanBattleSeasons.GetAsync();
 
             if (seasonNumber == -1)
@@ -87,7 +90,7 @@ public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContex
         }
         catch (Exception ex)
         {
-            await Program.LogError(ex);
+            await errorService.LogErrorAsync(ex);
             await deferredMessage.EditAsync("API error >_<");
         }
     }
@@ -101,9 +104,9 @@ public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContex
         var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
         await deferredMessage.SendAsync();
 
-        Guild.Exists(Context.Interaction);
+        repositoryService.GetOrCreate(Context.Interaction.Guild!.Id.ToString());
 
-        var self = await Program.Client!.Rest.GetCurrentUserAsync();
+        var self = await client.Rest.GetCurrentUserAsync();
         var botIconUrl = self.GetAvatarUrl()!.ToString();
 
         var split = accountData.Split(',');
@@ -121,7 +124,8 @@ public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContex
 
         try
         {
-            var data = await PlayerClanBattleSeasonStatsQuery.GetSingleAsync(new PlayerClanBattleSeasonStatsRequest(region, long.Parse(accountId)));
+            var query = new PlayerClanBattleSeasonStatsQuery(apiClient.HttpClient);
+            var data = await query.GetAsync(new PlayerClanBattleSeasonStatsRequest(region, long.Parse(accountId)));
             var seasonData = await ClanBattleSeasons.GetAsync();
 
             var filtered = data.Data[accountId].Seasons
@@ -186,12 +190,12 @@ public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContex
 
             var timeout = TimeSpan.FromSeconds(30);
             var cts = new CancellationTokenSource();
-            ComponentInactivityTimer.Timers[message.Id] = cts;
-            await ComponentInactivityTimer.StartAsync(message, timeout, cts);
+            ComponentInactivityTimer.Timers[message.Id.ToString()] = cts;
+            await ComponentInactivityTimer.StartAccountClanBattleSeasonDataInteractionsTimerAsync(message, timeout, cts);
         }
         catch (Exception ex)
         {
-            await Program.LogError(ex);
+            await errorService.LogErrorAsync(ex);
             await deferredMessage.EditAsync("API error >_<");
         }
     }

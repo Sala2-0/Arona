@@ -9,12 +9,12 @@ using Role = Arona.Models.Role;
 
 namespace Arona.Commands.Components;
 
-public class Modals : ComponentInteractionModule<ModalInteractionContext>
+public class Modals(IDatabaseRepository repository, IDatabaseRepositoryService<Guild> repositoryService, IErrorService errorService) : ComponentInteractionModule<ModalInteractionContext>
 {
     [ComponentInteraction("cookie form")]
     public async Task CookieFormAsync(long accountId, string region, int clanId)
     {
-        var guild = Guild.Find(Context.Interaction);
+        var guild = repositoryService.GetOrCreate(Context.Guild!.Id.ToString());
 
         var cookieInput = Context.Components
             .OfType<TextInput>()
@@ -37,12 +37,12 @@ public class Modals : ComponentInteractionModule<ModalInteractionContext>
                 throw new InvalidCredentialException("Player is too high ranking.");
 
             guild.Cookies[clanId] = cookieInput.Value;
-            Collections.Guilds.Update(guild);
+            repository.Guilds.Update(guild);
             await Context.Interaction.SendResponseAsync(InteractionCallback.Message($"Cookies set for clan `{clanId}`"));
         }
         catch (Exception ex)
         {
-            await Program.LogError(ex);
+            await errorService.LogErrorAsync(ex);
             await Context.Interaction.SendResponseAsync(InteractionCallback.Message($"Error >_<\n\n`{ex.Message}`"));
         }
     }

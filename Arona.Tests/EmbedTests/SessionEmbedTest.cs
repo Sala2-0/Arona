@@ -1,6 +1,6 @@
 ﻿using Arona.Models;
 using Arona.Models.Api.Clans;
-using Arona.Services.UpdateTasks.Submethods;
+using Arona.Services;
 
 namespace Arona.Tests.EmbedTests;
 
@@ -41,7 +41,7 @@ public class SessionEmbedTest
             },
         };
 
-        UpdateClansSubmethods.CalculateSessionStats(
+        ClanUpdateService.CalculateSessionStats(
             recentBattlesExample,
             out var wins,
             out var totalPoints

@@ -18,6 +18,11 @@
     <Folder Include="wwwroot\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="wwwroot\assets\index-CZKiicuo.css" />
+    <_ContentIncludedByDefault Remove="wwwroot\assets\index-DX_i2EaJ.js" />
+  </ItemGroup>
+
 	<Target Name="BuildTemplates" BeforeTargets="Build">
 		<Exec Command="npm run build" WorkingDirectory="../Arona.Templates"/>
 	</Target>

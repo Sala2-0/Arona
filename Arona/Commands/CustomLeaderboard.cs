@@ -11,7 +11,7 @@ using NetCord.Rest;
 namespace Arona.Commands;
 
 [SlashCommand("custom_leaderboard", "User defined leaderboard used to compare specific clans")]
-public class CustomLeaderboardCommand : ApplicationCommandModule<ApplicationCommandContext>
+public class CustomLeaderboardCommand(IDatabaseRepository repository, IDatabaseRepositoryService<User> repositoryService, IApiClient apiClient, IErrorService errorService) : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SubSlashCommand("set", "Set the region for the leaderboard")]
     public async Task SetAsync(
@@ -28,7 +28,7 @@ public class CustomLeaderboardCommand : ApplicationCommandModule<ApplicationComm
 
         using var key = new DatabaseService.DatabaseWriteKey(userId);
 
-        var user = User.Find(userId);
+        var user = repositoryService.GetOrCreate(userId);
 
         try
         {
@@ -46,13 +46,13 @@ public class CustomLeaderboardCommand : ApplicationCommandModule<ApplicationComm
                 Clans = []
             };
 
-            Collections.Users.Update(user);
+            repository.Users.Update(user);
 
             await deferredMessage.EditAsync($"Created a new leaderboard for region '{targetRegion.ToString().ToUpper()}'");
         }
         catch (Exception ex)
         {
-            await Program.LogError(ex);
+            await errorService.LogErrorAsync(ex);
             await deferredMessage.EditAsync($"❌ Error >_<\n\n{ex.Message}");
         }
     }
@@ -73,7 +73,7 @@ public class CustomLeaderboardCommand : ApplicationCommandModule<ApplicationComm
 
         using var key = new DatabaseService.DatabaseWriteKey(userId);
 
-        var user = User.Find(userId);
+        var user = repositoryService.GetOrCreate(userId);
 
         if (user.CustomLeaderboard == null)
         {
@@ -98,7 +98,7 @@ public class CustomLeaderboardCommand : ApplicationCommandModule<ApplicationComm
         {
             var clanTagList = clanTags.Split(' ').ToList();
 
-            var query = new ClanListItemQuery(ApiClient.Instance);
+            var query = new ClanListItemQuery(apiClient.HttpClient);
 
             foreach (var tag in clanTagList)
             {
@@ -122,11 +122,11 @@ public class CustomLeaderboardCommand : ApplicationCommandModule<ApplicationComm
                 await Task.Delay(500);
             }
 
-            Collections.Users.Update(user);
+            repository.Users.Update(user);
         }
         catch (Exception ex)
         {
-            await Program.LogError(ex);
+            await errorService.LogErrorAsync(ex);
             await deferredMessage.EditAsync($"❌ Error >_<\n\n{ex.Message}");
         }
     }
@@ -137,7 +137,7 @@ public class CustomLeaderboardCommand : ApplicationCommandModule<ApplicationComm
         var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
         await deferredMessage.SendAsync();
 
-        var user = User.Find(Context.Interaction.User.Id.ToString());
+        var user = repositoryService.GetOrCreate(Context.Interaction.User.Id.ToString());
 
         if (user.CustomLeaderboard == null || user.CustomLeaderboard.Clans.Count == 0)
         {
@@ -148,7 +148,7 @@ public class CustomLeaderboardCommand : ApplicationCommandModule<ApplicationComm
         var clanInfo = new List<ClanView>();
         var failedClans = new List<int>();
 
-        var clanViewQuery = new ClanViewQuery(ApiClient.Instance);
+        var clanViewQuery = new ClanViewQuery(apiClient.HttpClient);
         foreach (var clanId in user.CustomLeaderboard.Clans)
         {
             try
@@ -164,7 +164,7 @@ public class CustomLeaderboardCommand : ApplicationCommandModule<ApplicationComm
             }
             catch (Exception ex)
             {
-                await Program.LogError(ex);
+                await errorService.LogErrorAsync(ex);
                 failedClans.Add(clanId);
             }
         }

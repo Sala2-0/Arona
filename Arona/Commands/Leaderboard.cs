@@ -6,12 +6,13 @@ using NetCord.Services.ApplicationCommands;
 using Arona.Models;
 using Arona.Models.DB;
 using Arona.Models.Api.Clans;
+using Arona.Services;
 using Arona.Utility;
 using Arona.Services.Message;
 
 namespace Arona.Commands;
 
-public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
+public class Leaderboard(IDatabaseRepositoryService<Guild> repositoryService, IApiClient apiClient, IErrorService errorService) : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("leaderboard", "Latest clan battles season leaderboard. Default: Hurricane I (Global) [Ratings]")]
     public async Task LeaderboardAsync(
@@ -31,7 +32,7 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
         var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
         await deferredMessage.SendAsync();
 
-        Guild.Exists(Context.Interaction);
+        repositoryService.GetOrCreate(Context.Guild!.Id.ToString());
 
         if (league == League.Hurricane && division is Division.II or Division.III)
         {
@@ -41,7 +42,8 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
 
         try
         {
-            var data = await LadderStructureByRealmQuery.GetSingleAsync(
+            var query = new LadderStructureByRealmQuery(apiClient.HttpClient);
+            var data = await query.GetAsync(
                 new LadderStructureByRealmRequest(leaderboardCommandRealm.ToString().ToLower(), (int)league, (int)division)
             );
 
@@ -119,7 +121,7 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
         }
         catch (Exception ex)
         {
-            await Program.LogError(ex);
+            await errorService.LogErrorAsync(ex);
             await deferredMessage.EditAsync("❌ Error fetching leaderboard data from API.");
         }
     }

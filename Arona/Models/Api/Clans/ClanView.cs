@@ -21,12 +21,6 @@ public class ClanViewQuery(HttpClient client) : QueryBase<ClanViewRequest, ClanV
 
         return baseData.ClanView;
     }
-
-    public static async Task<ClanViewRoot> GetSingleAsync(ClanViewRequest request)
-    {
-        var apiQuery = new ClanViewQuery(ApiClient.Instance);
-        return await apiQuery.GetAsync(request);
-    }
 }
 
 public class ClanView

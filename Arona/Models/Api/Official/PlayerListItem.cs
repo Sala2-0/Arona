@@ -9,9 +9,6 @@ internal class PlayerListItemQuery(HttpClient client) : QueryBase<PlayerListItem
 {
     public override async Task<ResponseArray<PlayerListItem>> GetAsync(PlayerListItemRequest req)
         => await SendAndDeserializeAsync($"https://api.worldofwarships.{req.Region}/wows/account/list/?application_id={Config.WgApi}&search={req.SearchQuery}");
-
-    public static async Task<ResponseArray<PlayerListItem>> GetSingleAsync(PlayerListItemRequest request) =>
-        await new PlayerListItemQuery(ApiClient.Instance).GetAsync(request);
 }
 
 /// <summary>

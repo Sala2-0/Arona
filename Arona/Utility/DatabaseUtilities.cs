@@ -4,6 +4,6 @@ namespace Arona.Utility;
 
 internal static class DatabaseUtilities
 {
-    public static Guild[] GetGuildsForClan(int clanId) =>
-        Collections.Guilds.Find(guild => guild.Clans.Contains(clanId)).ToArray();
+    public static Guild[] GetGuildsForClan(IDatabaseRepository repository, int clanId) =>
+        repository.Guilds.Find(guild => guild.Clans.Contains(clanId)).ToArray();
 }

@@ -1,15 +1,22 @@
-﻿namespace Arona.Models;
+﻿using NetCord.Gateway;
 
-internal static class Emojis
+namespace Arona.Models;
+
+public interface IEmojiService
+{
+    public Task InitializeAsync();
+}
+
+internal class EmojiService(GatewayClient client) : IEmojiService
 {
     public static string StageProgressVictory { get; private set; }
     public static string StageProgressDefeat { get; private set; }
     public static string StagePromoted { get; private set; }
     public static string StageDemoted { get; private set; }
 
-    public static async Task InitializeAsync()
+    public async Task InitializeAsync()
     {
-        var emojis = await Program.Client!.Rest.GetApplicationEmojisAsync(Program.Client.Id);
+        var emojis = await client!.Rest.GetApplicationEmojisAsync(client.Id);
 
         StageProgressVictory = $"<:{nameof(StageProgressVictory)}:{emojis.First(x => x.Name == nameof(StageProgressVictory)).Id.ToString()}>";
         StageProgressDefeat = $"<:{nameof(StageProgressDefeat)}:{emojis.First(x => x.Name == nameof(StageProgressDefeat)).Id.ToString()}>";

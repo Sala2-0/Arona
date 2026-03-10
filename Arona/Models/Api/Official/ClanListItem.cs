@@ -9,12 +9,6 @@ internal class ClanListItemQuery(HttpClient client) : QueryBase<ClanListItemRequ
 {
     public override async Task<ResponseArray<ClanListItem>> GetAsync(ClanListItemRequest req)
         => await SendAndDeserializeAsync($"https://api.worldofwarships.{req.Region}/wows/clans/list/?application_id={Config.WgApi}&search={req.SearchQuery}");
-
-    public static async Task<ResponseArray<ClanListItem>> GetSingleAsync(ClanListItemRequest request)
-    {
-        var apiQuery = new ClanListItemQuery(ApiClient.Instance);
-        return await apiQuery.GetAsync(request);
-    }
 }
 
 /// <summary>

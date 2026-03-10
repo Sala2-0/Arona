@@ -11,12 +11,34 @@ using Arona.Models.DB;
 using Arona.Models.Api.Clans;
 using Arona.Services.Message;
 using Arona.Services;
-using Arona.Services.UpdateTasks;
+using NetCord.Gateway;
 
 namespace Arona.Commands;
 
 public class OwnerCommands : CommandModule<CommandContext>
 {
+    private readonly GatewayClient _client;
+    private readonly IPrivateMessageService _privateMessageService;
+    private readonly IApiClient _apiClient;
+    private readonly ClanUpdateService _clanUpdateService;
+    private IDatabaseRepository _repository;
+    private LiteDatabase _database;
+
+    public OwnerCommands(GatewayClient client,
+        IDatabaseRepository repository,
+        IPrivateMessageService privateMessageService,
+        IApiClient apiClient,
+        LiteDatabase db,
+        ClanUpdateService clanUpdateService)
+    {
+        _client = client;
+        _privateMessageService = privateMessageService;
+        _apiClient = apiClient;
+        _clanUpdateService = clanUpdateService;
+        _repository = repository;
+        _database = db;
+    }
+    
     [Command("announce")]
     public async Task OwnerAsync(
         [CommandParameter(Remainder = true)] string content
@@ -24,12 +46,12 @@ public class OwnerCommands : CommandModule<CommandContext>
     {
         if (!Owner.Check(Context.User.Id)) return;
 
-        var self = await Program.Client!.Rest.GetGuildUserAsync(
+        var self = await _client!.Rest.GetGuildUserAsync(
             guildId: Context.Guild!.Id,
-            userId: (await Program.Client.Rest.GetCurrentUserAsync()).Id
+            userId: (await _client.Rest.GetCurrentUserAsync()).Id
         );
 
-        var guilds = Collections.Guilds.FindAll().ToList();
+        var guilds = _repository.Guilds.FindAll().ToList();
 
         var attachments = Context.Message.Attachments;
 
@@ -39,28 +61,27 @@ public class OwnerCommands : CommandModule<CommandContext>
             {
                 var parsedChannelId = ulong.Parse(guild.ChannelId);
 
-                var channel = await Program.Client.Rest.GetChannelAsync(parsedChannelId) as TextGuildChannel;
+                var channel = await _client.Rest.GetChannelAsync(parsedChannelId) as TextGuildChannel;
 
                 var permissions = self.GetChannelPermissions(
-                    guild: await Program.Client.Rest.GetGuildAsync(Context.Guild.Id),
+                    guild: await _client.Rest.GetGuildAsync(Context.Guild.Id),
                     channel: channel!
                 );
 
                 // Arona har inte tillstånd att skicka meddelanden
                 if ((permissions & Permissions.SendMessages) == 0)
                 {
-                    await PrivateMessageService.SendNoPermissionMessageAsync(ulong.Parse(guild.Id), channel!.Name);
+                    await _privateMessageService.SendNoPermissionMessageAsync(ulong.Parse(guild.Id), channel!.Name);
                     continue;
                 }
 
                 if (attachments.Count > 0)
                 {
-                    using var client = new HttpClient();
                     var files = new List<AttachmentProperties>();
 
                     foreach (var a in attachments)
                     {
-                        var data = await client.GetByteArrayAsync(a.Url);
+                        var data = await _apiClient.HttpClient.GetByteArrayAsync(a.Url);
                         files.Add(new AttachmentProperties(a.FileName, new MemoryStream(data)));
                     }
 
@@ -68,13 +89,13 @@ public class OwnerCommands : CommandModule<CommandContext>
                         .WithContent(content)
                         .WithAttachments(files);
 
-                    await Program.Client.Rest.SendMessageAsync(
+                    await _client.Rest.SendMessageAsync(
                         channelId: parsedChannelId,
                         message: msgProperties
                     );
                 }
                 else
-                    await Program.Client.Rest.SendMessageAsync(
+                    await _client.Rest.SendMessageAsync(
                         channelId: parsedChannelId,
                         message: content
                     );
@@ -82,7 +103,7 @@ public class OwnerCommands : CommandModule<CommandContext>
             // Arona har inte tillgång/kan inte se kanalen
             catch (Exception ex)
             {
-                await PrivateMessageService.SendNoAccessMessageAsync(ulong.Parse(guild.Id), ulong.Parse(guild.ChannelId));
+                await _privateMessageService.SendNoAccessMessageAsync(ulong.Parse(guild.Id), ulong.Parse(guild.ChannelId));
             }
         }
     }
@@ -92,18 +113,18 @@ public class OwnerCommands : CommandModule<CommandContext>
     {
         if (!Owner.Check(Context.User.Id)) return;
 
-        var app = await Program.Client!.Rest.GetApplicationAsync(Config.ApplicationId);
+        var app = await _client!.Rest.GetApplicationAsync(Config.ApplicationId);
 
-        var totalMembers = Program.Client.Cache.Guilds.Values.Sum(g => g.UserCount);
+        var totalMembers = _client.Cache.Guilds.Values.Sum(g => g.UserCount);
 
         var message = $"**Statistik för Arona:**\n" +
-                         $"- Servrar i cache: {Program.Client.Cache.Guilds.Count}\n" +
+                         $"- Servrar i cache: {_client.Cache.Guilds.Count}\n" +
                          $"- Officiellt antal servrar: {app.ApproximateGuildCount ?? 0}\n" +
                          $"- Användarinstallationer: {app.ApproximateUserInstallCount ?? 0}\n" +
                          $"- Total räckvidd (medlemmar): {totalMembers}\n\n" +
                          $"**Servrar:**";
 
-        foreach (var guild in Program.Client.Cache.Guilds.Values)
+        foreach (var guild in _client.Cache.Guilds.Values)
             message += $"\n`{guild.Name}` (ID: {guild.Id}) - {guild.UserCount} medlemmar";
 
         await Context.Message.ReplyAsync(message);
@@ -119,9 +140,8 @@ public class OwnerCommands : CommandModule<CommandContext>
 
         try
         {
-            using var client = new HttpClient();
-
-            var data = await LadderStructureBySeasonQuery.GetSingleAsync(
+            var query = new  LadderStructureBySeasonQuery(_apiClient.HttpClient);
+            var data = await query.GetAsync(
                 new LadderStructureBySeasonRequest(season, league, division)
             );
 
@@ -157,7 +177,7 @@ public class OwnerCommands : CommandModule<CommandContext>
 
         try
         {
-            Program.DB.Dispose();
+            _database.Dispose();
 
             await using var fileStream = File.OpenRead(Config.Database);
             using var memoryStream = new MemoryStream();
@@ -176,8 +196,8 @@ public class OwnerCommands : CommandModule<CommandContext>
         }
         finally
         {
-            Program.DB = new LiteDatabase(Path.Combine(AppContext.BaseDirectory, Config.Database));
-            Collections.Initialize(Program.DB);
+            _database = new LiteDatabase(Path.Combine(AppContext.BaseDirectory, Config.Database));
+            _repository = new DatabaseRepository(_database);
 
             DatabaseService.IsDatabaseUpdating = false;
         }
@@ -195,7 +215,7 @@ public class OwnerCommands : CommandModule<CommandContext>
 
         try
         {
-            Collections.Ships.DeleteAll();
+            _repository.Ships.DeleteAll();
 
             using var client = new HttpClient();
             var res = await client.GetAsync("https://clans.worldofwarships.eu/api/encyclopedia/vehicles_info/");
@@ -216,7 +236,7 @@ public class OwnerCommands : CommandModule<CommandContext>
             {
                 if (!filtered.ContainsKey(ship.Key)) continue;
 
-                Collections.Ships.Insert(new Ship
+                _repository.Ships.Insert(new Ship
                 {
                     Id = ship.Value.Id,
                     Name = ship.Value.Name,
@@ -250,7 +270,7 @@ public class OwnerCommands : CommandModule<CommandContext>
 
         try
         {
-            var clans = Collections.Clans.FindAll().ToList();
+            var clans = _repository.Clans.FindAll().ToList();
 
             foreach (var clan in clans)
             {
@@ -275,7 +295,7 @@ public class OwnerCommands : CommandModule<CommandContext>
         if (!Owner.Check(Context.User.Id)) return;
 
         await Context.Message.ReplyAsync("Uppdaterar data för klaner...");
-        await UpdateTasks.UpdateClansAsync(notifyGuilds: false);
+        await _clanUpdateService.UpdateClansAsync(notifyGuilds: false);
     }
 }
 

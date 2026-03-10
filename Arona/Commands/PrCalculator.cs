@@ -5,12 +5,17 @@ using NetCord.Services.ApplicationCommands;
 using Arona.Commands.Autocomplete;
 using Arona.Services.Message;
 using Arona.Models.DB;
+using Arona.Services;
 using Arona.Utility;
 
 namespace Arona.Commands;
 
 [SlashCommand("pr_calculator", "Calculate PR")]
-public class PrCalculator : ApplicationCommandModule<ApplicationCommandContext>
+public class PrCalculator(
+    IDatabaseRepository repository, 
+    IDatabaseRepositoryService<Guild> databaseRepositoryService, 
+    IApiClient apiClient,
+    IErrorService errorService) : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SubSlashCommand("single", "PR of one ship for 1 game")]
     public async Task SingleAsync(
@@ -27,7 +32,7 @@ public class PrCalculator : ApplicationCommandModule<ApplicationCommandContext>
         GameOutcome outcome
     )
     {
-        Guild.Exists(Context.Interaction);
+        databaseRepositoryService.GetOrCreate(Context.Guild!.Id.ToString());
 
         string[] split = shipData.Split(',');
         
@@ -38,7 +43,7 @@ public class PrCalculator : ApplicationCommandModule<ApplicationCommandContext>
             avgKills = double.Parse(split[4]),
             winRate = double.Parse(split[5]);
         
-        var res = await ApiClient.Instance.GetAsync($"https://api.worldofwarships.eu/wows/encyclopedia/ships/?application_id={Config.WgApi}&ship_id={id}");
+        var res = await apiClient.HttpClient.GetAsync($"https://api.worldofwarships.eu/wows/encyclopedia/ships/?application_id={Config.WgApi}&ship_id={id}");
         JsonElement data = JsonDocument.Parse(await res.Content.ReadAsStringAsync())
             .RootElement
             .GetProperty("data")
@@ -76,7 +81,7 @@ public class PrCalculator : ApplicationCommandModule<ApplicationCommandContext>
         var deferredMessage = new DeferredMessage{ Interaction = Context.Interaction};
         await deferredMessage.SendAsync();
 
-        Guild.Exists(Context.Interaction);
+        databaseRepositoryService.GetOrCreate(Context.Guild!.Id.ToString());
 
         string[] sessionData = sessionStr.Split('_');
 
@@ -91,7 +96,7 @@ public class PrCalculator : ApplicationCommandModule<ApplicationCommandContext>
             var res = await client.GetAsync("https://api.wows-numbers.com/personal/rating/expected/json/");
             JsonElement doc = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement.GetProperty("data");
 
-            List<Ship> allShips = Collections.Ships.FindAll().ToList();
+            List<Ship> allShips = repository.Ships.FindAll().ToList();
 
             if (allShips.Count == 0)
                 throw new ApplicationException("Ship cache is empty, contact developer for update.");
@@ -166,17 +171,17 @@ public class PrCalculator : ApplicationCommandModule<ApplicationCommandContext>
         }
         catch(ApplicationException appEx)
         {
-            await Program.LogError(appEx);
+            await errorService.LogErrorAsync(appEx);
             await deferredMessage.EditAsync($"Application error.\n\n`{appEx.Message}`");
         }
         catch (InvalidDataException invalidEx)
         {
-            await Program.LogError(invalidEx);
+            await errorService.LogErrorAsync(invalidEx);
             await deferredMessage.EditAsync($"Invalid input format.\n\n`{invalidEx.Message}`");
         }
         catch (Exception ex)
         {
-            await Program.LogError(ex);
+            await errorService.LogErrorAsync(ex);
             await deferredMessage.EditAsync("API LogError! >_<");
         }
     }

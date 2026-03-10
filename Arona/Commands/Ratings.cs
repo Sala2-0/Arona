@@ -4,14 +4,16 @@ using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using Arona.Commands.Autocomplete;
 using Arona.Models.Api.Clans;
-using Arona.Models.DB;
 using Arona.Services.Message;
 using Arona.Utility;
 using Arona.Models;
+using Arona.Services;
+using NetCord.Gateway;
+using Guild = Arona.Models.DB.Guild;
 
 namespace Arona.Commands;
 
-public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
+public class Ratings(GatewayClient client, IDatabaseRepositoryService<Guild> repositoryService, IApiClient apiClient, IErrorService errorService) : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("ratings", "Get detailed information about a clans current ratings on current CB season")]
     public async Task RatingsAsync(
@@ -22,18 +24,19 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
         var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
         await deferredMessage.SendAsync();
 
-        Guild.Exists(Context.Interaction);
+        repositoryService.GetOrCreate(Context.Guild!.Id.ToString());
 
-        var self = await Program.Client!.Rest.GetCurrentUserAsync();
+        var self = await client.Rest.GetCurrentUserAsync();
         var botIconUrl = self.GetAvatarUrl()!.ToString();
 
         string[] split = clanIdAndRegion.Split(',');
         string region = split[1];
         int clanId = int.Parse(split[0]);
 
-        Task<ClanViewRoot> generalTask = ClanViewQuery.GetSingleAsync(new ClanViewRequest(region, clanId));
+        var query = new ClanViewQuery(apiClient.HttpClient);
+        Task<ClanViewRoot> generalTask = query.GetAsync(new ClanViewRequest(region, clanId));
 
-        var ladderStructureQuery = new LadderStructureByClanQuery(ApiClient.Instance);
+        var ladderStructureQuery = new LadderStructureByClanQuery(apiClient.HttpClient);
         Task<LadderStructure[]> 
             globalRankTask = ladderStructureQuery.GetAsync(new LadderStructureByClanRequest(clanId, region)),
             regionRankTask = ladderStructureQuery.GetAsync(new LadderStructureByClanRequest(clanId, region, ClanUtils.ToRealm(region)));
@@ -105,7 +108,7 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
             clan.RegionRank = data.Region.Where(c => c.Id == clanId)
                 .Select(c => c.Rank).FirstOrDefault();
 
-            var response = await ApiClient.PostToServiceAsync("ratings", JsonSerializer.Serialize(clan));
+            var response = await apiClient.PostToServiceAsync("ratings", JsonSerializer.Serialize(clan));
             response.EnsureSuccessStatusCode();
 
             var imageBytes = await response.Content.ReadAsByteArrayAsync();
@@ -118,7 +121,7 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
         }
         catch (Exception ex)
         {
-            await Program.LogError(ex);
+            await errorService.LogErrorAsync(ex);
             await deferredMessage.EditAsync("❌ Error fetching clan data from API.");
         }
     }

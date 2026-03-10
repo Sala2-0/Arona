@@ -1,73 +1,84 @@
-﻿using Arona.ClanEvents;
-using Arona.Models;
-using Arona.Models.Api.Clans;
-using Arona.Services;
-using Arona.Services.UpdateTasks;
-using Arona.Utility;
-using NetCord.Rest;
+﻿using System.Text.Json;
 using System.Security.Authentication;
-using Arona.Services.UpdateTasks.Submethods;
+using NetCord.Rest;
+using NetCord;
+using NetCord.Gateway;
+using Arona.ClanEvents;
+using Arona.Models.Api.Clans;
+using Arona.Models.DB;
+using Arona.Services;
+using Arona.Utility;
+using Arona.Models.Dto;
+using Arona.Services.Message;
+using Microsoft.Extensions.Hosting;
 
 namespace Arona.ClanEventHandlers;
 
-public class DiscordBattleDetectedHandler
+public class DiscordBattleDetectedHandler : IEventHandler<BattleDetected>, IHostedService
 {
-    public static void Register() => ClanEventBus.BattleDetected += OnBattleDetectedAsync;
+    private readonly IClanEventBus _eventBus;
+    private readonly GatewayClient _client;
+    private readonly IApiClient _apiClient;
+    private readonly IChannelMessageService _channelMessageService;
+    private readonly IDatabaseRepository _repository;
+    private readonly IErrorService _errorService;
 
-    private static async Task OnBattleDetectedAsync(BattleDetected evt)
+    public DiscordBattleDetectedHandler(
+        IClanEventBus eventBus,
+        GatewayClient client,
+        IApiClient apiClient,
+        IChannelMessageService channelMessageService,
+        IDatabaseRepository repository,
+        IErrorService errorService)
     {
-        var guilds = DatabaseUtilities.GetGuildsForClan(evt.ClanId);
-        var botIconUrl = await BotUtilities.GetBotIconUrl();
+        _eventBus = eventBus;
+        _client = client;
+        _apiClient = apiClient;
+        _channelMessageService = channelMessageService;
+        _repository = repository;
+        _errorService = errorService;
+    }
 
-        var ladderBattlesQuery = new LadderBattlesQuery(ApiClient.Instance);
+    public async Task OnEventAsync(BattleDetected evt)
+    {
+        var guilds = DatabaseUtilities.GetGuildsForClan(_repository, evt.ClanId);
+
+        var ladderBattlesQuery = new LadderBattlesQuery(_apiClient.HttpClient);
 
         foreach (var guild in guilds)
         {
-            var embed = new BattleEmbed
+            var battleId = $"{evt.ClanId}_{evt.BattleTime}";
+            
+            var dto = new BattleResultDto
             {
-                IconUrl = botIconUrl,
-                BattleTime = evt.BattleTime,
-                ClanFullName = $"[{evt.ClanTag}] {evt.ClanName}",
-                TeamNumber = evt.TeamNumber,
-
-                League = evt.League,
+                ClanName = evt.ClanName,
+                ClanTag = evt.ClanTag,
                 Division = evt.Division,
                 DivisionRating = evt.DivisionRating,
-                Stage = evt.Stage,
-
-                GlobalRank = evt.GlobalRank,
-                RegionRank = evt.RegionRank,
-                SuccessFactor = evt.SuccessFactor,
-
+                League = evt.League,
                 IsVictory = evt.IsVictory,
                 PointsDelta = evt.PointsDelta,
-                StageProgressOutcome = evt.StageProgressOutcome
+                Stage = evt.Stage != null ? new StageDto(evt.Stage.Type, evt.Stage.Progress) : null,
             };
-
+            
             if (guild.Cookies.TryGetValue(evt.ClanId, out var cookie))
             {
                 try
                 {
-                    await UpdateClansSubmethods.ValidateCookie(cookie, evt.Region, evt.ClanId, evt.ClanTag);
+                    await ClanUtils.ValidateCookie(cookie, evt.Region, evt.ClanId, evt.ClanTag);
 
-                    var detailedData = (await ladderBattlesQuery.GetAsync(
+                    var lineupData = (await ladderBattlesQuery.GetAsync(
                             new LadderBattlesRequest(evt.Region, evt.TeamNumber, cookie))
                         )[0];
 
-                    var detailedEmbed = new DetailedBattleEmbed
-                    {
-                        IconUrl = botIconUrl,
-                        Data = detailedData,
-                        BattleTime = evt.BattleTime,
-                        IsVictory = evt.IsVictory
-                    }.CreateEmbed();
+                    dto.IsLineupDataAvailable = true;
 
-                    await UpdateTasks.SendMessageAsync(ulong.Parse(guild.Id),ulong.Parse(guild.ChannelId), detailedEmbed, evt.BattleTime);
+                    RecentInteractions.LineUpData[battleId] = LineupDto.CreateLineupDto(lineupData, dto.IsVictory);
                 }
                 catch (InvalidCredentialException ex)
                 {
-                    await Program.LogError(ex);
-                    await Program.Client!.Rest
+                    await _errorService.LogErrorAsync(ex);
+                    await _client!.Rest
                         .SendMessageAsync(ulong.Parse(guild.ChannelId), new MessageProperties
                         {
                             Content = "Error sending detailed clan battle info >_<\n\n" +
@@ -75,15 +86,52 @@ public class DiscordBattleDetectedHandler
                         });
 
                     guild.Cookies.Remove(evt.ClanId);
-
-                    // Send regular embed instead since detailed data failed
-                    await UpdateTasks.SendMessageAsync(ulong.Parse(guild.Id), ulong.Parse(guild.ChannelId), embed.CreateEmbed(), evt.BattleTime);
                 }
             }
-            else
+            
+            try
             {
-                await UpdateTasks.SendMessageAsync(ulong.Parse(guild.Id), ulong.Parse(guild.ChannelId), embed.CreateEmbed(), evt.BattleTime);
+                var response = await _apiClient.PostToServiceAsync("BattleResult", JsonSerializer.Serialize(dto));
+                response.EnsureSuccessStatusCode();
+                    
+                var imageBytes = await response.Content.ReadAsByteArrayAsync();
+                using var stream = new MemoryStream(imageBytes);
+                
+                var button = new ButtonProperties(
+                    customId: $"battle result lineup data:{battleId}",
+                    label: "View lineup data",
+                    style: ButtonStyle.Primary
+                );
+
+                var messageProperties = new MessageProperties
+                {
+                    Attachments = [new AttachmentProperties("BattleResult.png", stream)],
+                    Components = [new ActionRowProperties([button])]
+                };
+                    
+                await _channelMessageService.SendAfterTimeoutAsync(ulong.Parse(guild.Id), ulong.Parse(guild.ChannelId), messageProperties, evt.BattleTime);
+                
+                var timeout = TimeSpan.FromSeconds(30);
+                var cts = new CancellationTokenSource();
+                ComponentInactivityTimer.Timers[battleId] = cts;
+                await ComponentInactivityTimer.StartLineupDataTimerAsync(battleId, timeout, cts);
+            }
+            catch (Exception ex)
+            {
+                await _errorService.LogErrorAsync(ex);
             }
         }
+    }
+    
+    public Task StartAsync(CancellationToken cancellationToken) 
+    {
+        _eventBus.BattleDetected += OnEventAsync;
+        return Task.CompletedTask;
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken) 
+    {
+        _eventBus.BattleDetected -= OnEventAsync;
+        return Task.CompletedTask;
     }
 }

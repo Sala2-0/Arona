@@ -10,12 +10,6 @@ internal class PlayerClanBattleSeasonStatsQuery(HttpClient client) : QueryBase<P
 {
     public override async Task<ResponseObject<PlayerClanBattleSeasonStats>> GetAsync(PlayerClanBattleSeasonStatsRequest req) =>
         await SendAndDeserializeAsync($"https://api.worldofwarships.{req.Region}/wows/clans/seasonstats/?application_id={Config.WgApi}&account_id={req.AccountId}");
-
-    public static async Task<ResponseObject<PlayerClanBattleSeasonStats>> GetSingleAsync(PlayerClanBattleSeasonStatsRequest request)
-    {
-        var apiQuery = new PlayerClanBattleSeasonStatsQuery(ApiClient.Instance);
-        return await apiQuery.GetAsync(request);
-    }
 }
 
 /// <summary>

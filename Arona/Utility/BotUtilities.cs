@@ -1,10 +1,12 @@
-﻿namespace Arona.Utility;
+﻿using NetCord.Gateway;
 
-internal class BotUtilities
+namespace Arona.Utility;
+
+internal static class BotUtilities
 {
-    public static async Task<string> GetBotIconUrl()
+    public static async Task<string> GetBotIconUrl(GatewayClient client)
     {
-        var self = await Program.Client!.Rest.GetCurrentUserAsync();
+        var self = await client.Rest.GetCurrentUserAsync();
         return self.GetAvatarUrl()!.ToString();
     }
 }

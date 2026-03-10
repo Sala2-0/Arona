@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using System.Text.Json;
 using Arona.Models.Api.Clans;
-using Arona.Utility;
+using Arona.Services;
 
 namespace Arona.Tests.ApiTests.Clans;
 
@@ -75,7 +75,8 @@ public class LadderStructureTest
     [Trait("Category", "Integration")]
     public async Task GetAsync_LadderStructureByRealmRequestApi_ShouldReturnCorrectRealm()
     {
-        var query = new LadderStructureByRealmQuery(ApiClient.Instance);
+        var apiClient = new ApiClient(new HttpClient());
+        var query = new LadderStructureByRealmQuery(apiClient.HttpClient);
 
         const string targetRealm = "eu",
             expectedRealm = "eu";
@@ -83,7 +84,7 @@ public class LadderStructureTest
         var result = await query.GetAsync(new LadderStructureByRealmRequest(targetRealm, 0, 1));
 
         Assert.NotNull(result);
-        Assert.NotEqual(0, result.Length);
+        Assert.NotEmpty(result);
         Assert.True(result.All(c => c.Realm == expectedRealm),
             $"Expected region '{expectedRealm}' but got '{targetRealm}'");
     }
@@ -92,7 +93,8 @@ public class LadderStructureTest
     [Trait("Category", "Integration")]
     public async Task GetAsync_LadderStructureBySeasonRequestApi_ShouldReturnValidData()
     {
-        var query = new LadderStructureBySeasonQuery(ApiClient.Instance);
+        var apiClient = new ApiClient(new HttpClient());
+        var query = new LadderStructureBySeasonQuery(apiClient.HttpClient);
 
         const int targetSeasonNumber = 32,
             expectedSeasonNumber = 32;
@@ -100,6 +102,6 @@ public class LadderStructureTest
         var result = await query.GetAsync(new LadderStructureBySeasonRequest(targetSeasonNumber, 0, 1));
 
         Assert.NotNull(result);
-        Assert.NotEqual(0, result.Length);
+        Assert.NotEmpty(result);
     }
 }

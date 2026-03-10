@@ -5,7 +5,7 @@ using Arona.Models.DB;
 
 namespace Arona.Commands.Autocomplete;
 
-internal class BuildAutocomplete : IAutocompleteProvider<AutocompleteInteractionContext>
+internal class BuildAutocomplete(IDatabaseRepository repository) : IAutocompleteProvider<AutocompleteInteractionContext>
 {
     public ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(
         ApplicationCommandInteractionDataOption option,
@@ -13,7 +13,7 @@ internal class BuildAutocomplete : IAutocompleteProvider<AutocompleteInteraction
     {
         var guildId = context.Interaction.GuildId.ToString();
 
-        var guild = Collections.Guilds.FindOne(g => g.Id == guildId);
+        var guild = repository.Guilds.FindOne(g => g.Id == guildId);
 
         if (guild == null || guild.Builds.Count == 0)
         {

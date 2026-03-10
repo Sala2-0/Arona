@@ -1,11 +1,13 @@
-﻿using NetCord;
+﻿using System.Text.Json;
+using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ComponentInteractions;
 using Arona.Services;
+using NetCord.Gateway;
 
 namespace Arona.Commands.Components;
 
-public class ButtonModule : ComponentInteractionModule<ButtonInteractionContext>
+public class ButtonModule(GatewayClient client, IApiClient apiClient, IErrorService errorService) : ComponentInteractionModule<ButtonInteractionContext>
 {
     [ComponentInteraction("button-id")]
     public async Task Button(string data)
@@ -25,10 +27,10 @@ public class ButtonModule : ComponentInteractionModule<ButtonInteractionContext>
     [ComponentInteraction("account season data")]
     public async Task AccountSeasonDataAsync(ulong userId, string title, int page)
     {
-        var self = await Program.Client!.Rest.GetCurrentUserAsync();
+        var self = await client.Rest.GetCurrentUserAsync();
         var botIconUrl = self.GetAvatarUrl()!.ToString();
 
-        if (ComponentInactivityTimer.Timers.TryGetValue(Context.Message.Id, out var existingCts))
+        if (ComponentInactivityTimer.Timers.TryGetValue(Context.Message.Id.ToString(), out var existingCts))
         {
             await existingCts.CancelAsync();
             existingCts.Dispose();
@@ -63,7 +65,45 @@ public class ButtonModule : ComponentInteractionModule<ButtonInteractionContext>
 
         var timeout = TimeSpan.FromSeconds(30);
         var cts = new CancellationTokenSource();
-        ComponentInactivityTimer.Timers[Context.Message.Id] = cts;
-        await ComponentInactivityTimer.StartAsync(Context.Message, timeout, cts);
+        ComponentInactivityTimer.Timers[Context.Message.Id.ToString()] = cts;
+        await ComponentInactivityTimer.StartAccountClanBattleSeasonDataInteractionsTimerAsync(Context.Message, timeout, cts);
+    }
+
+    [ComponentInteraction("battle result lineup data")]
+    public async Task BattleResultLineupDataAsync(string battleId)
+    {
+        RecentInteractions.LineUpData.TryGetValue(battleId, out var lineupData);
+
+        if (lineupData == null)
+        {
+            await Context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
+            {
+                Content = "Lineup data unavailable"
+            }));
+
+            return;
+        }
+        
+        try
+        {
+            var response = await apiClient.PostToServiceAsync("Lineup", JsonSerializer.Serialize(lineupData));
+            response.EnsureSuccessStatusCode();
+                    
+            var imageBytes = await response.Content.ReadAsByteArrayAsync();
+            using var stream = new MemoryStream(imageBytes);
+            
+            await Context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
+            {
+                Attachments = [new AttachmentProperties("Lineup.png", stream)],
+            }));
+        }
+        catch (Exception ex)
+        {
+            await errorService.LogErrorAsync(ex);
+            await Context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
+            {
+                Content = "Internal Error >_<"
+            }));
+        }
     }
 }

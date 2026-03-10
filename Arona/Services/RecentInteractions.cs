@@ -1,6 +1,9 @@
-﻿using Arona.Models.Components;
+﻿using System.Collections.Concurrent;
+using Arona.Models.Components;
 using Arona.Commands;
 using Arona.Commands.Components;
+using Arona.Models.Api.Clans;
+using Arona.Models.Dto;
 
 namespace Arona.Services;
 
@@ -42,5 +45,7 @@ internal static class RecentInteractions
     ///   </item>
     /// </list>
     /// </remarks>
-    public static Dictionary<ulong, Dictionary<int, List<AccountClanBattleSeasonData>>> AccountClanBattleSeasonDataInteractions { get; set; } = new();
+    public static ConcurrentDictionary<ulong, Dictionary<int, List<AccountClanBattleSeasonData>>> AccountClanBattleSeasonDataInteractions { get; } = new();
+    
+    public static ConcurrentDictionary<string, LineupDto> LineUpData { get; } = new();
 }

@@ -5,10 +5,11 @@ using Arona.Commands.Autocomplete;
 using Arona.Services.Message;
 using Arona.Models.DB;
 using Arona.Models.Api.Clans;
+using Arona.Services;
 
 namespace Arona.Commands;
 
-public class PrimeTime : ApplicationCommandModule<ApplicationCommandContext>
+public class PrimeTime(IDatabaseRepositoryService<Guild> repositoryService, IApiClient apiClient, IErrorService errorService) : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("prime_time", "Get a clans active clan battle regions")]
     public async Task PrimeTimeAsync(
@@ -19,7 +20,7 @@ public class PrimeTime : ApplicationCommandModule<ApplicationCommandContext>
         var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
         await deferredMessage.SendAsync();
 
-        Guild.Exists(Context.Interaction);
+        repositoryService.GetOrCreate(Context.Guild!.Id.ToString());
 
         var split = clanIdAndRegion.Split(',');
         string region = split[1];
@@ -27,7 +28,8 @@ public class PrimeTime : ApplicationCommandModule<ApplicationCommandContext>
 
         try
         {
-            var clan = await ClanViewQuery.GetSingleAsync(new ClanViewRequest(region, clanId));
+            var query = new ClanViewQuery(apiClient.HttpClient);
+            var clan = await query.GetAsync(new ClanViewRequest(region, clanId));
 
             int? primeTime = clan.ClanView.WowsLadder.PrimeTime,
                 plannedPrimeTime = clan.ClanView.WowsLadder.PlannedPrimeTime;
@@ -44,7 +46,7 @@ public class PrimeTime : ApplicationCommandModule<ApplicationCommandContext>
         }
         catch (Exception ex)
         {
-            await Program.LogError(ex);
+            await errorService.LogErrorAsync(ex);
             await deferredMessage.EditAsync("❌ LogError fetching clan data from API.");
         }
     }

@@ -1,5 +1,6 @@
 ﻿using LiteDB;
 using System.Text.Json.Serialization;
+using Arona.Services;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 using Arona.Utility;
 
@@ -11,21 +12,14 @@ public class ClanViewQuery(HttpClient client) : QueryBase<ClanViewRequest, ClanV
 {
     public override async Task<ClanViewRoot> GetAsync(ClanViewRequest req) =>
         await SendAndDeserializeAsync($"https://clans.worldofwarships.{req.Region}/api/clanbase/{req.ClanId}/claninfo/");
+}
 
-    public async Task<ClanView> GetMockupAsync()
+public static class ClanViewQueryExtensions
+{
+    public static async Task<ClanView> IgnoreRedundantFields(this Task<ClanViewRoot> task)
     {
-        var res = await Client.GetAsync($"http://localhost:3000/");
-        res.EnsureSuccessStatusCode();
-
-        var baseData = JsonSerializer.Deserialize<ClanViewRoot>(await res.Content.ReadAsStringAsync())!;
-
-        return baseData.ClanView;
-    }
-
-    public static async Task<ClanViewRoot> GetSingleAsync(ClanViewRequest request)
-    {
-        var apiQuery = new ClanViewQuery(ApiClient.Instance);
-        return await apiQuery.GetAsync(request);
+        var root = await task;
+        return root.ClanView;
     }
 }
 
@@ -47,6 +41,32 @@ public class ClanView
 
     [BsonField("external_data")]
     public External ExternalData { get; set; } = new();
+
+    public void CalculateSessionStatistics(out int winsCount,  out int totalPoints)
+    {
+        winsCount = 0;
+        totalPoints = 0;
+        
+        foreach (var battle in ExternalData.RecentBattles)
+        {
+            if (battle.IsVictory) winsCount++;
+            totalPoints += battle.PointsEarned;
+        }
+    }
+
+    public void ResetSessionData()
+    {
+        ExternalData.RecentBattles.Clear();
+        ExternalData.SessionEndTime = null;
+    }
+    
+    public void FilterRatings(int latestSeasonNumber) =>
+        WowsLadder.Ratings.RemoveAll(r => r.SeasonNumber != latestSeasonNumber);
+    
+    public bool HasSessionEnded(long currentTime)
+        => currentTime >= ExternalData.SessionEndTime;
+
+    public bool HasASession() => ExternalData.RecentBattles.Count > 0;
 }
 
 public record ClanViewMinimal
@@ -217,21 +237,7 @@ public class External
 {
     [BsonField("region")]
     public string Region { get; set; }
-
-    /// <remarks>
-    /// Can be null during new season where no games have been played yet
-    /// </remarks>
-
-    [BsonField("global_rank")]
-    public int? GlobalRank { get; set; } = null;
-
-    /// <remarks>
-    /// Can be null during new season where no games have been played yet
-    /// </remarks>
-
-    [BsonField("region_rank")]
-    public int? RegionRank { get; set; } = null;
-
+    
     [BsonField("session_end_time")]
     public long? SessionEndTime { get; set; } = null;
 
@@ -240,6 +246,12 @@ public class External
 
     [BsonField("guilds")]
     public List<string> Guilds { get; set; } = [];
+
+    /// <remarks>
+    /// Global and Region properties can be null during new season where no games have been played yet
+    /// </remarks>
+    [BsonField("rank_data")]
+    public ClanRank RankData { get; set; } = new ClanRank(Global: null, Region: null);
 }
 
 public class RecentBattle

@@ -1,0 +1,35 @@
+﻿{
+  "clanview": {
+    "clan": {
+      "id": 500256050,
+      "tag": "SEIA",
+      "name": "Tepartiet",
+      "color": "#cda4ff"
+    },
+    "wows_ladder": {
+      "prime_time": 4,
+      "planned_prime_time": 4,
+      "ratings": [
+        {
+          "team_number": 1,
+          "league": 0,
+          "division": 1,
+          "division_rating": 1000,
+          "stage": null,
+          "season_number": 1,
+          "public_rating": 3200,
+          "battles_count": 50,
+          "wins_count": 45
+        }
+      ],
+      "season_number": 1,
+      "last_battle_at": "2026-02-08T21:53:30+00:00",
+      "league": 0,
+      "division": 1,
+      "division_rating": 1000,
+      "leading_team_number": 1,
+      "public_rating": 3200,
+      "battles_count": 50
+    }
+  }
+}

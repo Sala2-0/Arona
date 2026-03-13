@@ -1,0 +1,22 @@
+﻿[
+  {
+    "id": 500256050,
+    "tag": "SEIA",
+    "name": "Tepartiet",
+    "rank": 2,
+    "division_rating": 1000,
+    "realm": "eu",
+    "public_rating": 3200,
+    "battles_count": 50
+  },
+  {
+    "id": 500140589,
+    "tag": "-TWA-",
+    "name": "Total War Alliance",
+    "rank": 3,
+    "division_rating": 200,
+    "realm": "eu",
+    "public_rating": 2400,
+    "battles_count": 90
+  }
+]

@@ -3,7 +3,7 @@ using Arona.Models.Api.Clans;
 
 namespace Arona.Models.DB;
 
-public class Collections
+public static class Repository
 {
     public static ILiteCollection<ClanView> Clans { get; private set; }
     public static ILiteCollection<Guild> Guilds { get; private set; }

@@ -13,11 +13,17 @@ public class LadderStructureByClanQuery(HttpClient client) : QueryBase<LadderStr
 {
     public override async Task<LadderStructure[]> GetAsync(LadderStructureByClanRequest request) =>
         await SendAndDeserializeAsync($"https://clans.worldofwarships.{request.Region}/api/ladder/structure/?clan_id={request.ClanId}&realm={request.Realm}");
-
-    public static async Task<LadderStructure[]> GetSingleAsync(LadderStructureByClanRequest request)
+    
+    public async Task<ClanRank> GetRegionAndGlobalRankAsync(
+        int clanId, string region)
     {
-        var apiQuery = new LadderStructureByClanQuery(ApiClient.Instance);
-        return await apiQuery.GetAsync(request);
+        var globalData =  await GetAsync(new LadderStructureByClanRequest(clanId, region));
+        var regionData = await GetAsync(new LadderStructureByClanRequest(clanId, region, ClanUtils.ToRealm(region)));
+        
+        var clanGlobal = globalData.First(x => x.Id == clanId);
+        var clanRegion = regionData.First(x => x.Id == clanId);
+
+        return new ClanRank(Global: clanGlobal.Rank, Region: clanRegion.Rank);
     }
 }
 
@@ -27,12 +33,6 @@ public class LadderStructureByRealmQuery(HttpClient client) : QueryBase<LadderSt
     {
         var url = $"https://clans.worldofwarships.eu/api/ladder/structure/?league={request.League}&division={request.Division}&realm={request.Realm}";
         return await SendAndDeserializeAsync(url);
-    }
-
-    public static async Task<LadderStructure[]> GetSingleAsync(LadderStructureByRealmRequest request)
-    {
-        var apiQuery = new LadderStructureByRealmQuery(ApiClient.Instance);
-        return await apiQuery.GetAsync(request);
     }
 }
 
@@ -45,12 +45,6 @@ public class LadderStructureBySeasonQuery(HttpClient client) : QueryBase<LadderS
             : $"https://clans.worldofwarships.eu/api/ladder/structure/?division={request.Division}&league={request.League}";
 
         return await SendAndDeserializeAsync(url);
-    }
-
-    public static async Task<LadderStructure[]> GetSingleAsync(LadderStructureBySeasonRequest request)
-    {
-        var apiQuery = new LadderStructureBySeasonQuery(ApiClient.Instance);
-        return await apiQuery.GetAsync(request);
     }
 }
 
@@ -82,3 +76,5 @@ public class LadderStructure
 
     public double? SuccessFactor { get; set; }
 }
+
+public record ClanRank(int? Global, int? Region);

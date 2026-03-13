@@ -3,11 +3,12 @@ using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using Arona.Models.DB;
+using Arona.Services;
 using Arona.Utility;
 
 namespace Arona.Commands.Autocomplete;
 
-internal class ShipAutocomplete : IAutocompleteProvider<AutocompleteInteractionContext>
+internal class ShipAutocomplete(IApiService apiService) : IAutocompleteProvider<AutocompleteInteractionContext>
 {
     public async ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>?> GetChoicesAsync(
         ApplicationCommandInteractionDataOption option,
@@ -16,9 +17,9 @@ internal class ShipAutocomplete : IAutocompleteProvider<AutocompleteInteractionC
         string input = option.Value ?? string.Empty;
         input = Text.Normalize(input);
 
-        var cachedShips = Collections.Ships.FindAll();
+        var cachedShips = Repository.Ships.FindAll();
         
-        var res = await ApiClient.Instance.GetAsync("https://api.wows-numbers.com/personal/rating/expected/json/");
+        var res = await apiService.HttpClient.GetAsync("https://api.wows-numbers.com/personal/rating/expected/json/");
         JsonElement doc = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement.GetProperty("data");
         
         List<ShipStructure> ships = [];

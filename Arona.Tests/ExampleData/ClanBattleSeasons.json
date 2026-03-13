@@ -1,0 +1,10 @@
+﻿{
+  "data": {
+    "1": {
+      "season_id": 1,
+      "start_time": 10000,
+      "finish_time": 20000,
+      "name": "SEIA's season"
+    }
+  }
+}

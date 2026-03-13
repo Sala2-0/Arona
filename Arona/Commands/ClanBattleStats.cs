@@ -4,15 +4,16 @@ using NetCord.Services.ApplicationCommands;
 using Arona.Commands.Autocomplete;
 using Arona.Models.Api.Official;
 using Arona.Models.Components;
-using Arona.Models.DB;
 using Arona.Utility;
 using Arona.Services.Message;
 using Arona.Services;
+using NetCord.Gateway;
+using Guild = Arona.Models.DB.Guild;
 
 namespace Arona.Commands;
 
 [SlashCommand("cb_stats", "Clan battle stats of a player")]
-public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContext>
+public class ClanBattleStats(GatewayClient gatewayClient, ErrorService errorService, IApiService apiService) : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SubSlashCommand("season", "One season")]
     public async Task SeasonAsync(
@@ -23,12 +24,11 @@ public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContex
         int seasonNumber = -1
     )
     {
-        var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
-        await deferredMessage.SendAsync();
+        var deferredMessage = await DeferredMessage.CreateAsync(Context.Interaction);
 
         Guild.Exists(Context.Interaction);
 
-        var self = await Program.Client!.Rest.GetCurrentUserAsync();
+        var self = await gatewayClient.Rest.GetCurrentUserAsync();
         var botIconUrl = self.GetAvatarUrl()!.ToString();
 
         var split = accountData.Split(',');
@@ -46,7 +46,8 @@ public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContex
 
         try
         {
-            var data = await PlayerClanBattleSeasonStatsQuery.GetSingleAsync(new PlayerClanBattleSeasonStatsRequest(region, accountId));
+            var data = await new PlayerClanBattleSeasonStatsQuery(apiService.HttpClient)
+                .GetAsync(new PlayerClanBattleSeasonStatsRequest(region, accountId));
             var seasonData = await ClanBattleSeasons.GetAsync();
 
             if (seasonNumber == -1)
@@ -71,11 +72,12 @@ public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContex
                 return;
             }
 
-            await deferredMessage.EditAsync(new EmbedProperties
+            var embed = new EmbedProperties
             {
                 Author = new EmbedAuthorProperties { Name = "Arona's intelligence report", IconUrl = botIconUrl },
                 Title = $"{name} ({ClanUtils.GetHumanRegion(region)})",
-                Color = new Color(Convert.ToInt32(PersonalRatingColors.GetColor((double)playerSeasonData.Wins / playerSeasonData.Battles * 100), 16)),
+                Color = new Color(Convert.ToInt32(
+                    PersonalRatingColors.GetColor((double)playerSeasonData.Wins / playerSeasonData.Battles * 100), 16)),
                 Description =
                     $"**Season:** {season.Name} ({seasonNumber})\n" +
                     $"**Battles:** {playerSeasonData.Battles}\n\n" +
@@ -83,12 +85,14 @@ public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContex
                     $"**W/B:** {Math.Round((double)playerSeasonData.Wins / playerSeasonData.Battles * 100, 2).ToString(System.Globalization.CultureInfo.InvariantCulture) + "%"}\n" +
                     $"**D/B:** {Math.Round((double)playerSeasonData.DamageDealt / playerSeasonData.Battles).ToString(System.Globalization.CultureInfo.InvariantCulture)}\n" +
                     $"**K/B:** {Math.Round((double)playerSeasonData.Kills / playerSeasonData.Battles, 2).ToString(System.Globalization.CultureInfo.InvariantCulture)}",
-            });
+            };
+
+            await deferredMessage.EditAsync(new MessageProperties().AddEmbeds(embed));
         }
         catch (Exception ex)
         {
-            await Program.LogError(ex);
-            await deferredMessage.EditAsync("API error >_<");
+            await errorService.PrintErrorAsync(ex, $"Error in {nameof(PlayerAutocomplete)}");
+            await errorService.NotifyUserOfErrorAsync(Context.Interaction, ex, deferredMode: true);
         }
     }
 
@@ -98,12 +102,11 @@ public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContex
         string accountData
     )
     {
-        var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
-        await deferredMessage.SendAsync();
+        var deferredMessage = await DeferredMessage.CreateAsync(Context.Interaction);
 
         Guild.Exists(Context.Interaction);
 
-        var self = await Program.Client!.Rest.GetCurrentUserAsync();
+        var self = await gatewayClient.Rest.GetCurrentUserAsync();
         var botIconUrl = self.GetAvatarUrl()!.ToString();
 
         var split = accountData.Split(',');
@@ -121,7 +124,8 @@ public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContex
 
         try
         {
-            var data = await PlayerClanBattleSeasonStatsQuery.GetSingleAsync(new PlayerClanBattleSeasonStatsRequest(region, long.Parse(accountId)));
+            var data = await new PlayerClanBattleSeasonStatsQuery(apiService.HttpClient)
+                .GetAsync(new PlayerClanBattleSeasonStatsRequest(region, long.Parse(accountId)));
             var seasonData = await ClanBattleSeasons.GetAsync();
 
             var filtered = data.Data[accountId].Seasons
@@ -132,7 +136,7 @@ public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContex
             var processed = filtered.Select(c => new
             {
                 Id = c.SeasonId,
-                Name = seasonData.First(s => s.Value.SeasonId == c.SeasonId).Value.Name,
+                seasonData.First(s => s.Value.SeasonId == c.SeasonId).Value.Name,
                 BattlesCount = c.Battles,
                 WinsCount = c.Wins
             });
@@ -173,12 +177,10 @@ public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContex
             var button = structured.Keys.Count > 1
                 ? new ButtonProperties($"account season data:{Context.User.Id}:{embed.Title}:{1}", ">", ButtonStyle.Secondary)
                 : null;
-
-            await Context.Interaction.ModifyResponseAsync(message =>
-            {
-                message.Embeds = [embed];
-                message.Components = button != null ? [new ActionRowProperties { Buttons = [button] }] : [];
-            });
+            
+            await deferredMessage.EditAsync(new MessageProperties()
+                .AddEmbeds(embed)
+                .AddComponents(button != null ? [new ActionRowProperties { Buttons = [button] }] : []));
 
             var message = await Context.Interaction.GetResponseAsync();
 
@@ -191,8 +193,8 @@ public class ClanBattleStats : ApplicationCommandModule<ApplicationCommandContex
         }
         catch (Exception ex)
         {
-            await Program.LogError(ex);
-            await deferredMessage.EditAsync("API error >_<");
+            await errorService.PrintErrorAsync(ex, $"Error in {nameof(ActivityAsync)}");
+            await errorService.NotifyUserOfErrorAsync(Context.Interaction, ex, deferredMode: true);
         }
     }
 }

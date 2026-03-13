@@ -1,12 +1,14 @@
-﻿namespace Arona.Services.Message;
+﻿using NetCord.Gateway;
 
-internal static class PrivateMessageService
+namespace Arona.Services.Message;
+
+public class PrivateMessageService(GatewayClient gatewayClient)
 {
-    public static async Task SendNoAccessMessageAsync(ulong guildId, ulong channelId)
+    public async Task SendNoAccessMessageAsync(ulong guildId, ulong channelId)
     {
-        var parsedGuild = await Program.Client!.Rest.GetGuildAsync(guildId);
+        var parsedGuild = await gatewayClient.Rest.GetGuildAsync(guildId);
 
-        var owner = await Program.Client.Rest.GetGuildUserAsync(guildId, parsedGuild.OwnerId);
+        var owner = await gatewayClient.Rest.GetGuildUserAsync(guildId, parsedGuild.OwnerId);
 
         var ownerName = owner.Username;
         var ownerPrivateMsg = await owner.GetDMChannelAsync();
@@ -18,11 +20,11 @@ internal static class PrivateMessageService
         );
     }
 
-    public static async Task SendNoPermissionMessageAsync(ulong guildId, string channelName)
+    public async Task SendNoPermissionMessageAsync(ulong guildId, string channelName)
     {
-        var parsedGuild = await Program.Client!.Rest.GetGuildAsync(guildId);
+        var parsedGuild = await gatewayClient!.Rest.GetGuildAsync(guildId);
 
-        var owner = await Program.Client.Rest.GetGuildUserAsync(guildId, parsedGuild.OwnerId);
+        var owner = await gatewayClient.Rest.GetGuildUserAsync(guildId, parsedGuild.OwnerId);
 
         var ownerName = owner.Username;
         var ownerPrivateMsg = await owner.GetDMChannelAsync();

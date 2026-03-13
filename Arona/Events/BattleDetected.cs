@@ -1,9 +1,9 @@
 ﻿using Arona.Models;
 using Arona.Models.Api.Clans;
 
-namespace Arona.ClanEvents;
+namespace Arona.Events;
 
-public struct BattleDetected
+public record BattleDetected
 {
     public required int ClanId { get; init; }
     public required string Region { get; init; }
@@ -11,8 +11,7 @@ public struct BattleDetected
     public required string ClanName { get; init; }
     public required long BattleTime { get; init; }
     public required TeamNumber TeamNumber { get; init; }
-    public required int GlobalRank { get; init; }
-    public required int RegionRank { get; init; }
+    public required ClanRank ClanRank { get; init; }
     public required double SuccessFactor { get; init; }
 
     public bool IsVictory { get; init; }

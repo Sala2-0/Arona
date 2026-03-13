@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace Arona;
 
-internal static class Config
+public static class Config
 {
     private static string _token;
     private static string _devToken;

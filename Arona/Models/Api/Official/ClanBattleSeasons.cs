@@ -8,7 +8,7 @@ internal record EmptyRequest;
 internal class ClanBattleSeasonsQuery(HttpClient client) : QueryBase<EmptyRequest, ResponseObject<ClanBattleSeasons>>(client)
 {
     public override async Task<ResponseObject<ClanBattleSeasons>> GetAsync(EmptyRequest req) =>
-        await SendAndDeserializeAsync("https://api.worldofwarships.eu/wows/clans/season/?application_id={Config.WgApi}");
+        await SendAndDeserializeAsync($"https://api.worldofwarships.eu/wows/clans/season/?application_id={Config.WgApi}");
 }
 
 /// <summary>

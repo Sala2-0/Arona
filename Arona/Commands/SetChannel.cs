@@ -3,10 +3,12 @@ using NetCord.Services.ApplicationCommands;
 using Arona.Services.Message;
 using Arona.Models.DB;
 using Arona.Services;
+using NetCord.Gateway;
+using Guild = Arona.Models.DB.Guild;
 
 namespace Arona.Commands;
 
-public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
+public class SetChannel(GatewayClient gatewayClient, ErrorService errorService) : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("set_channel", "Set the channel for Arona to log.")]
     public async Task SetChannelAsync(
@@ -14,8 +16,8 @@ public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
         string input
     )
     {
-        var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
-        await deferredMessage.SendAsync();
+        var deferredMessage = await DeferredMessage.CreateAsync(Context.Interaction);
+
         Guild.Exists(Context.Interaction);
 
         string guildId = Context.Interaction.GuildId.ToString()!;
@@ -29,7 +31,7 @@ public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
 
         try
         {
-            var channel = await Program.Client!.Rest.GetChannelAsync(channelId);
+            var channel = await gatewayClient.Rest.GetChannelAsync(channelId);
 
             if (channel.GetType() != typeof(TextGuildChannel))
             {
@@ -37,10 +39,10 @@ public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
                 return;
             }
 
-            var guild = await Program.Client.Rest.GetGuildAsync(Context.Guild!.Id);
-            var self = await Program.Client.Rest.GetGuildUserAsync(
+            var guild = await gatewayClient.Rest.GetGuildAsync(Context.Guild!.Id);
+            var self = await gatewayClient.Rest.GetGuildUserAsync(
                 guildId: Context.Guild.Id,
-                userId: (await Program.Client.Rest.GetCurrentUserAsync()).Id
+                userId: (await gatewayClient.Rest.GetCurrentUserAsync()).Id
             );
 
             var guildChannel = channel as TextGuildChannel;
@@ -52,9 +54,9 @@ public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
                 return;
             }
 
-            var guildDb = Collections.Guilds.FindOne(g => g.Id == Context.Guild.Id.ToString());
+            var guildDb = Repository.Guilds.FindOne(g => g.Id == Context.Guild.Id.ToString());
             if (guildDb == null)
-                Collections.Guilds.Insert(new Guild
+                Repository.Guilds.Insert(new Guild
                 {
                     Id = Context.Guild.Id.ToString(),
                     ChannelId = channelId.ToString()
@@ -62,16 +64,17 @@ public class SetChannel : ApplicationCommandModule<ApplicationCommandContext>
             else
             {
                 guildDb.ChannelId = channelId.ToString();
-                Collections.Guilds.Update(guildDb);
+                Repository.Guilds.Update(guildDb);
             }
 
             await deferredMessage.EditAsync($"✅ Channel set to <#{channelId}>");
         }
         catch (Exception ex)
         {
-            await Program.LogError(ex);
-            await deferredMessage.EditAsync("❌ Invalid channel ID format. Please provide a valid channel ID." +
-                                            "\nCould also be that Arona doesn't have permissions to see specified channel");
+            await errorService.PrintErrorAsync(ex, $"Error at {nameof(SetChannelAsync)}");
+            await errorService.NotifyUserOfErrorAsync(Context.Interaction, ex, deferredMode: true, 
+                "❌ Invalid channel ID format. Please provide a valid channel ID." +
+                "\nCould also be that Arona doesn't have permissions to see specified channel");
         }
     }
 }

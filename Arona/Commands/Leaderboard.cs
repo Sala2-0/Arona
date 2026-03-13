@@ -6,12 +6,13 @@ using NetCord.Services.ApplicationCommands;
 using Arona.Models;
 using Arona.Models.DB;
 using Arona.Models.Api.Clans;
+using Arona.Services;
 using Arona.Utility;
 using Arona.Services.Message;
 
 namespace Arona.Commands;
 
-public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
+public class Leaderboard(ErrorService errorService, IApiService apiService) : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("leaderboard", "Latest clan battles season leaderboard. Default: Hurricane I (Global) [Ratings]")]
     public async Task LeaderboardAsync(
@@ -28,8 +29,7 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
         LeaderboardCommandLeaderboardType leaderboardType = LeaderboardCommandLeaderboardType.Ratings
     )
     {
-        var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
-        await deferredMessage.SendAsync();
+        var deferredMessage = await DeferredMessage.CreateAsync(Context.Interaction);
 
         Guild.Exists(Context.Interaction);
 
@@ -41,9 +41,8 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
 
         try
         {
-            var data = await LadderStructureByRealmQuery.GetSingleAsync(
-                new LadderStructureByRealmRequest(leaderboardCommandRealm.ToString().ToLower(), (int)league, (int)division)
-            );
+            var data = await new LadderStructureByRealmQuery(apiService.HttpClient)
+                .GetAsync(new LadderStructureByRealmRequest(leaderboardCommandRealm.ToString().ToLower(), (int)league, (int)division));
 
             if (data.Length == 0)
             {
@@ -108,7 +107,7 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
 
                     embed.WithFields(fields);
 
-                    await deferredMessage.EditAsync(embed);
+                    await deferredMessage.EditAsync(new MessageProperties().AddEmbeds(embed));
                     break;
                 }
                 default:
@@ -119,8 +118,8 @@ public class Leaderboard : ApplicationCommandModule<ApplicationCommandContext>
         }
         catch (Exception ex)
         {
-            await Program.LogError(ex);
-            await deferredMessage.EditAsync("❌ Error fetching leaderboard data from API.");
+            await errorService.PrintErrorAsync(ex, $"Error in {nameof(LeaderboardAsync)}");
+            await errorService.NotifyUserOfErrorAsync(Context.Interaction, ex, deferredMode: true);
         }
     }
 

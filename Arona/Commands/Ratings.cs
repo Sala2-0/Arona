@@ -4,14 +4,16 @@ using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using Arona.Commands.Autocomplete;
 using Arona.Models.Api.Clans;
-using Arona.Models.DB;
 using Arona.Services.Message;
 using Arona.Utility;
 using Arona.Models;
+using Arona.Services;
+using NetCord.Gateway;
+using Guild = Arona.Models.DB.Guild;
 
 namespace Arona.Commands;
 
-public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
+public class Ratings(GatewayClient gatewayClient, ErrorService errorService, IApiService apiService) : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("ratings", "Get detailed information about a clans current ratings on current CB season")]
     public async Task RatingsAsync(
@@ -19,62 +21,52 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
         string clanIdAndRegion
     )
     {
-        var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
-        await deferredMessage.SendAsync();
+        var deferredMessage = await DeferredMessage.CreateAsync(Context.Interaction);
 
         Guild.Exists(Context.Interaction);
 
-        var self = await Program.Client!.Rest.GetCurrentUserAsync();
+        var self = await gatewayClient.Rest.GetCurrentUserAsync();
         var botIconUrl = self.GetAvatarUrl()!.ToString();
 
         string[] split = clanIdAndRegion.Split(',');
         string region = split[1];
         int clanId = int.Parse(split[0]);
 
-        Task<ClanViewRoot> generalTask = ClanViewQuery.GetSingleAsync(new ClanViewRequest(region, clanId));
-
-        var ladderStructureQuery = new LadderStructureByClanQuery(ApiClient.Instance);
-        Task<LadderStructure[]> 
-            globalRankTask = ladderStructureQuery.GetAsync(new LadderStructureByClanRequest(clanId, region)),
-            regionRankTask = ladderStructureQuery.GetAsync(new LadderStructureByClanRequest(clanId, region, ClanUtils.ToRealm(region)));
+        var clan = await new ClanViewQuery(apiService.HttpClient)
+            .GetAsync(new ClanViewRequest(region, clanId))
+            .IgnoreRedundantFields();
+        var clanRank = await new LadderStructureByClanQuery(apiService.HttpClient)
+            .GetRegionAndGlobalRankAsync(clanId, region);
 
         try
         {
-            await Task.WhenAll(generalTask, globalRankTask, regionRankTask);
+            int latestSeason = clan.WowsLadder.SeasonNumber;
+            var leadingTeamNumber = clan.WowsLadder.LeadingTeamNumber;
 
-            var data = (
-                Clan: await generalTask,
-                Global: await globalRankTask,
-                Region: await regionRankTask
-            );
-
-            int latestSeason = data.Clan.ClanView.WowsLadder.SeasonNumber;
-            var leadingTeamNumber = data.Clan.ClanView.WowsLadder.LeadingTeamNumber;
-
-            var clan = new ClanDto
+            var clanDto = new ClanDto
             {
-                Name = $"[{data.Clan.ClanView.Clan.Tag}] {data.Clan.ClanView.Clan.Name}",
-                League = data.Clan.ClanView.WowsLadder.League,
-                Division = data.Clan.ClanView.WowsLadder.Division,
-                DivisionRating = data.Clan.ClanView.WowsLadder.DivisionRating,
-                Color = data.Clan.ClanView.Clan.Color,
+                Name = $"[{clan.Clan.Tag}] {clan.Clan.Name}",
+                League = clan.WowsLadder.League,
+                Division = clan.WowsLadder.Division,
+                DivisionRating = clan.WowsLadder.DivisionRating,
+                Color = clan.Clan.Color,
             };
 
-            if (!data.Clan.ClanView.WowsLadder.Ratings.Exists(team => team.SeasonNumber == latestSeason))
+            if (!clan.WowsLadder.Ratings.Exists(team => team.SeasonNumber == latestSeason))
             {
-                await deferredMessage.EditAsync(new EmbedProperties 
+                await deferredMessage.EditAsync(new MessageProperties().AddEmbeds(new EmbedProperties 
                 {
                     Author = new EmbedAuthorProperties { Name = "Arona's intelligence report", IconUrl = botIconUrl },
-                    Title = $"`[{data.Clan.ClanView.Clan.Tag}] {data.Clan.ClanView.Clan.Name}` ({ClanUtils.GetHumanRegion(region)})",
+                    Title = $"`[{clan.Clan.Tag}] {clan.Clan.Name}` ({ClanUtils.GetHumanRegion(region)})",
                     Fields = [new EmbedFieldProperties{ Name = $"Clan hasn't played any battles in S{latestSeason}" }]
-                });
+                }));
 
                 return;
             }
 
-            foreach (var rating in data.Clan.ClanView.WowsLadder.Ratings.FindAll(team => team.SeasonNumber == latestSeason))
+            foreach (var rating in clan.WowsLadder.Ratings.FindAll(team => team.SeasonNumber == latestSeason))
             {
-                clan.Teams.Add(new TeamDto
+                clanDto.Teams.Add(new TeamDto
                 {
                     TeamNumber = rating.TeamNumber,
                     Color = $"#{ClanUtils.GetLeagueColor(rating.League)}",
@@ -90,22 +82,20 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
                 });
             }
 
-            clan.Teams.Sort((a, b) => (int)a.TeamNumber - (int)b.TeamNumber);
+            clanDto.Teams.Sort((a, b) => (int)a.TeamNumber - (int)b.TeamNumber);
 
-            clan.Stage = data.Clan.ClanView.WowsLadder.Ratings.Find(t => t.TeamNumber == leadingTeamNumber && t.SeasonNumber == latestSeason)?.Stage != null
+            clanDto.Stage = clan.WowsLadder.Ratings.Find(t => t.TeamNumber == leadingTeamNumber && t.SeasonNumber == latestSeason)?.Stage != null
                 ? new StageDto(
-                    data.Clan.ClanView.WowsLadder.Ratings.Find(t => t.TeamNumber == leadingTeamNumber && t.SeasonNumber == latestSeason)!.Stage!.Type,
-                    data.Clan.ClanView.WowsLadder.Ratings.Find(t => t.TeamNumber == leadingTeamNumber && t.SeasonNumber == latestSeason)!.Stage!.Progress
+                    clan.WowsLadder.Ratings.Find(t => t.TeamNumber == leadingTeamNumber && t.SeasonNumber == latestSeason)!.Stage!.Type,
+                    clan.WowsLadder.Ratings.Find(t => t.TeamNumber == leadingTeamNumber && t.SeasonNumber == latestSeason)!.Stage!.Progress
                 )
                 : null;
 
             // Hämta klanens ranking
-            clan.GlobalRank = data.Global.Where(c => c.Id == clanId)
-                .Select(c => c.Rank).FirstOrDefault();
-            clan.RegionRank = data.Region.Where(c => c.Id == clanId)
-                .Select(c => c.Rank).FirstOrDefault();
+            clanDto.GlobalRank = clanRank.Global;
+            clanDto.RegionRank = clanRank.Region;
 
-            var response = await ApiClient.PostToServiceAsync("ratings", JsonSerializer.Serialize(clan));
+            var response = await apiService.PostToServiceAsync("ratings", JsonSerializer.Serialize(clanDto));
             response.EnsureSuccessStatusCode();
 
             var imageBytes = await response.Content.ReadAsByteArrayAsync();
@@ -118,8 +108,8 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
         }
         catch (Exception ex)
         {
-            await Program.LogError(ex);
-            await deferredMessage.EditAsync("❌ Error fetching clan data from API.");
+            await errorService.PrintErrorAsync(ex, $"Error at {nameof(RatingsAsync)}");
+            await errorService.NotifyUserOfErrorAsync(Context.Interaction, ex, deferredMode: true);
         }
     }
 
@@ -130,8 +120,8 @@ public class Ratings : ApplicationCommandModule<ApplicationCommandContext>
         public League League { get; init; }
         public Division Division { get; init; }
         public int DivisionRating { get; init; }
-        public int GlobalRank { get; set; }
-        public int RegionRank { get; set; }
+        public int? GlobalRank { get; set; }
+        public int? RegionRank { get; set; }
         public List<TeamDto> Teams { get; } = [];
         public StageDto? Stage { get; set; }
     }

@@ -17,10 +17,10 @@ public class User
     /// <remarks>Creates a new <see cref="User"/> object if not found</remarks>
     public static void Exists(string userId)
     {
-        if (Collections.Users.Exists(g => g.Id == userId))
+        if (Repository.Users.Exists(g => g.Id == userId))
             return;
 
-        Collections.Users.Insert(new User
+        Repository.Users.Insert(new User
         {
             Id = userId,
         });
@@ -33,7 +33,7 @@ public class User
     /// <returns>a <see cref="User"/> object</returns>
     public static User Find(string userId)
     {
-        var user = Collections.Users.FindById(userId);
+        var user = Repository.Users.FindById(userId);
 
         if (user != null)
             return user;
@@ -43,7 +43,7 @@ public class User
             Id = userId
         };
 
-        Collections.Users.Insert(user);
+        Repository.Users.Insert(user);
         return user;
     }
 }

@@ -1,4 +1,6 @@
-﻿using Arona.Models;
+﻿using System.Security.Authentication;
+using Arona.Models;
+using Arona.Models.Api.Clans;
 
 namespace Arona.Utility;
 
@@ -127,4 +129,14 @@ public static class ClanUtils
         "us" => "NA",
         _ => throw new ArgumentException("Invalid realm", nameof(realm))
     };
+    
+    public static async Task ValidateCookie(string cookie, string region, int clanId, string tag)
+    {
+        var cookieValidationData = await AccountInfoSync.GetAsync(cookie, region);
+
+        if (cookieValidationData.ClanId != clanId)
+            throw new InvalidCredentialException($"Cookie for clan `{tag}` is invalid: Player is not a member of the clan.");
+        if (cookieValidationData.Rank < Role.LineOfficer)
+            throw new InvalidCredentialException($"Cookie for clan `{tag}` is invalid: Player is too high ranking.");
+    }
 }

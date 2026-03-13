@@ -2,6 +2,7 @@
 using NetCord;
 using NetCord.Rest;
 using Arona.Models.Api.Clans;
+using Arona.Services;
 using Arona.Utility;
 
 using static Arona.Utility.ClanUtils;
@@ -111,10 +112,10 @@ internal class BattleEmbed : Base
         {
             var outcomeEmoji = StageProgressOutcome switch
             {
-                StageProgressOutcome.Victory => Emojis.StageProgressVictory,
-                StageProgressOutcome.Defeat => Emojis.StageProgressDefeat,
-                StageProgressOutcome.PromotedOrStayed => Emojis.StagePromoted,
-                StageProgressOutcome.DemotedOrFailed => Emojis.StageDemoted,
+                StageProgressOutcome.Victory => EmojiService.StageProgressVictory,
+                StageProgressOutcome.Defeat => EmojiService.StageProgressDefeat,
+                StageProgressOutcome.PromotedOrStayed => EmojiService.StagePromoted,
+                StageProgressOutcome.DemotedOrFailed => EmojiService.StageDemoted,
                 _ => string.Empty
             };
 
@@ -176,8 +177,8 @@ internal class DetailedBattleEmbed : Base
         {
             var field = new EmbedFieldProperties { Name = $"{team.ClanInfo.Tag} ({team.TeamNumber})", Inline = true };
             var resultEmoji = team.Result == "victory"
-                ? Emojis.StageProgressVictory
-                : Emojis.StageProgressDefeat;
+                ? EmojiService.StageProgressVictory
+                : EmojiService.StageProgressDefeat;
 
             if (team.Stage != null)
             {

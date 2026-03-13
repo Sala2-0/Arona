@@ -2,10 +2,11 @@
 using NetCord.Rest;
 using NetCord.Services.ComponentInteractions;
 using Arona.Services;
+using NetCord.Gateway;
 
 namespace Arona.Commands.Components;
 
-public class ButtonModule : ComponentInteractionModule<ButtonInteractionContext>
+public class ButtonModule(GatewayClient gatewayClient) : ComponentInteractionModule<ButtonInteractionContext>
 {
     [ComponentInteraction("button-id")]
     public async Task Button(string data)
@@ -25,7 +26,7 @@ public class ButtonModule : ComponentInteractionModule<ButtonInteractionContext>
     [ComponentInteraction("account season data")]
     public async Task AccountSeasonDataAsync(ulong userId, string title, int page)
     {
-        var self = await Program.Client!.Rest.GetCurrentUserAsync();
+        var self = await gatewayClient.Rest.GetCurrentUserAsync();
         var botIconUrl = self.GetAvatarUrl()!.ToString();
 
         if (ComponentInactivityTimer.Timers.TryGetValue(Context.Message.Id, out var existingCts))

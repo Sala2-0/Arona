@@ -22,10 +22,10 @@ public class Guild
 
     public static void Exists(ApplicationCommandInteraction interaction)
     {
-        if (Collections.Guilds.Exists(g => g.Id == interaction.GuildId.ToString()))
+        if (Repository.Guilds.Exists(g => g.Id == interaction.GuildId.ToString()))
             return;
 
-        Collections.Guilds.Insert(new Guild
+        Repository.Guilds.Insert(new Guild
             {
                 Id = interaction.GuildId.ToString()!,
                 ChannelId = interaction.Channel.Id.ToString()
@@ -34,7 +34,7 @@ public class Guild
 
     public static Guild Find(ApplicationCommandInteraction interaction)
     {
-        var guild = Collections.Guilds.FindById(interaction.GuildId.ToString());
+        var guild = Repository.Guilds.FindById(interaction.GuildId.ToString());
 
         if (guild != null)
             return guild;
@@ -45,13 +45,13 @@ public class Guild
             ChannelId = interaction.Channel.Id.ToString()
         };
 
-        Collections.Guilds.Insert(guild);
+        Repository.Guilds.Insert(guild);
         return guild;
     }
 
     public static Guild Find(ModalInteraction interaction)
     {
-        var guild = Collections.Guilds.FindById(interaction.GuildId.ToString());
+        var guild = Repository.Guilds.FindById(interaction.GuildId.ToString());
 
         if (guild != null)
             return guild;
@@ -62,7 +62,7 @@ public class Guild
             ChannelId = interaction.Channel.Id.ToString()
         };
 
-        Collections.Guilds.Insert(guild);
+        Repository.Guilds.Insert(guild);
         return guild;
     }
 }

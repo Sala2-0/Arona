@@ -11,7 +11,7 @@ using Arona.Utility;
 namespace Arona.Commands;
 
 [SlashCommand("builds", "Store WoWs builds for ease of access later on")]
-public class Builds : ApplicationCommandModule<ApplicationCommandContext>
+public class Builds(IApiService apiService) : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SubSlashCommand("add", "Add a ship build to server database in form of WoWs-ShipBuilder link")]
     public async Task BuildsAddAsync(
@@ -28,9 +28,8 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
         string? color = null
     )
     {
-        var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
-        await deferredMessage.SendAsync();
-
+        var deferredMessage = await DeferredMessage.CreateAsync(Context.Interaction);
+        
         var guild = Guild.Find(Context.Interaction);
 
         await DatabaseService.WaitForWriteAsync(guild.Id);
@@ -51,7 +50,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
         }
 
         var payload = new BuildInfo(link);
-        var response = await ApiClient.PostToServiceAsync("verifybuildlink", payload);
+        var response = await apiService.PostToServiceAsync("verifybuildlink", payload);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -68,7 +67,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
             Color = color?.TrimStart('#')
         });
 
-        Collections.Guilds.Update(guild);
+        Repository.Guilds.Update(guild);
 
         await deferredMessage.EditAsync($"✅ Added build: `{name}`");
     }
@@ -79,8 +78,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
         string name
     )
     {
-        var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
-        await deferredMessage.SendAsync();
+        var deferredMessage = await DeferredMessage.CreateAsync(Context.Interaction);
 
         var guild = Guild.Find(Context.Interaction);
 
@@ -105,7 +103,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
         }
 
         guild.Builds.Remove(build);
-        Collections.Guilds.Update(guild);
+        Repository.Guilds.Update(guild);
 
         await deferredMessage.EditAsync($"✅ Removed build: `{name}`");
     }
@@ -119,8 +117,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
         BuildData data = BuildData.Image
     )
     {
-        var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
-        await deferredMessage.SendAsync();
+        var deferredMessage = await DeferredMessage.CreateAsync(Context.Interaction);
 
         var guild = Guild.Find(Context.Interaction);
 
@@ -140,7 +137,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
         if (data == BuildData.Image)
         {
             var payload = new BuildInfo(build.Link);
-            var response = await ApiClient.PostToServiceAsync("getbuild", payload);
+            var response = await apiService.PostToServiceAsync("getbuild", payload);
 
             string parsedName = build.Name.ToLower().Replace(" ", "_");
         
@@ -168,7 +165,7 @@ public class Builds : ApplicationCommandModule<ApplicationCommandContext>
             if (!string.IsNullOrEmpty(build.Color))
                 embed.Color = new Color(Convert.ToInt32(build.Color, 16));
 
-            await deferredMessage.EditAsync(embed);
+            await deferredMessage.EditAsync(new MessageProperties().AddEmbeds(embed));
         }
     }
     

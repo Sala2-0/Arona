@@ -1,12 +1,14 @@
 ﻿namespace Arona.Tests;
 
-public class MockHttpMessageHandler(HttpResponseMessage responseMessage) : HttpMessageHandler
+public class MockHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage?> responseFactory) : DelegatingHandler(new HttpClientHandler())
 {
-    private readonly HttpResponseMessage _responseMessage = responseMessage;
-
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
-        return Task.FromResult(_responseMessage);
+        var mockResponse = responseFactory(request);
+        
+        return mockResponse != null
+            ? Task.FromResult(mockResponse)
+            : base.SendAsync(request, cancellationToken);
     }
 }

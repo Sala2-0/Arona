@@ -5,10 +5,11 @@ using Arona.Commands.Autocomplete;
 using Arona.Services.Message;
 using Arona.Models.DB;
 using Arona.Models.Api.Clans;
+using Arona.Services;
 
 namespace Arona.Commands;
 
-public class PrimeTime : ApplicationCommandModule<ApplicationCommandContext>
+public class PrimeTime(ErrorService errorService, IApiService apiService) : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("prime_time", "Get a clans active clan battle regions")]
     public async Task PrimeTimeAsync(
@@ -16,8 +17,7 @@ public class PrimeTime : ApplicationCommandModule<ApplicationCommandContext>
         string clanIdAndRegion
     )
     {
-        var deferredMessage = new DeferredMessage { Interaction = Context.Interaction };
-        await deferredMessage.SendAsync();
+        var deferredMessage = await DeferredMessage.CreateAsync(Context.Interaction);
 
         Guild.Exists(Context.Interaction);
 
@@ -27,25 +27,27 @@ public class PrimeTime : ApplicationCommandModule<ApplicationCommandContext>
 
         try
         {
-            var clan = await ClanViewQuery.GetSingleAsync(new ClanViewRequest(region, clanId));
+            var clan = await new ClanViewQuery(apiService.HttpClient)
+                .GetAsync(new ClanViewRequest(region, clanId))
+                .IgnoreRedundantFields();
 
-            int? primeTime = clan.ClanView.WowsLadder.PrimeTime,
-                plannedPrimeTime = clan.ClanView.WowsLadder.PlannedPrimeTime;
+            int? primeTime = clan.WowsLadder.PrimeTime,
+                plannedPrimeTime = clan.WowsLadder.PlannedPrimeTime;
 
-            await deferredMessage.EditAsync(new EmbedProperties
+            await deferredMessage.EditAsync(new MessageProperties().AddEmbeds(new EmbedProperties
             {
-                Title = $"`[{clan.ClanView.Clan.Tag}] {clan.ClanView.Clan.Name}`",
+                Title = $"`[{clan.Clan.Tag}] {clan.Clan.Name}`",
                 Color = new Color(Convert.ToInt32("a4fff7", 16)),
                 Fields = [
                     new EmbedFieldProperties{ Name = "Selected region", Value = plannedPrimeTime != null ? GetPrimeTimeRegions(plannedPrimeTime) : "Not selected" },
                     new EmbedFieldProperties{ Name = "Active region", Value = primeTime != null ? GetPrimeTimeRegions(primeTime) : "Not playing" }
                 ]
-            });
+            }));
         }
         catch (Exception ex)
         {
-            await Program.LogError(ex);
-            await deferredMessage.EditAsync("❌ LogError fetching clan data from API.");
+            await errorService.PrintErrorAsync(ex, $"Error at {nameof(PrimeTimeAsync)}");
+            await errorService.NotifyUserOfErrorAsync(Context.Interaction, ex, deferredMode: true);
         }
     }
 

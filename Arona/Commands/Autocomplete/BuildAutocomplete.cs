@@ -13,7 +13,7 @@ internal class BuildAutocomplete : IAutocompleteProvider<AutocompleteInteraction
     {
         var guildId = context.Interaction.GuildId.ToString();
 
-        var guild = Collections.Guilds.FindOne(g => g.Id == guildId);
+        var guild = Repository.Guilds.FindOne(g => g.Id == guildId);
 
         if (guild == null || guild.Builds.Count == 0)
         {

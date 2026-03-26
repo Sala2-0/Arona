@@ -9,7 +9,7 @@ using Role = Arona.Models.Role;
 
 namespace Arona.Commands.Components;
 
-public class Modals(ErrorService errorService) : ComponentInteractionModule<ModalInteractionContext>
+public class Modals(ErrorService errorService, IApiService apiService) : ComponentInteractionModule<ModalInteractionContext>
 {
     [ComponentInteraction("cookie form")]
     public async Task CookieFormAsync(long accountId, string region, int clanId)
@@ -27,7 +27,7 @@ public class Modals(ErrorService errorService) : ComponentInteractionModule<Moda
 
         try
         {
-            var data = await AccountInfoSync.GetAsync(cookieInput!.Value, region);
+            var data = await new AccountInfoSyncQuery(apiService.HttpClient).GetAsync(new AccountInfoSyncRequest(cookieInput!.Value, region));
 
             if (data.AccountId != accountId)
                 throw new InvalidCredentialException("Cookie does not belong to specified account.");

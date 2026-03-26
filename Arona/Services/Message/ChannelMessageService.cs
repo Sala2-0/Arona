@@ -2,8 +2,6 @@
 using NetCord.Gateway;
 using NetCord.Rest;
 
-using Timer = System.Timers.Timer;
-
 namespace Arona.Services.Message;
 
 public class ChannelMessageService(GatewayClient gatewayClient, PrivateMessageService pmService, ErrorService errorService)
@@ -44,27 +42,17 @@ public class ChannelMessageService(GatewayClient gatewayClient, PrivateMessageSe
         }
     }
 
-    public async Task SendMessageAfterTimeoutAsync(ulong guildId, ulong channelId, MessageProperties properties, long timeout)
+    public async Task SendAfterTimeoutAsync(ulong guildId, ulong channelId, MessageProperties properties, long timeout)
     {
         timeout += 300;
         var currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
         var timeDifference = timeout - currentTime;
-        if (timeDifference <= 0)
+        if (timeDifference > 0)
         {
-            await SendAsync(guildId, channelId, properties);
-
-            return;
+            await Task.Delay(TimeSpan.FromSeconds(timeDifference));
         }
-
-        var timer = new Timer(timeDifference * 1000d);
-        timer.AutoReset = false;
-        timer.Elapsed += async (_, _) =>
-        {
-            timer.Dispose();
-            await SendAsync(guildId, channelId, properties);
-        };
-        timer.Enabled = true;
-        timer.Start();
+        
+        await SendAsync(guildId, channelId, properties);
     }
 }

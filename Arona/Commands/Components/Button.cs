@@ -1,4 +1,5 @@
-﻿using NetCord;
+﻿using System.Text.Json;
+using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ComponentInteractions;
 using Arona.Services;
@@ -6,7 +7,7 @@ using NetCord.Gateway;
 
 namespace Arona.Commands.Components;
 
-public class ButtonModule(GatewayClient gatewayClient) : ComponentInteractionModule<ButtonInteractionContext>
+public class ButtonModule(GatewayClient gatewayClient, IApiService apiService, ErrorService errorService) : ComponentInteractionModule<ButtonInteractionContext>
 {
     [ComponentInteraction("button-id")]
     public async Task Button(string data)
@@ -29,7 +30,9 @@ public class ButtonModule(GatewayClient gatewayClient) : ComponentInteractionMod
         var self = await gatewayClient.Rest.GetCurrentUserAsync();
         var botIconUrl = self.GetAvatarUrl()!.ToString();
 
-        if (ComponentInactivityTimer.Timers.TryGetValue(Context.Message.Id, out var existingCts))
+        var messageStringId = Context.Message.Id.ToString();
+
+        if (ComponentInactivityTimer.Timers.TryGetValue(messageStringId, out var existingCts))
         {
             await existingCts.CancelAsync();
             existingCts.Dispose();
@@ -37,13 +40,13 @@ public class ButtonModule(GatewayClient gatewayClient) : ComponentInteractionMod
 
         await Context.Interaction.SendResponseAsync(InteractionCallback.ModifyMessage(message =>
         {
-            var data = RecentInteractions.AccountClanBattleSeasonDataInteractions[Context.Message.Id];
+            var data = RecentInteractions.AccountClanBattleSeasonDataInteractions[messageStringId];
 
             var buttons = new List<ButtonProperties>();
 
-            if (data.Keys.Contains(page + 1))
+            if (data.ContainsKey(page + 1))
                 buttons.Add(new ButtonProperties($"account season data:{Context.User.Id}:{title}:{page + 1}", ">", ButtonStyle.Secondary));
-            if (data.Keys.Contains(page - 1))
+            if (data.ContainsKey(page - 1))
                 buttons.Add(new ButtonProperties($"account season data:{Context.User.Id}:{title}:{page - 1}", "<", ButtonStyle.Secondary));
 
             var embed = new EmbedProperties
@@ -64,7 +67,45 @@ public class ButtonModule(GatewayClient gatewayClient) : ComponentInteractionMod
 
         var timeout = TimeSpan.FromSeconds(30);
         var cts = new CancellationTokenSource();
-        ComponentInactivityTimer.Timers[Context.Message.Id] = cts;
+        ComponentInactivityTimer.Timers[messageStringId] = cts;
         await ComponentInactivityTimer.StartAsync(Context.Message, timeout, cts);
+    }
+    
+    [ComponentInteraction("battle result lineup data")]
+    public async Task BattleResultLineupDataAsync(string battleId)
+    {
+        RecentInteractions.LineupData.TryGetValue(battleId, out var lineupData);
+
+        if (lineupData == null)
+        {
+            await Context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
+            {
+                Content = "Lineup data unavailable"
+            }));
+
+            return;
+        }
+        
+        try
+        {
+            var response = await apiService.PostToServiceAsync("Lineup", JsonSerializer.Serialize(lineupData));
+            response.EnsureSuccessStatusCode();
+                    
+            var imageBytes = await response.Content.ReadAsByteArrayAsync();
+            using var stream = new MemoryStream(imageBytes);
+            
+            await Context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
+            {
+                Attachments = [new AttachmentProperties("Lineup.png", stream)],
+            }));
+        }
+        catch (Exception ex)
+        {
+            await errorService.PrintErrorAsync(ex);
+            await Context.Interaction.SendResponseAsync(InteractionCallback.Message(new InteractionMessageProperties
+            {
+                Content = "Internal Error >_<"
+            }));
+        }
     }
 }

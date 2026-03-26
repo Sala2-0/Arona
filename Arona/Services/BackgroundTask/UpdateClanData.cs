@@ -111,6 +111,7 @@ public class UpdateClanData(ErrorService errorService, IApiService apiService) :
 
                 if (HasStartedPlaying(clan.WowsLadder.PrimeTime, newClanData.WowsLadder.PrimeTime))
                 {
+                    newClanData.Id = clan.Id;
                     newClanData.ExternalData = clan.ExternalData;
                     newClanData.ExternalData.SessionEndTime = ClanUtils.GetEndSession(newClanData.WowsLadder.PrimeTime);
 
@@ -197,6 +198,7 @@ public class UpdateClanData(ErrorService errorService, IApiService apiService) :
                     });
                 }
 
+                newClanData.Id = clan.Id;
                 newClanData.ExternalData = clan.ExternalData;
                 newClanData.ExternalData.RankData = clanRank;
 
@@ -255,11 +257,13 @@ public class UpdateClanData(ErrorService errorService, IApiService apiService) :
             {
                 return;
             }
-               
+            
+            clanData.Id = oldClanData.Id;
             clanData.ExternalData = oldClanData.ExternalData;
             Repository.Clans.Update(clanData);
         });
-           
+
+        Repository.HurricaneLeaderboard.DeleteAll();
         clanDatas.Clear();
     }
 }

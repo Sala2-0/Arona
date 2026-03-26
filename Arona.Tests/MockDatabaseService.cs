@@ -14,6 +14,10 @@ public class MockDatabaseService : LiteDatabase
             Id = Config.GuildId ?? throw new NullReferenceException("Guild ID cannot be null"),
             ChannelId = "1425924148663685172",
             Clans = [500256050],
+            Cookies = new Dictionary<int, string>
+            {
+                [500256050] = "secret_cookie_lol"
+            }
         });
 
         GetCollection<ClanView>("clans").Insert(new ClanView

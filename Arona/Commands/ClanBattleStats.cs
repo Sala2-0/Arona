@@ -183,12 +183,13 @@ public class ClanBattleStats(GatewayClient gatewayClient, ErrorService errorServ
                 .AddComponents(button != null ? [new ActionRowProperties { Buttons = [button] }] : []));
 
             var message = await Context.Interaction.GetResponseAsync();
+            var stringId = message.Id.ToString();
 
-            RecentInteractions.AccountClanBattleSeasonDataInteractions[message.Id] = structured;
+            RecentInteractions.AccountClanBattleSeasonDataInteractions[stringId] = structured;
 
             var timeout = TimeSpan.FromSeconds(30);
             var cts = new CancellationTokenSource();
-            ComponentInactivityTimer.Timers[message.Id] = cts;
+            ComponentInactivityTimer.Timers[stringId] = cts;
             await ComponentInactivityTimer.StartAsync(message, timeout, cts);
         }
         catch (Exception ex)

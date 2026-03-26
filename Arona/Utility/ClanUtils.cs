@@ -1,6 +1,7 @@
 ﻿using System.Security.Authentication;
 using Arona.Models;
 using Arona.Models.Api.Clans;
+using Arona.Services;
 
 namespace Arona.Utility;
 
@@ -130,9 +131,9 @@ public static class ClanUtils
         _ => throw new ArgumentException("Invalid realm", nameof(realm))
     };
     
-    public static async Task ValidateCookie(string cookie, string region, int clanId, string tag)
+    public static async Task ValidateCookie(string cookie, string region, int clanId, string tag, IApiService apiService)
     {
-        var cookieValidationData = await AccountInfoSync.GetAsync(cookie, region);
+        var cookieValidationData = await new AccountInfoSyncQuery(apiService.HttpClient).GetAsync(new AccountInfoSyncRequest(cookie, region));
 
         if (cookieValidationData.ClanId != clanId)
             throw new InvalidCredentialException($"Cookie for clan `{tag}` is invalid: Player is not a member of the clan.");

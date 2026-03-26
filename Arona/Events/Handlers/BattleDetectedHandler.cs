@@ -5,8 +5,11 @@ using Arona.Services;
 using Arona.Utility;
 using NetCord.Rest;
 using System.Security.Authentication;
+using System.Text.Json;
+using Arona.Models.DataTransfer;
 using Arona.Services.Message;
 using Microsoft.Extensions.Hosting;
+using NetCord;
 using NetCord.Gateway;
 
 namespace Arona.Events.Handlers;
@@ -27,50 +30,32 @@ public class BattleDetectedHandler(
 
         foreach (var guild in guilds)
         {
-            var embed = new BattleEmbed
-            {
-                IconUrl = botIconUrl,
-                BattleTime = evt.BattleTime,
-                ClanFullName = $"[{evt.ClanTag}] {evt.ClanName}",
-                TeamNumber = evt.TeamNumber,
+            var battleId = $"{evt.ClanId}_{evt.BattleTime}";
 
-                League = evt.League,
+            var dto = new BattleResult
+            {
+                ClanName = evt.ClanName,
+                ClanTag = evt.ClanTag,
                 Division = evt.Division,
                 DivisionRating = evt.DivisionRating,
-                Stage = evt.Stage,
-
-                GlobalRank = (int)evt.ClanRank.Global!,
-                RegionRank = (int)evt.ClanRank.Region!,
-                SuccessFactor = evt.SuccessFactor,
-
+                League = evt.League,
                 IsVictory = evt.IsVictory,
                 PointsDelta = evt.PointsDelta,
-                StageProgressOutcome = evt.StageProgressOutcome
+                Stage = evt.Stage != null ? new BattleResult.ResultStage(evt.Stage.Type, evt.Stage.Progress) : null,
             };
 
             if (guild.Cookies.TryGetValue(evt.ClanId, out var cookie))
             {
                 try
                 {
-                    await ClanUtils.ValidateCookie(cookie, evt.Region, evt.ClanId, evt.ClanTag);
+                    await ClanUtils.ValidateCookie(cookie, evt.Region, evt.ClanId, evt.ClanTag, apiService);
 
-                    var detailedData = (await ladderBattlesQuery.GetAsync(
+                    var lineupData = (await ladderBattlesQuery.GetAsync(
                             new LadderBattlesRequest(evt.Region, evt.TeamNumber, cookie))
                         )[0];
-
-                    var detailedEmbed = new DetailedBattleEmbed
-                    {
-                        IconUrl = botIconUrl,
-                        Data = detailedData,
-                        BattleTime = evt.BattleTime,
-                        IsVictory = evt.IsVictory
-                    }.CreateEmbed();
-
-                    await channelMessageService.SendMessageAfterTimeoutAsync(
-                        ulong.Parse(guild.Id),
-                        ulong.Parse(guild.ChannelId), 
-                        new MessageProperties().AddEmbeds(detailedEmbed), 
-                        evt.BattleTime);
+                    
+                    dto.IsLineupDataAvailable = true;
+                    RecentInteractions.LineupData[battleId] = new Lineup(lineupData, evt.IsVictory);
                 }
                 catch (InvalidCredentialException ex)
                 {
@@ -78,22 +63,43 @@ public class BattleDetectedHandler(
                     await errorService.NotifyUserOfErrorAsync(ulong.Parse(guild.Id), ex, "Error sending detailed clan battle info");
 
                     guild.Cookies.Remove(evt.ClanId);
-
-                    // Send regular embed instead since detailed data failed
-                    await channelMessageService.SendMessageAfterTimeoutAsync(
-                        ulong.Parse(guild.Id), 
-                        ulong.Parse(guild.ChannelId),
-                        new MessageProperties().AddEmbeds(embed.CreateEmbed()),
-                        evt.BattleTime);
                 }
             }
-            else
+
+            try
             {
-                await channelMessageService.SendMessageAfterTimeoutAsync(
+                var response = await apiService.PostToServiceAsync("BattleResult", JsonSerializer.Serialize(dto));
+                response.EnsureSuccessStatusCode();
+
+                var imageBytes = await response.Content.ReadAsByteArrayAsync();
+                using var stream = new MemoryStream(imageBytes);
+
+                var button = new ButtonProperties(
+                    customId: $"battle result lineup data:{battleId}",
+                    label: "View lineup data",
+                    style: ButtonStyle.Primary
+                );
+
+                var messageProperties = new MessageProperties
+                {
+                    Attachments = [new AttachmentProperties("BattleResult.png", stream)],
+                    Components = [new ActionRowProperties([button])]
+                };
+
+                await channelMessageService.SendAfterTimeoutAsync(
                     ulong.Parse(guild.Id), 
                     ulong.Parse(guild.ChannelId),
-                    new MessageProperties().AddEmbeds(embed.CreateEmbed()),
+                    messageProperties,
                     evt.BattleTime);
+
+                var timeout = TimeSpan.FromSeconds(30);
+                var cts = new CancellationTokenSource();
+                ComponentInactivityTimer.Timers[battleId] = cts;
+                await ComponentInactivityTimer.StartLineupDataTimerAsync(battleId, timeout, cts);
+            }
+            catch (Exception ex)
+            {
+                await errorService.PrintErrorAsync(ex);
             }
         }
     }

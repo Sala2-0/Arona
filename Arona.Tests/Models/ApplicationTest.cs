@@ -5,8 +5,6 @@ using LiteDB;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-using Timer = System.Timers.Timer;
-
 namespace Arona.Tests.Models;
 
 public class ApplicationTest
@@ -53,13 +51,13 @@ public class ApplicationTest
         var host = builder.Build();
         
         var apiService = host.Services.GetRequiredService<IApiService>();
-        // if (args is ["--port", var portStr, ..] && short.TryParse(portStr, out var port))
-        // {
-        //     apiService.SetServicePort(port);
-        // }   
-        //
-        // await Task.Delay(3000);
-        // if (!await apiService.IsServiceOnline()) return;
+        if (args is ["--port", var portStr, ..] && short.TryParse(portStr, out var port))
+        {
+            apiService.SetServicePort(port);
+        }   
+        
+        await Task.Delay(3000);
+        if (!await apiService.IsServiceOnline()) return;
         
         var database =  host.Services.GetRequiredService<LiteDatabase>();
         var emojiService = host.Services.GetRequiredService<EmojiService>();
@@ -71,12 +69,9 @@ public class ApplicationTest
         
         var errorService = host.Services.GetRequiredService<ErrorService>();
         
-        var timer = new Timer(TimeSpan.FromSeconds(5));
-        timer.Elapsed += async (_, _) => await UpdateClanData.RunAsync(errorService, apiService);
-        timer.AutoReset = false;
-        timer.Start();
-        
-        await Task.Delay(TimeSpan.FromSeconds(15));
+        await Task.Delay(TimeSpan.FromSeconds(5));
+        await UpdateClanData.RunAsync(errorService, apiService);
+        await Task.Delay(TimeSpan.FromSeconds(5));
     }
 
     [Fact]

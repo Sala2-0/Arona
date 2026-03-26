@@ -5,7 +5,20 @@ using System.Text.Json.Serialization;
 
 namespace Arona.Models.Api.Clans;
 
-internal class AccountInfoSync
+public record AccountInfoSyncRequest(string Cookie, string Region);
+
+public class AccountInfoSyncQuery(HttpClient client) : QueryBase<AccountInfoSyncRequest, AccountInfoSync>(client)
+{
+    public override async Task<AccountInfoSync> GetAsync(AccountInfoSyncRequest request)
+    {
+        var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, request.Region);
+        httpRequestMessage.Headers.Add("Cookie", $"wsauth_token={request.Region};");
+        
+        return await SendAndDeserializeAsync($"https://clans.worldofwarships.{request.Region}/account_info_sync/", httpRequestMessage);
+    }
+}
+
+public class AccountInfoSync
 {
     [JsonPropertyName("id")]
     public required long AccountId { get; set; }
@@ -15,17 +28,4 @@ internal class AccountInfoSync
 
     [JsonPropertyName("role_name")]
     public Role? Rank { get; set; }
-
-    public static async Task<AccountInfoSync> GetAsync(string cookie, string region)
-    {
-        using HttpClient client = new();
-        client.DefaultRequestHeaders.Add("Cookie", $"wsauth_token={cookie};");
-
-        var res = await client.GetAsync($"https://clans.worldofwarships.{region}/account_info_sync/");
-        if (res.StatusCode == HttpStatusCode.Forbidden)
-            throw new InvalidCredentialException("Invalid or expired cookie.");
-        res.EnsureSuccessStatusCode();
-
-        return JsonSerializer.Deserialize<AccountInfoSync>(await res.Content.ReadAsStringAsync())!;
-    }
 }

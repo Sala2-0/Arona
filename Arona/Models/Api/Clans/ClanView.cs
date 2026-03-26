@@ -1,8 +1,5 @@
 ﻿using LiteDB;
 using System.Text.Json.Serialization;
-using Arona.Services;
-using JsonSerializer = System.Text.Json.JsonSerializer;
-using Arona.Utility;
 
 namespace Arona.Models.Api.Clans;
 
@@ -67,30 +64,6 @@ public class ClanView
         => currentTime >= ExternalData.SessionEndTime;
 
     public bool HasASession() => ExternalData.RecentBattles.Count > 0;
-}
-
-public record ClanViewMinimal
-{
-    public int Id { get; init; }
-    public string Tag { get; init; }
-    public string Name { get; init; }
-    public int LatestSeason { get; init; }
-    public int? PrimeTime { get; init; }
-    public int? PlannedPrimeTime { get; init; }
-    public int? GlobalRank { get; init; }
-    public int? RegionRank { get; init; }
-
-    public ClanViewMinimal(ClanView clanInfo, LadderStructure[] globalLeaderboard, LadderStructure[] regionLeaderboard)
-    {
-        Id = clanInfo.Clan.Id;
-        Tag = clanInfo.Clan.Tag;
-        Name = clanInfo.Clan.Name;
-        LatestSeason = clanInfo.WowsLadder.SeasonNumber;
-        PrimeTime = clanInfo.WowsLadder.PrimeTime;
-        PlannedPrimeTime = clanInfo.WowsLadder.PlannedPrimeTime;
-        GlobalRank = globalLeaderboard.FirstOrDefault(c => c.Id == clanInfo.Clan.Id)?.Rank;
-        RegionRank = regionLeaderboard.FirstOrDefault(c => c.Id == clanInfo.Clan.Id)?.Rank;
-    }
 }
 
 public class ClanViewRoot

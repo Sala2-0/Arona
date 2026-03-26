@@ -14,7 +14,10 @@ public abstract class QueryBase<TRequest, TResponse>(HttpClient client) : IApiQu
         HttpResponseMessage res;
 
         if (message != null)
+        {
+            message.RequestUri = new Uri(url);
             res = await Client.SendAsync(message);
+        }
         else
             res = await Client.GetAsync(url);
 

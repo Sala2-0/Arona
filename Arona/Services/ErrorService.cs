@@ -23,7 +23,7 @@ public class ErrorService(GatewayClient gatewayClient)
                 .AddFields(new EmbedFieldProperties
                 {
                     Name = "Exception Information",
-                    Value = ex.ToString()
+                    Value = ex.Message + " " + ex.StackTrace
                 });
 
             if (customMessage != null)

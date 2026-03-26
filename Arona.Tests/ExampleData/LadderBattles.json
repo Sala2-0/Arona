@@ -1,0 +1,61 @@
+﻿[
+  {
+    "season_number": 1,
+    "teams": [
+      {
+        "result": "victory",
+        "clan_id": 500256050,
+        "id": 10000,
+        "division_rating": 1000,
+        "division": 1,
+        "league": 0,
+        "rating_delta": 20,
+        "team_number": 1,
+        "players": [
+          {
+            "spa_id": 557422466,
+            "clan_id": 500256050,
+            "name": "Yurizono_Seia_",
+            "survived": true,
+            "ship": {
+              "level": 10,
+              "name": "Ragnar"
+            }
+          }
+        ],
+        "claninfo": {
+          "tag": "SEIA",
+          "name": "Tepartiet"
+        },
+        "stage": null
+      },
+      {
+        "result": "defeat",
+        "clan_id": 500140589,
+        "id": 20000,
+        "division_rating": 200,
+        "division": 1,
+        "league": 0,
+        "rating_delta": -30,
+        "team_number": 1,
+        "players": [
+          {
+            "spa_id": 67890,
+            "clan_id": 500140589,
+            "name": "KinimodKsuc",
+            "survived": false,
+            "ship": {
+              "level": 10,
+              "name": "Bungo"
+            }
+          }
+        ],
+        "claninfo": {
+          "tag": "-TWA-",
+          "name": "Total War Alliance"
+        },
+        "stage": null
+      }
+    ]
+  }
+]

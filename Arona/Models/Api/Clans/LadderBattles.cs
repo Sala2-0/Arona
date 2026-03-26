@@ -18,7 +18,7 @@ internal class LadderBattlesQuery(HttpClient client) : QueryBase<LadderBattlesRe
     }
 }
 
-internal class LadderBattle
+public class LadderBattle
 {
     [JsonPropertyName("season_number")]
     public required int SeasonNumber { get; set; }
@@ -26,7 +26,7 @@ internal class LadderBattle
     [JsonPropertyName("teams")]
     public required Team[] Teams { get; set; }
 
-    internal class Team
+    public class Team
     {
         [JsonPropertyName("result")]
         public required string Result { get; set; }
@@ -62,7 +62,7 @@ internal class LadderBattle
         public required Stage? Stage { get; set; }
     }
 
-    internal class Player
+    public class Player
     {
         [JsonPropertyName("spa_id")]
         public required long AccountId { get; set; }
@@ -80,7 +80,7 @@ internal class LadderBattle
         public required Ship Ship { get; set; }
     }
 
-    internal class Ship
+    public class Ship
     {
         [JsonPropertyName("level")]
         public required Text.Tier Level { get; set; }
@@ -90,7 +90,7 @@ internal class LadderBattle
 
     }
 
-    internal class ClanInfo
+    public class ClanInfo
     {
         [JsonPropertyName("tag")]
         public required string Tag { get; set; }

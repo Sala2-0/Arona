@@ -30,12 +30,18 @@ public class BattleDetectedHandler(
 
         foreach (var guild in guilds)
         {
+            if (guild.ChannelId == null)
+            {
+                continue;
+            }
+            
             var battleId = $"{evt.ClanId}_{evt.BattleTime}";
 
             var dto = new BattleResult
             {
                 ClanName = evt.ClanName,
                 ClanTag = evt.ClanTag,
+                Team = evt.TeamNumber.ToString(),
                 Division = evt.Division,
                 DivisionRating = evt.DivisionRating,
                 League = evt.League,

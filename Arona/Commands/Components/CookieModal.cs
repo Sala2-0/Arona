@@ -27,7 +27,8 @@ public class Modals(ErrorService errorService, IApiService apiService) : Compone
 
         try
         {
-            var data = await new AccountInfoSyncQuery(apiService.HttpClient).GetAsync(new AccountInfoSyncRequest(cookieInput!.Value, region));
+            var data = await new AccountInfoSyncQuery(apiService.HttpClient).GetAsync(
+                new AccountInfoSyncRequest(cookieInput!.Value, region));
 
             if (data.AccountId != accountId)
                 throw new InvalidCredentialException("Cookie does not belong to specified account.");
@@ -38,7 +39,8 @@ public class Modals(ErrorService errorService, IApiService apiService) : Compone
 
             guild.Cookies[clanId] = cookieInput.Value;
             Repository.Guilds.Update(guild);
-            await Context.Interaction.SendResponseAsync(InteractionCallback.Message($"Cookies set for clan `{clanId}`"));
+            await Context.Interaction.SendResponseAsync(
+                InteractionCallback.Message($"Cookies set for clan `{clanId}`"));
         }
         catch (Exception ex)
         {

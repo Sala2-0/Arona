@@ -10,6 +10,7 @@ interface Stage {
 interface BattleResult {
   ClanTag: string
   ClanName: string
+  Team: string
   IsVictory: boolean
   PointsDelta: number
   League: number
@@ -22,6 +23,7 @@ interface BattleResult {
 const exampleData: BattleResult = {
   ClanTag: "SEIA",
   ClanName: "Tepartiet",
+  Team: "Alpha",
   IsVictory: false,
   PointsDelta: -30,
   League: 0,
@@ -47,6 +49,7 @@ onMounted(async () => {
 <template>
   <div id="root">
     <h1 id="clan_name">{{ `[${data.ClanTag}] ${data.ClanName}` }}</h1>
+    <h1 style="margin-top: 0; font-size: 3.5rem">{{ data.Team }}</h1>
 
     <p id="outcome" :style="{ 'color': getOutcomeColor(data.IsVictory) }">{{ data.IsVictory ? "Victory" : "Defeat" }}</p>
 

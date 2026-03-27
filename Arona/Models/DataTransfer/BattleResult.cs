@@ -4,6 +4,7 @@ public record BattleResult
 {
     public required string ClanTag { get; init; }
     public required string ClanName { get; init; }
+    public required string Team { get; init; }
     public required bool IsVictory { get; init; }
     public required int? PointsDelta { get; init; }
     public required League League { get; init; }

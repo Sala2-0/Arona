@@ -9,7 +9,7 @@ public class Guild
     public required string Id { get; set; }
 
     [BsonField("channel_id")]
-    public required string ChannelId { get; set; }
+    public required string? ChannelId { get; set; }
 
     [BsonField("clans")]
     public List<int> Clans { get; set; } = [];

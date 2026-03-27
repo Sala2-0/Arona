@@ -78,16 +78,16 @@ public class UpdateClanData(ErrorService errorService, IApiService apiService) :
 
             if (notifyGuilds)
             {
-                EventBus.OnSessionEnded(new ClanBattleSessionEnded
+                _ = Task.Run(async () => await EventBus.OnSessionEnded(new ClanBattleSessionEnded
                 {
                     ClanId = clan.Id,
                     ClanTag = clan.Clan.Tag,
-                    ClanName  = clan.Clan.Name,
+                    ClanName = clan.Clan.Name,
                     BattlesCount = clan.ExternalData.RecentBattles.Count,
                     WinsCount = winsCount,
                     TotalPoints = totalPoints,
                     Date = DateOnly.FromDateTime(DateTime.UtcNow)
-                });
+                }));
             }
                     
             clan.ResetSessionData();
@@ -117,11 +117,11 @@ public class UpdateClanData(ErrorService errorService, IApiService apiService) :
 
                     if (notifyGuilds)
                     {
-                        await EventBus.OnSessionStarted(new ClanBattleSessionStarted(
+                        _ = Task.Run(async () => await EventBus.OnSessionStarted(new ClanBattleSessionStarted(
                             ClanId: clan.Id,
                             ClanTag: clan.Clan.Tag,
                             ClanName: clan.Clan.Name
-                        ));
+                        )));
                     }
 
                     Repository.Clans.Update(newClanData);
@@ -186,7 +186,7 @@ public class UpdateClanData(ErrorService errorService, IApiService apiService) :
 
                     if (notifyGuilds)
                     {
-                        await EventBus.OnBattleDetected(eventData);
+                        _ = Task.Run(async () => await EventBus.OnBattleDetected(eventData));
                     }
 
                     clan.ExternalData.RecentBattles.Add(new RecentBattle

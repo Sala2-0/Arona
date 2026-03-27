@@ -1,7 +1,4 @@
-﻿using System.Net;
-using System.Security.Authentication;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace Arona.Models.Api.Clans;
 
@@ -11,8 +8,8 @@ public class AccountInfoSyncQuery(HttpClient client) : QueryBase<AccountInfoSync
 {
     public override async Task<AccountInfoSync> GetAsync(AccountInfoSyncRequest request)
     {
-        var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, request.Region);
-        httpRequestMessage.Headers.Add("Cookie", $"wsauth_token={request.Region};");
+        var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "");
+        httpRequestMessage.Headers.Add("Cookie", $"wsauth_token={request.Cookie};");
         
         return await SendAndDeserializeAsync($"https://clans.worldofwarships.{request.Region}/account_info_sync/", httpRequestMessage);
     }

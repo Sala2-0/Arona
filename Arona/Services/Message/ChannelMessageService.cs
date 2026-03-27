@@ -1,4 +1,5 @@
-﻿using NetCord;
+﻿using Arona.Models.DB;
+using NetCord;
 using NetCord.Gateway;
 using NetCord.Rest;
 
@@ -39,6 +40,10 @@ public class ChannelMessageService(GatewayClient gatewayClient, PrivateMessageSe
         {
             await errorService.PrintErrorAsync(ex);
             await pmService.SendNoAccessMessageAsync(guildId, channelId);
+
+            var guildData = Repository.Guilds.FindOne(guildId.ToString());
+            guildData.ChannelId = null;
+            Repository.Guilds.Update(guildId, guildData);
         }
     }
 

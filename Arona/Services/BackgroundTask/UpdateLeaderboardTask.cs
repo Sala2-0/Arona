@@ -7,20 +7,42 @@ using NetCord.Rest;
 
 namespace Arona.Services.BackgroundTask;
 
-public class UpdateLeaderboardTask(ChannelMessageService channelMessageService, ErrorService errorService, IApiService apiService) : BackgroundService, IBackgroundTask
+public class UpdateLeaderboardTask : BackgroundService, IBackgroundTask
 {
+    private readonly IApiService _apiService;
+    private readonly ErrorService _errorService;
+    private readonly ChannelMessageService _channelMessageService;
+    private bool _isRunning;
+    
+    private static UpdateLeaderboardTask SingletonInstance { get; set; }
+
+    public UpdateLeaderboardTask(ChannelMessageService channelMessageService, ErrorService errorService, IApiService apiService)
+    {
+        _apiService =  apiService;
+        _errorService = errorService;
+        _channelMessageService = channelMessageService;
+
+        SingletonInstance = this;
+    }
+    
     public async Task RunAsync()
     {
         await RunAsync(startupUpdate: false);
     }
 
-    private async Task RunAsync(bool startupUpdate = false)
+    public static async Task RunAsync(bool startupUpdate = false)
     {
+        if (SingletonInstance._isRunning)
+        {
+            return;
+        }
+        SingletonInstance._isRunning = true;
+        
         var guilds = Repository.Guilds.FindAll().ToList();
         var newLeaderboard = new List<LadderStructure>();
         string[] realms = ["eu", "us", "sg"];
         
-        var query = new LadderStructureByRealmQuery(apiService.HttpClient);
+        var query = new LadderStructureByRealmQuery(SingletonInstance._apiService.HttpClient);
         foreach (var realm in realms)
         {
             try
@@ -33,7 +55,7 @@ public class UpdateLeaderboardTask(ChannelMessageService channelMessageService, 
             }
             catch (Exception e)
             {
-                await errorService.PrintErrorAsync(e);
+                await SingletonInstance._errorService.PrintErrorAsync(e);
             }
         }
 
@@ -49,7 +71,7 @@ public class UpdateLeaderboardTask(ChannelMessageService channelMessageService, 
             .ToList();
         if (leaderboard.Count == 0)
         {
-            await NotifyNewHurricaneClansAsync(guilds, newLeaderboard);
+            await SingletonInstance.NotifyNewHurricaneClansAsync(guilds, newLeaderboard);
             
             Repository.HurricaneLeaderboard.InsertBulk(newLeaderboard);
             return;
@@ -61,10 +83,12 @@ public class UpdateLeaderboardTask(ChannelMessageService channelMessageService, 
         var removedClans = leaderboard.Where(x => !newClanIds.Contains(x.Id)).ToList();
         var addedClans = newLeaderboard.Where(x => !oldClanIds.Contains(x.Id)).ToList();
         
-        await NotifyHurricaneChangesAsync(guilds, addedClans, removedClans);
+        await SingletonInstance.NotifyHurricaneChangesAsync(guilds, addedClans, removedClans);
         
         Repository.HurricaneLeaderboard.DeleteAll();
         Repository.HurricaneLeaderboard.InsertBulk(newLeaderboard);
+
+        SingletonInstance._isRunning = false;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -81,7 +105,7 @@ public class UpdateLeaderboardTask(ChannelMessageService channelMessageService, 
             }
             catch (Exception ex)
             {
-                await errorService.PrintErrorAsync(ex);
+                await _errorService.PrintErrorAsync(ex);
             }
         }
     }
@@ -96,7 +120,7 @@ public class UpdateLeaderboardTask(ChannelMessageService channelMessageService, 
             {
                 try
                 {
-                    await channelMessageService.SendAsync(
+                    await _channelMessageService.SendAsync(
                         ulong.Parse(guild.Id),
                         ulong.Parse(guild.ChannelId),
                         new MessageProperties().AddEmbeds(
@@ -109,7 +133,7 @@ public class UpdateLeaderboardTask(ChannelMessageService channelMessageService, 
                 }
                 catch (Exception e)
                 {
-                    await errorService.PrintErrorAsync(e);
+                    await _errorService.PrintErrorAsync(e);
                 }
             }
         }
@@ -127,7 +151,7 @@ public class UpdateLeaderboardTask(ChannelMessageService channelMessageService, 
             {
                 try
                 {
-                    await channelMessageService.SendAsync(
+                    await _channelMessageService.SendAsync(
                         ulong.Parse(guild.Id),
                         ulong.Parse(guild.ChannelId),
                         new MessageProperties().AddEmbeds(
@@ -140,7 +164,7 @@ public class UpdateLeaderboardTask(ChannelMessageService channelMessageService, 
                 }
                 catch (Exception e)
                 {
-                    await errorService.PrintErrorAsync(e);
+                    await _errorService.PrintErrorAsync(e);
                 }
             }
 
@@ -148,7 +172,7 @@ public class UpdateLeaderboardTask(ChannelMessageService channelMessageService, 
             {
                 try
                 {
-                    await channelMessageService.SendAsync(
+                    await _channelMessageService.SendAsync(
                         ulong.Parse(guild.Id),
                         ulong.Parse(guild.ChannelId),
                         new MessageProperties().AddEmbeds(
@@ -161,7 +185,7 @@ public class UpdateLeaderboardTask(ChannelMessageService channelMessageService, 
                 }
                 catch (Exception e)
                 {
-                    await errorService.PrintErrorAsync(e);
+                    await _errorService.PrintErrorAsync(e);
                 }
             }
         }

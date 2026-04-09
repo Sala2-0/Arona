@@ -64,7 +64,7 @@ onMounted(async () => {
     <p v-else id="points" style="margin-top: 50px">{{ data.DivisionRating }}</p>
     <p v-if="!data.Stage" id="points_delta" :style="{ 'color': getOutcomeColor(data.IsVictory) }">{{ stringify(data.PointsDelta) }}</p>
 
-    <p v-if="data.IsLineupDataAvailable" class="lineup_data_info">Lineup data available</p>
+    <p v-if="data.IsLineupDataAvailable" class="lineup_data_info">Lineup data available until 22.30 UTC</p>
     <p v-else class="lineup_data_info">Lineup data unavailable, use '/clan_monitor set_cookie' to view lineup data</p>
   </div>
 </template>

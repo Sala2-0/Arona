@@ -22,4 +22,5 @@ public record BattleDetected
     public required Division Division { get; init; }
     public required int DivisionRating { get; init; }
     public required Stage? Stage { get; init; }
+    public required long SessionEndTime { get; init; }
 }

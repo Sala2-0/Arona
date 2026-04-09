@@ -60,7 +60,25 @@ public class MockDatabaseService : LiteDatabase
             ExternalData = new External
             {
                 Region = "eu",
-                Guilds = [Config.GuildId ?? throw new NullReferenceException("Guild ID cannot be null")]
+                Guilds = [Config.GuildId ?? throw new NullReferenceException("Guild ID cannot be null")],
+                RecentBattles =
+                {
+                    new RecentBattle
+                    {
+                        BattleTime = 123456789,
+                        IsVictory = true,
+                        PointsEarned = 30,
+                        TeamNumber = TeamNumber.Alpha
+                    },
+                    new RecentBattle
+                    {
+                        BattleTime = 234567890,
+                        IsVictory = true,
+                        PointsEarned = 16,
+                        TeamNumber = TeamNumber.Alpha
+                    }
+                },
+                SessionEndTime = 3000
             }
         });
     }

@@ -98,7 +98,10 @@ public class BattleDetectedHandler(
                     messageProperties,
                     evt.BattleTime);
 
-                var timeout = TimeSpan.FromSeconds(30);
+                var currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                var deltaTime = evt.SessionEndTime - currentTime;
+                
+                var timeout = TimeSpan.FromSeconds(deltaTime);
                 var cts = new CancellationTokenSource();
                 ComponentInactivityTimer.Timers[battleId] = cts;
                 await ComponentInactivityTimer.StartLineupDataTimerAsync(battleId, timeout, cts);

@@ -72,7 +72,7 @@ public class UpdateClanData(ErrorService errorService, IApiService apiService) :
         var finishedClans = clansWithFinishedSession.Select(c => c.Id).ToHashSet();
         clans.RemoveAll(c => finishedClans.Contains(c.Id));
         
-        clansWithFinishedSession.ForEach(clan =>
+        foreach (var clan in clansWithFinishedSession)
         {
             clan.CalculateSessionStatistics(out var winsCount, out var totalPoints);
 
@@ -88,11 +88,13 @@ public class UpdateClanData(ErrorService errorService, IApiService apiService) :
                     TotalPoints = totalPoints,
                     Date = DateOnly.FromDateTime(DateTime.UtcNow)
                 }));
+                
+                await Task.Delay(TimeSpan.FromSeconds(3));
             }
-                    
+            
             clan.ResetSessionData();
             Repository.Clans.Update(clan);
-        });
+        }
 
         foreach (var clan in clans)
         {
@@ -162,7 +164,8 @@ public class UpdateClanData(ErrorService errorService, IApiService apiService) :
                         League = newRatingData.League,
                         Division = newRatingData.Division,
                         DivisionRating = newRatingData.DivisionRating,
-                        Stage = newRatingData.Stage
+                        Stage = newRatingData.Stage,
+                        SessionEndTime = clan.ExternalData.SessionEndTime!.Value
                     };
 
                     if (HasEnteredStage(newRatingData.Stage))
@@ -263,7 +266,7 @@ public class UpdateClanData(ErrorService errorService, IApiService apiService) :
             Repository.Clans.Update(clanData);
         });
 
-        Repository.HurricaneLeaderboard.DeleteAll();
+        _ = UpdateLeaderboardTask.RunAsync(startupUpdate: true);
         clanDatas.Clear();
     }
 }

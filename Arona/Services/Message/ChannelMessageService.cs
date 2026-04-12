@@ -5,7 +5,7 @@ using NetCord.Rest;
 
 namespace Arona.Services.Message;
 
-public class ChannelMessageService(GatewayClient gatewayClient, PrivateMessageService pmService, ErrorService errorService)
+public class ChannelMessageService(GatewayClient gatewayClient, ErrorService errorService)
 {
     public async Task SendAsync(ulong guildId, ulong channelId, MessageProperties properties)
     {
@@ -26,7 +26,6 @@ public class ChannelMessageService(GatewayClient gatewayClient, PrivateMessageSe
             // Arona har inte tillstånd att skicka meddelanden
             if ((permissions & Permissions.SendMessages) == 0)
             {
-                await pmService.SendNoPermissionMessageAsync(guildId, channel!.Name);
                 return;
             }
             
@@ -39,7 +38,6 @@ public class ChannelMessageService(GatewayClient gatewayClient, PrivateMessageSe
         catch (Exception ex)
         {
             await errorService.PrintErrorAsync(ex);
-            await pmService.SendNoAccessMessageAsync(guildId, channelId);
 
             var guildData = Repository.Guilds.FindOne(guildId.ToString());
             guildData.ChannelId = null;

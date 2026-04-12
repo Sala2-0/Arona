@@ -19,7 +19,6 @@ namespace Arona.Commands;
 
 public class OwnerCommands(
     GatewayClient gatewayClient,
-    PrivateMessageService pmService,
     ErrorService errorService,
     LiteDatabase db,
     IApiService apiService) : CommandModule<CommandContext>
@@ -58,7 +57,6 @@ public class OwnerCommands(
                 // Arona har inte tillstånd att skicka meddelanden
                 if ((permissions & Permissions.SendMessages) == 0)
                 {
-                    await pmService.SendNoPermissionMessageAsync(ulong.Parse(guild.Id), channel!.Name);
                     continue;
                 }
 
@@ -92,7 +90,6 @@ public class OwnerCommands(
             catch (Exception ex)
             {
                 await errorService.PrintErrorAsync(ex);
-                await pmService.SendNoAccessMessageAsync(ulong.Parse(guild.Id), ulong.Parse(guild.ChannelId));
             }
         }
     }

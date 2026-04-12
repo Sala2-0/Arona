@@ -46,8 +46,7 @@ public class ApplicationBuilder
         
         // Message services
         Builder.Services
-            .AddSingleton<ChannelMessageService>()
-            .AddSingleton<PrivateMessageService>();
+            .AddSingleton<ChannelMessageService>();
 
         // Background services
         Builder.Services

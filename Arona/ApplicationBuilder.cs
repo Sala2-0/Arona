@@ -111,7 +111,7 @@ public class ApplicationBuilder
         client.Ready += _ => client.UpdatePresenceAsync(new PresenceProperties(statusType: UserStatusType.Online)
         {
             Activities = [
-                new UserActivityProperties(Config.PrecenseStr, UserActivityType.Playing)
+                new UserActivityProperties(Config.PresenceStr, UserActivityType.Playing)
             ],
         });
     }

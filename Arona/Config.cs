@@ -14,7 +14,8 @@ public static class Config
     public static string WgApi { get; private set; }
     public static string Database { get; private set; }
     public static ulong BackdoorChannel { get; private set; } // Används för att skicka potentiella fel, missbruk osv
-    public static string PrecenseStr { get; private set; }
+    public static string PresenceStr { get; private set; }
+    public static string GameVersionsPath { get; private set; }
 
     public static void Initialize()
     {
@@ -37,7 +38,8 @@ public static class Config
             WgApi = instance.WgApi;
             Database = instance.Database;
             BackdoorChannel = ulong.Parse(instance.BackdoorChannel);
-            PrecenseStr = instance.PresenceStr;
+            PresenceStr = instance.PresenceStr;
+            GameVersionsPath = instance.GameVersionsPath;
         }
         catch (JsonException ex)
         {
@@ -58,5 +60,6 @@ public static class Config
         [JsonPropertyName("database")] public required string Database { get; set; }
         [JsonPropertyName("backdoor_channel")] public required string BackdoorChannel { get; set; }
         [JsonPropertyName("presence_str")] public string PresenceStr { get; set; } = "/help";
+        [JsonPropertyName("game_versions_path")] public required string GameVersionsPath { get; set; }
     }
 }

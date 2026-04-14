@@ -18,8 +18,7 @@
     <Folder Include="wwwroot\" />
   </ItemGroup>
 
-	<Target Name="BuildTemplates" BeforeTargets="Build">
-		<Exec Command="npm run build" WorkingDirectory="../Arona.Templates"/>
-	</Target>
-
+  <Target Name="BuildTemplates" BeforeTargets="Build">
+    <Exec Command="npm run build" WorkingDirectory="../Arona.Templates"/>
+  </Target>
 </Project>

@@ -102,7 +102,7 @@ Since exponent is different per league, each league would have their own ranges 
 
 Render your World of Warships replays into a minimap time lapse, made possible with landaire's [wows-toolkit](https://github.com/landaire/wows-toolkit)
 
-Made as a replacement for the now deprecated [minimap_renderer](https://github.com/WoWs-Builder-Team/minimap_renderer?tab=readme-ov-file) project.
+Made as a replacement for the now deprecated [minimap_renderer](https://github.com/WoWs-Builder-Team/minimap_renderer?tab=readme-ov-file) project and more specifically [Track](https://github.com/padtrack/track) bot.
 
 <table border="0.5" cellspacing="0" cellpadding="5">
   <tr>

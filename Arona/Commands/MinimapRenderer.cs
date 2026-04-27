@@ -60,9 +60,9 @@ public class MinimapRenderer : ApplicationCommandModule<ApplicationCommandContex
             using var process = new Process { StartInfo = psi };
             process.Start();
             
+            var timer = new Stopwatch();
             _ = Task.Run(async () =>
             {
-                var timer = new Stopwatch();
                 timer.Start();
                 
                 while (!process.HasExited)
@@ -98,9 +98,20 @@ public class MinimapRenderer : ApplicationCommandModule<ApplicationCommandContex
             }
 
             await Task.Delay(500);
-            await deferredMessage.EditAsync(new MessageProperties().WithContent("**Done!** :white_check_mark:"));
             
-            return new FileStream(Path.Combine(AppContext.BaseDirectory, "Replay.mp4"), FileMode.Open);
+            var outFile = new FileStream(Path.Combine(AppContext.BaseDirectory, "Replay.mp4"), FileMode.Open);
+            if (outFile.Length > 25 * 1024 * 1024)
+            {
+                await deferredMessage.EditAsync(new MessageProperties()
+                    .WithContent(":x: Unfortunately the minimap render file size is too large so I cannot send >.>\n" +
+                                 "Perhaps try again later?"));
+                return null;
+            }
+            
+            await deferredMessage.EditAsync(new MessageProperties()
+                .WithContent("**Done!** :white_check_mark:\n" +
+                             $"Time elapsed: {Math.Round(timer.Elapsed.TotalSeconds, 1)} s"));
+            return outFile;
         }
         catch (Exception e)
         {
